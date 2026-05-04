@@ -1,0 +1,80 @@
+.bibliography-section {
+  padding: 0.5rem 0;
+}
+
+.bibliography-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin: 0 0 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bibliography-subtitle {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0 0 1.25rem;
+  font-style: italic;
+}
+
+.bibliography-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+}
+
+.bibliography-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 7px;
+  padding: 0.75rem 1rem;
+}
+
+.bibliography-number {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #7C4DFF;
+  min-width: 1.5rem;
+  padding-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.bibliography-text {
+  margin: 0;
+  line-height: 1.6;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.82);
+  word-wrap: break-word;
+}
+
+.bibliography-info {
+  background: rgba(107, 47, 224, 0.08);
+  border-left: 3px solid rgba(107, 47, 224, 0.5);
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+}
+
+.info-text {
+  margin: 0;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .bibliography-title {
+    font-size: 0.95rem;
+  }
+
+  .bibliography-item {
+    padding: 0.65rem 0.85rem;
+  }
+}
