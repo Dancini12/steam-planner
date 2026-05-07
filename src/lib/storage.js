@@ -14,11 +14,17 @@
 // ============================================================
 
 import { isSupabaseConfigured, supabase } from "./supabaseClient.js";
+import { createBlankProject } from "./project.js";
 
 const STORAGE_KEY = "steam_planner_projects";
 
 function canUseRemoteStorage(userId) {
-  return isSupabaseConfigured && supabase && userId && userId !== "demo-user";
+  if (supabase && isSupabaseConfigured && Boolean(userId)) {
+    return true;
+  }
+
+  console.warn("Supabase indisponível");
+  return false;
 }
 
 function sanitizePublicProject(project) {
@@ -68,6 +74,62 @@ function mergePrivateProjectData(project, privateData) {
   return merged;
 }
 
+function normalizeSteam(steam) {
+  if (Array.isArray(steam)) return steam;
+  if (steam && typeof steam === "object") {
+    return Object.entries(steam)
+      .filter(([, selected]) => Boolean(selected))
+      .map(([area]) => area);
+  }
+  return [];
+}
+
+function toProjectRow(project, userId) {
+  const ownerId = userId || project.ownerId;
+  const normalizedSteam = normalizeSteam(project.steam);
+  const projectData = {
+    ...sanitizePublicProject(project),
+    ownerId,
+    steam: normalizedSteam,
+    isPublic: project.isPublic !== false
+  };
+
+  return {
+    id: project.id,
+    owner_id: ownerId,
+    title: project.title || "Projeto sem título",
+    theme: project.theme || "",
+    grade: project.grade || "",
+    duration: project.duration || "",
+    steam: normalizedSteam,
+    created_via: project.createdVia || "blank",
+    is_public: project.isPublic !== false,
+    project_data: projectData,
+    created_at: project.createdAt || new Date().toISOString(),
+    updated_at: project.updatedAt || new Date().toISOString()
+  };
+}
+
+function toPrivateProjectRow(project, userId) {
+  return {
+    project_id: project.id,
+    owner_id: userId || project.ownerId,
+    private_data: extractPrivateProjectData(project),
+    updated_at: project.updatedAt || new Date().toISOString()
+  };
+}
+
+function logRlsIfNeeded(error) {
+  const message = `${error?.message || ""} ${error?.details || ""}`.toLowerCase();
+  if (error?.code === "42501" || message.includes("row-level security")) {
+    console.error(
+      "Erro de permissao/RLS no Supabase. Verifique se o usuario esta autenticado " +
+      "e se a policy permite owner_id = auth.uid().",
+      error
+    );
+  }
+}
+
 // Carrega todos os projetos do localStorage.
 // Se não houver nada salvo ainda, retorna lista vazia.
 // Se houver erro ao ler, também retorna lista vazia
@@ -85,13 +147,19 @@ export function loadLocalProjects() {
 }
 
 export async function loadProjects(userId) {
+  console.log("loadProjects: iniciando", { userId });
   const localProjects = loadLocalProjects().filter(
     (project) => !project.ownerId || project.ownerId === userId
   );
 
+  console.log("loadProjects: Supabase configurado", isSupabaseConfigured);
+
   if (!canUseRemoteStorage(userId)) {
+    console.log("loadProjects: usando dados locais", localProjects);
     return localProjects;
   }
+
+  console.log("loadProjects: buscando no Supabase");
 
   const { data, error } = await supabase
     .from("projects")
@@ -100,9 +168,11 @@ export async function loadProjects(userId) {
     .order("updated_at", { ascending: false });
 
   if (error) {
-    console.warn("Erro ao carregar projetos do Supabase:", error);
+    console.warn("loadProjects: erro Supabase", error);
     return localProjects;
   }
+
+  console.log("loadProjects: dados recebidos do Supabase", data);
 
   const remoteProjects = (data || [])
     .map((row) => row.project_data)
@@ -149,6 +219,71 @@ export function saveLocalProjects(projects) {
   }
 }
 
+function createDefaultProject(userId) {
+  const project = createBlankProject();
+  return {
+    ...project,
+    ownerId: userId,
+    title: "Projeto Teste",
+    theme: "Sustentabilidade",
+    grade: "6º ano",
+    duration: "2 semanas",
+    steam: ["S", "T"],
+    createdVia: "app",
+    isPublic: true,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+export async function createProject(userId, data = null) {
+  console.log("createProject: iniciando", { userId, data });
+  const project = {
+    ...(data || createDefaultProject(userId)),
+    ownerId: userId || data?.ownerId || null
+  };
+
+  console.log("createProject: projeto preparado", project);
+
+  saveLocalProjects([
+    project,
+    ...loadLocalProjects().filter((item) => item.id !== project.id)
+  ]);
+
+  if (!canUseRemoteStorage(project.ownerId)) {
+    console.log("createProject: Supabase indisponível, projeto salvo localmente", [project]);
+    return [project];
+  }
+
+  const row = toProjectRow(project, userId);
+  console.log("createProject: inserindo projeto principal", project);
+  const { data: result, error } = await supabase
+    .from("projects")
+    .insert([row])
+    .select();
+
+  if (error) {
+    console.error("createProject: erro ao inserir em projects", error);
+    logRlsIfNeeded(error);
+    throw error;
+  }
+
+  console.log("createProject: projeto principal salvo", result);
+
+  const privateRow = toPrivateProjectRow(project, userId);
+  console.log("createProject: inserindo dados privados", privateRow);
+  const { error: privateError } = await supabase
+    .from("project_private_data")
+    .insert([privateRow]);
+
+  if (privateError) {
+    console.warn("createProject: erro ao inserir dados privados", privateError);
+    logRlsIfNeeded(privateError);
+  }
+
+  console.log("createProject: resposta Supabase", result);
+  return result;
+}
+
 export async function saveProjects(projects, userId) {
   saveLocalProjects(projects);
 
@@ -156,39 +291,23 @@ export async function saveProjects(projects, userId) {
     return true;
   }
 
-  const rows = projects.map((project) => ({
-    id: project.id,
-    owner_id: userId,
-    title: project.title || "Projeto sem título",
-    theme: project.theme || "",
-    grade: project.grade || "",
-    duration: project.duration || "",
-    steam: project.steam || [],
-    created_via: project.createdVia || "blank",
-    is_public: project.isPublic !== false,
-    project_data: {
-      ...sanitizePublicProject(project),
-      ownerId: userId,
-      isPublic: project.isPublic !== false
-    },
-    created_at: project.createdAt || new Date().toISOString(),
-    updated_at: project.updatedAt || new Date().toISOString()
-  }));
+  const rows = projects.map((project) =>
+    toProjectRow(project, userId)
+  );
 
   if (rows.length === 0) return true;
 
-  const { error } = await supabase.from("projects").upsert(rows);
+  const { data, error } = await supabase.from("projects").upsert(rows).select();
   if (error) {
     console.error("Erro ao salvar projetos no Supabase:", error);
+    logRlsIfNeeded(error);
     return false;
   }
+  console.log("Resposta Supabase:", data);
 
-  const privateRows = projects.map((project) => ({
-    project_id: project.id,
-    owner_id: userId,
-    private_data: extractPrivateProjectData(project),
-    updated_at: project.updatedAt || new Date().toISOString()
-  }));
+  const privateRows = projects.map((project) =>
+    toPrivateProjectRow(project, userId)
+  );
 
   const { error: privateError } = await supabase
     .from("project_private_data")
@@ -196,6 +315,7 @@ export async function saveProjects(projects, userId) {
 
   if (privateError) {
     console.error("Erro ao salvar dados privados no Supabase:", privateError);
+    logRlsIfNeeded(privateError);
     return false;
   }
 

@@ -1,8 +1,54 @@
 import { useState } from "react";
-import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
+import { supabase } from "../lib/supabaseClient";
 import { registerUserProfile, trackEvent } from "../lib/analytics.js";
 import Modal from "../components/ui/Modal.jsx";
 import Button from "../components/ui/Button.jsx";
+
+function getAuthErrorMessage(error) {
+  const message = error?.message || "Erro desconhecido.";
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("already registered") || normalized.includes("already exists")) {
+    return "Este e-mail já está cadastrado. Tente fazer login.";
+  }
+
+  if (normalized.includes("weak password") || normalized.includes("password")) {
+    return "Senha fraca. Use uma senha mais longa e segura.";
+  }
+
+  if (normalized.includes("failed to fetch") || normalized.includes("network")) {
+    return "Erro de rede. Verifique sua conexão e tente novamente.";
+  }
+
+  if (normalized.includes("invalid login credentials")) {
+    return "E-mail ou senha incorretos.";
+  }
+
+  if (normalized.includes("email not confirmed")) {
+    return "Confirme seu e-mail antes de fazer login. Verifique sua caixa de entrada.";
+  }
+
+  return message;
+}
+
+async function saveProfile(user) {
+  if (supabase && user?.id && user?.email) {
+    const { error } = await supabase.from("profiles").insert([
+      {
+        id: user.id,
+        email: user.email
+      }
+    ]);
+
+    if (error) {
+      console.warn("Perfil opcional nao foi salvo em profiles:", error.message);
+    }
+
+    return;
+  }
+
+  console.warn("Supabase indisponível");
+}
 
 export default function Login({ onLogin }) {
   const [activeTab, setActiveTab] = useState(null);
@@ -45,70 +91,50 @@ export default function Login({ onLogin }) {
     }
 
     try {
-      // Verificar se Supabase está configurado
-      if (!isSupabaseConfigured || !supabase) {
-        // Modo demo - simular login
-        if (loginEmail === "demo@demo.com" && loginPassword === "demo123") {
-          console.log("Modo demo: Login simulado");
-          onLogin({
-            id: "demo-user",
-            email: loginEmail,
-            name: "Usuário Demo",
-            school: "Escola Demo",
-            area: "ciencias"
-          });
-          return;
-        } else {
-          setLoginError("No modo demo, use: demo@demo.com / demo123");
+      if (supabase) {
+        console.log("Login: iniciando signInWithPassword", { email: loginEmail });
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: loginEmail,
+          password: loginPassword,
+        });
+
+        console.log("Login: resposta Supabase", { data, error });
+
+        if (error) {
+          const errorMessage = getAuthErrorMessage(error);
+          console.error("Erro no login:", error.message);
+          alert(errorMessage);
+          setLoginError(errorMessage);
           return;
         }
-      }
 
-      // Login real no Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-      });
+        console.log("Login realizado:", data);
 
-      if (error) {
-        console.error("Erro no login:", error);
-        if (error.message.includes("Invalid login credentials")) {
-          setLoginError("E-mail ou senha incorretos");
-        } else if (error.message.includes("Email not confirmed")) {
-          setLoginError("Confirme seu e-mail antes de fazer login. Verifique sua caixa de entrada.");
-        } else {
-          setLoginError("Erro ao fazer login: " + error.message);
+        if (data.user) {
+          const userData = {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.user_metadata?.name || data.user.email.split("@")[0],
+            school: data.user.user_metadata?.school,
+            area: data.user.user_metadata?.area
+          };
+
+          console.log("Login bem-sucedido:", userData);
+          await registerUserProfile(data.user);
+          await trackEvent(data.user.id, "login");
+          onLogin(userData);
         }
+
         return;
       }
 
-      if (data.user) {
-        // Verificar se o email foi confirmado
-        if (!data.user.email_confirmed_at) {
-          setLoginError("Confirme seu e-mail antes de fazer login. Verifique sua caixa de entrada.");
-          // Fazer logout para forçar confirmação
-          await supabase.auth.signOut();
-          return;
-        }
-
-        // Login bem-sucedido
-        const userData = {
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.user_metadata?.name || data.user.email.split("@")[0],
-          school: data.user.user_metadata?.school,
-          area: data.user.user_metadata?.area
-        };
-
-        console.log("Login bem-sucedido:", userData);
-        await registerUserProfile(data.user);
-        await trackEvent(data.user.id, "login");
-        onLogin(userData);
-      }
-
+      console.warn("Supabase indisponível");
+      setLoginError("Serviço de login temporariamente indisponível.");
     } catch (error) {
       console.error("Erro inesperado no login:", error);
-      setLoginError("Erro inesperado. Tente novamente.");
+      const errorMessage = getAuthErrorMessage(error);
+      alert(errorMessage);
+      setLoginError(errorMessage);
     }
   };
 
@@ -139,92 +165,80 @@ export default function Login({ onLogin }) {
     }
 
     try {
-      // Verificar se Supabase está configurado
-      if (!isSupabaseConfigured || !supabase) {
-        // Modo demo - simular cadastro
-        console.log("Modo demo: Cadastro simulado", {
-          name: signupName,
+      if (supabase) {
+        console.log("Cadastro: iniciando signUp", { email: signupEmail });
+        const { data, error } = await supabase.auth.signUp({
           email: signupEmail,
-          school: signupSchool,
-          area: signupArea
+          password: signupPassword,
+          options: {
+            data: {
+              name: signupName,
+              school: signupSchool,
+              area: signupArea,
+            }
+          }
         });
 
-        setSignupSuccess(
-          "✅ Modo demonstração: Cadastro simulado com sucesso!\n\n" +
-          "Para funcionalidade completa, configure o Supabase seguindo as instruções acima."
-        );
+        console.log("Cadastro: resposta Supabase", { data, error });
 
-        // Limpa os campos
-        setSignupName("");
-        setSignupEmail("");
-        setSignupSchool("");
-        setSignupArea("");
-        setSignupPassword("");
-        setSignupPasswordConfirm("");
-
-        // Simular login automático
-        setTimeout(() => {
-          onLogin({
-            id: "demo-" + Date.now(),
-            email: signupEmail,
-            name: signupName,
-            school: signupSchool,
-            area: signupArea
-          });
-        }, 2000);
-
-        return;
-      }
-
-      // Cadastro real no Supabase
-      const { data, error } = await supabase.auth.signUp({
-        email: signupEmail,
-        password: signupPassword,
-        options: {
-          data: {
-            name: signupName,
-            school: signupSchool,
-            area: signupArea,
-          }
+        if (error) {
+          const errorMessage = getAuthErrorMessage(error);
+          console.error("Erro no cadastro:", error.message);
+          alert(errorMessage);
+          setSignupError(errorMessage);
+          return;
         }
-      });
 
-      if (error) {
-        console.error("Erro no cadastro:", error);
-        if (error.message.includes("already registered")) {
-          setSignupError("Este e-mail já está cadastrado. Tente fazer login.");
-        } else {
-          setSignupError("Erro ao criar conta: " + error.message);
-        }
-        return;
-      }
+        console.log("Usuário criado:", data);
 
-      if (data.user && !data.user.email_confirmed_at) {
-        await registerUserProfile(data.user);
-        await trackEvent(data.user.id, "signup");
-        setSignupSuccess(
-          "Cadastro realizado! Um link de confirmação foi enviado para seu e-mail. " +
-          "Verifique sua caixa de entrada e clique no link para ativar sua conta."
-        );
-
-        // Limpa os campos
-        setSignupName("");
-        setSignupEmail("");
-        setSignupSchool("");
-        setSignupArea("");
-        setSignupPassword("");
-        setSignupPasswordConfirm("");
-      } else {
         if (data.user) {
           await registerUserProfile(data.user);
+          await saveProfile(data.user);
           await trackEvent(data.user.id, "signup");
         }
-        setSignupSuccess("Conta criada com sucesso! Você pode fazer login agora.");
+
+        if (data.session && data.user) {
+          const userData = {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.user_metadata?.name || data.user.email.split("@")[0],
+            school: data.user.user_metadata?.school,
+            area: data.user.user_metadata?.area
+          };
+          alert("Cadastro realizado com sucesso!");
+          onLogin(userData);
+          return;
+        }
+
+        if (data.user && !data.user.email_confirmed_at) {
+          setSignupSuccess(
+            "Cadastro realizado! Um link de confirmação foi enviado para seu e-mail. " +
+            "Verifique sua caixa de entrada e clique no link para ativar sua conta."
+          );
+          alert("Cadastro realizado com sucesso!");
+
+          // Limpa os campos
+          setSignupName("");
+          setSignupEmail("");
+          setSignupSchool("");
+          setSignupArea("");
+          setSignupPassword("");
+          setSignupPasswordConfirm("");
+        } else {
+          setSignupSuccess("Conta criada com sucesso! Você pode fazer login agora.");
+          alert("Cadastro realizado com sucesso!");
+        }
+
+        return;
       }
 
+      console.warn("Supabase indisponível");
+      setSignupError("Serviço de cadastro temporariamente indisponível.");
     } catch (error) {
       console.error("Erro inesperado:", error);
-      setSignupError("Erro inesperado. Tente novamente.");
+      const errorMessage = getAuthErrorMessage(error);
+      alert(errorMessage);
+      setSignupError(errorMessage);
     }
   };
 
@@ -417,24 +431,6 @@ export default function Login({ onLogin }) {
 
         {/* Subtítulo */}
         <div style={subtitleStyle}>Planejamento e avaliação em fases</div>
-
-        {/* Modo Demo Alert */}
-        {(!isSupabaseConfigured || !supabase) && (
-          <div style={{
-            background: "rgba(255, 193, 7, 0.1)",
-            border: "1px solid rgba(255, 193, 7, 0.3)",
-            borderRadius: "8px",
-            padding: "1rem",
-            marginBottom: "1.5rem",
-            fontSize: "13px",
-            color: "rgba(255, 255, 255, 0.9)",
-            textAlign: "center"
-          }}>
-            ⚠️ <strong>Modo Demonstração</strong><br/>
-            Configure o Supabase para funcionalidade completa.<br/>
-            <em>Login demo: demo@demo.com / demo123</em>
-          </div>
-        )}
 
         {activeTab === null && (
           <div style={{ textAlign: "center" }}>

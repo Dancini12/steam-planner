@@ -1,23 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : process.env;
-const SUPABASE_URL = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-const hasPlaceholderUrl = SUPABASE_URL && SUPABASE_URL.includes('SEU_PROJETO');
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const isSupabaseConfigured = Boolean(
-  SUPABASE_URL &&
-  SUPABASE_ANON_KEY &&
-  !hasPlaceholderUrl
-);
+let supabase = null;
 
-if (!isSupabaseConfigured) {
-  console.warn(
-    'Supabase nao configurado. Verifique VITE_SUPABASE_URL e ' +
-    'VITE_SUPABASE_ANON_KEY no arquivo .env'
-  );
+if (supabaseUrl && supabaseKey) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseKey);
+  } catch (err) {
+    console.error("Erro ao criar cliente Supabase:", err);
+  }
+} else {
+  console.warn("Variáveis do Supabase não definidas");
 }
 
-export const supabase = isSupabaseConfigured
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
+export const isSupabaseConfigured = Boolean(supabase);
+export { supabase };

@@ -14,8 +14,13 @@
 // nenhum dado é perdido entre sessões.
 // ============================================================
 
-import { useState, useEffect, useCallback } from "react";
-import { deleteProject, loadProjects, saveProjects } from "../lib/storage.js";
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  createProject,
+  deleteProject,
+  loadProjects,
+  saveProjects
+} from "../lib/storage.js";
 import { trackEvent } from "../lib/analytics.js";
 import {
   createBlankProject,
@@ -37,6 +42,7 @@ function createStudent({ number, name, className, notes }) {
 export function useProjects(userId) {
   const [projects, setProjects] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const skipNextSaveRef = useRef(false);
 
   // Ao montar, carrega projetos do Supabase ou do fallback local
   useEffect(() => {
@@ -61,9 +67,29 @@ export function useProjects(userId) {
   //  para não sobrescrever dados existentes com lista vazia)
   useEffect(() => {
     if (isLoaded) {
+      if (skipNextSaveRef.current) {
+        skipNextSaveRef.current = false;
+        return;
+      }
       saveProjects(projects, userId);
     }
   }, [projects, isLoaded, userId]);
+
+  const refreshProjects = useCallback(async () => {
+    const loaded = await loadProjects(userId);
+    setProjects(loaded);
+    return loaded;
+  }, [userId]);
+
+  const createRemoteProjectAndRefresh = useCallback(async (project) => {
+    try {
+      await createProject(userId, project);
+    } catch (error) {
+      console.error("Projeto criado localmente, mas nao foi salvo no Supabase:", error);
+    } finally {
+      await refreshProjects();
+    }
+  }, [refreshProjects, userId]);
 
   // ----------------------------------------------------------
   // OPERAÇÕES DE PROJETO
@@ -76,11 +102,12 @@ export function useProjects(userId) {
     newProject.isPublic = true;
     newProject.createdVia = "blank";
     const nextProjects = [...projects, newProject];
+    skipNextSaveRef.current = true;
     setProjects(nextProjects);
-    saveProjects(nextProjects, userId);
+    createRemoteProjectAndRefresh(newProject);
     trackEvent(userId, "project_created", { source: "blank" });
     return newProject;
-  }, [projects, userId]);
+  }, [createRemoteProjectAndRefresh, projects, userId]);
 
   // Cria um projeto a partir de um template (biblioteca ou IA)
   const addProjectFromTemplate = useCallback((template) => {
@@ -89,11 +116,12 @@ export function useProjects(userId) {
     newProject.isPublic = true;
     newProject.createdVia = template?.source === "ai" ? "ai" : "library";
     const nextProjects = [...projects, newProject];
+    skipNextSaveRef.current = true;
     setProjects(nextProjects);
-    saveProjects(nextProjects, userId);
+    createRemoteProjectAndRefresh(newProject);
     trackEvent(userId, "project_created", { source: newProject.createdVia });
     return newProject;
-  }, [projects, userId]);
+  }, [createRemoteProjectAndRefresh, projects, userId]);
 
   // Edita campos de um projeto existente
   const editProject = useCallback((projectId, updates) => {

@@ -16,7 +16,7 @@
 // o professor a criar o primeiro projeto.
 // ============================================================
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useProjects } from "../hooks/useProjects.js";
 
 import Button from "../components/ui/Button.jsx";
@@ -46,6 +46,11 @@ export default function Dashboard({
 
   // Estado: modal de geração via IA
   const [showAIModal, setShowAIModal] = useState(false);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    console.log("Dados recebidos:", projects);
+  }, [isLoaded, projects]);
 
   // Cria projeto em branco e abre direto na edição
   const handleCreateBlank = () => {
@@ -242,7 +247,7 @@ export default function Dashboard({
         </div>
       ) : (
         <div style={emptyStateStyle}>
-          <div style={emptyTitleStyle}>Sem projetos por aqui ainda</div>
+          <div style={emptyTitleStyle}>Nenhum projeto encontrado</div>
           <p style={emptyTextStyle}>
             Crie um projeto do zero, escolha um modelo pronto na biblioteca
             ou peça à IA uma sugestão inicial baseada num tema.

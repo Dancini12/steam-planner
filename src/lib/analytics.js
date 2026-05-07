@@ -1,5 +1,14 @@
 import { isSupabaseConfigured, supabase } from "./supabaseClient.js";
 
+function canUseSupabase() {
+  if (supabase && isSupabaseConfigured) {
+    return true;
+  }
+
+  console.warn("Supabase indisponível");
+  return false;
+}
+
 export function getUserData(user) {
   if (!user) return null;
   return {
@@ -12,7 +21,7 @@ export function getUserData(user) {
 }
 
 export async function registerUserProfile(user) {
-  if (!isSupabaseConfigured || !supabase || !user?.id) return;
+  if (!canUseSupabase() || !user?.id) return;
 
   const userData = getUserData(user);
   await supabase.from("app_profiles").upsert({
@@ -26,7 +35,7 @@ export async function registerUserProfile(user) {
 }
 
 export async function trackEvent(userId, eventType, metadata = {}) {
-  if (!isSupabaseConfigured || !supabase || !userId) return;
+  if (!canUseSupabase() || !userId) return;
 
   await supabase.from("app_usage_events").insert({
     user_id: userId,
@@ -36,7 +45,7 @@ export async function trackEvent(userId, eventType, metadata = {}) {
 }
 
 export async function getAdminMetrics() {
-  if (!isSupabaseConfigured || !supabase) {
+  if (!canUseSupabase()) {
     return {
       usersCount: 0,
       projectsCount: 0,
@@ -158,7 +167,7 @@ export async function getAdminMetrics() {
 }
 
 export async function saveAdminMetricSnapshot(metrics, title = "Leitura dos indicadores") {
-  if (!isSupabaseConfigured || !supabase || !metrics) return;
+  if (!canUseSupabase() || !metrics) return;
 
   const { error } = await supabase.from("app_metric_snapshots").insert({
     title,

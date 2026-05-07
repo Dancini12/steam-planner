@@ -24,8 +24,8 @@ import ProjectEditor from "./pages/ProjectEditor.jsx";
 import PhaseEditor from "./pages/PhaseEditor.jsx";
 import BibliographyEditor from "./pages/BibliographyEditor.jsx";
 import Login from "./pages/Login.jsx";
-import { isSupabaseConfigured, supabase } from "./lib/supabaseClient.js";
-import { trackEvent } from "./lib/analytics.js";
+import { supabase } from "./lib/supabaseClient.js";
+import { getUserData, trackEvent } from "./lib/analytics.js";
 
 // ------------------------------------------------------------
 // CONSTANTES DE NAVEGAÇÃO
@@ -53,6 +53,7 @@ export default function App() {
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [activePhaseId, setActivePhaseId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   // ----------------------------------------------------------
   // APLICAR TEMA VISUAL GLOBAL AO BODY
@@ -71,6 +72,65 @@ export default function App() {
 
     // Suaviza o scroll
     document.documentElement.style.scrollBehavior = "smooth";
+  }, []);
+
+  useEffect(() => {
+    let isCurrent = true;
+    const sessionTimeout = window.setTimeout(() => {
+      if (isCurrent) {
+        setIsCheckingSession(false);
+      }
+    }, 2500);
+
+    if (supabase) {
+      async function loadUser() {
+        try {
+          const {
+            data: { user },
+            error
+          } = await supabase.auth.getUser();
+
+          if (error) {
+            console.error("Erro ao obter usuario atual:", error);
+          }
+
+          if (isCurrent && user) {
+            setCurrentUser(getUserData(user));
+          }
+        } catch (error) {
+          console.error("Erro inesperado ao obter usuario atual:", error);
+        } finally {
+          if (isCurrent) {
+            window.clearTimeout(sessionTimeout);
+            setIsCheckingSession(false);
+          }
+        }
+      }
+
+      loadUser();
+
+      const {
+        data: { subscription }
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        const user = session?.user || null;
+        setCurrentUser(user ? getUserData(user) : null);
+      });
+
+      return () => {
+        isCurrent = false;
+        window.clearTimeout(sessionTimeout);
+        subscription.unsubscribe();
+      };
+    }
+
+    {
+      console.warn("Supabase indisponível");
+      setIsCheckingSession(false);
+      return () => {
+        isCurrent = false;
+        window.clearTimeout(sessionTimeout);
+      };
+    }
   }, []);
 
   // ----------------------------------------------------------
@@ -127,8 +187,10 @@ export default function App() {
     if (currentUser?.id) {
       await trackEvent(currentUser.id, "logout");
     }
-    if (isSupabaseConfigured && supabase) {
+    if (supabase) {
       await supabase.auth.signOut();
+    } else {
+      console.warn("Supabase indisponível");
     }
     setCurrentUser(null);
     goToDashboard();
@@ -146,6 +208,16 @@ export default function App() {
   // ----------------------------------------------------------
   // RENDERIZAÇÃO CONDICIONAL DA TELA ATUAL
   // ----------------------------------------------------------
+  if (isCheckingSession) {
+    return (
+      <div style={appStyle}>
+        <div style={{ padding: "2rem", color: "rgba(255, 255, 255, 0.7)" }}>
+          Carregando...
+        </div>
+      </div>
+    );
+  }
+
   if (!currentUser) {
     return <Login onLogin={setCurrentUser} />;
   }
