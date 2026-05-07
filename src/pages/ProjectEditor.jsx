@@ -55,6 +55,7 @@ export default function ProjectEditor({
   const project = getProjectById(projectId);
 
   // Estado local para os campos editáveis
+  const [savedMsg, setSavedMsg] = useState(false);
   const [title, setTitle] = useState("");
   const [theme, setTheme] = useState("");
   const [grade, setGrade] = useState("");
@@ -129,6 +130,8 @@ export default function ProjectEditor({
   const handleSave = () => {
     const updates = buildProjectUpdates();
     editProject(projectId, updates);
+    setSavedMsg(true);
+    setTimeout(() => setSavedMsg(false), 3000);
     return updates;
   };
 
@@ -863,9 +866,16 @@ export default function ProjectEditor({
         <Button variant="secondary" onClick={onBack}>
           Voltar
         </Button>
-        <Button variant="primary" onClick={handleSave}>
-          Salvar alterações
-        </Button>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          {savedMsg && (
+            <span style={{ color: "#4ade80", fontSize: "14px", fontWeight: 500 }}>
+              Alterações salvas com sucesso!
+            </span>
+          )}
+          <Button variant="primary" onClick={handleSave}>
+            Salvar alterações
+          </Button>
+        </div>
       </div>
     </div>
   );

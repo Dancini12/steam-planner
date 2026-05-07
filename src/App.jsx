@@ -80,25 +80,17 @@ export default function App() {
       if (isCurrent) {
         setIsCheckingSession(false);
       }
-    }, 2500);
+    }, 800);
 
     if (supabase) {
       async function loadUser() {
         try {
-          const {
-            data: { user },
-            error
-          } = await supabase.auth.getUser();
-
-          if (error) {
-            console.error("Erro ao obter usuario atual:", error);
-          }
-
-          if (isCurrent && user) {
-            setCurrentUser(getUserData(user));
+          const { data: { session } } = await supabase.auth.getSession();
+          if (isCurrent && session?.user) {
+            setCurrentUser(getUserData(session.user));
           }
         } catch (error) {
-          console.error("Erro inesperado ao obter usuario atual:", error);
+          console.error("Erro ao restaurar sessão:", error);
         } finally {
           if (isCurrent) {
             window.clearTimeout(sessionTimeout);
