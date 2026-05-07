@@ -159,12 +159,15 @@ export async function loadProjects(userId) {
     return localProjects;
   }
 
-  console.log("loadProjects: buscando no Supabase");
+  const { data: { session } } = await supabase.auth.getSession();
+  const effectiveUserId = session?.user?.id || userId;
+
+  console.log("loadProjects: buscando no Supabase", { effectiveUserId });
 
   const { data, error } = await supabase
     .from("projects")
     .select("project_data")
-    .eq("owner_id", userId)
+    .eq("owner_id", effectiveUserId)
     .order("updated_at", { ascending: false });
 
   if (error) {
@@ -254,12 +257,17 @@ export async function createProject(userId, data = null) {
     return [project];
   }
 
-  const row = toProjectRow(project, userId);
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    console.warn("createProject: sem sessão ativa, projeto salvo apenas localmente");
+    return [project];
+  }
+
+  const row = toProjectRow(project, session.user.id);
   console.log("createProject: inserindo projeto principal", project);
   const { data: result, error } = await supabase
     .from("projects")
-    .insert([row])
-    .select();
+    .insert([row]);
 
   if (error) {
     console.error("createProject: erro ao inserir em projects", error);
@@ -291,19 +299,24 @@ export async function saveProjects(projects, userId) {
     return true;
   }
 
-  const rows = projects.map((project) =>
-    toProjectRow(project, userId)
-  );
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    console.warn("saveProjects: sem sessão ativa, salvando apenas localmente");
+    return false;
+  }
+
+  const rows = projects
+    .map((project) => toProjectRow(project, session.user.id))
+    .filter((row) => Boolean(row.owner_id));
 
   if (rows.length === 0) return true;
 
-  const { data, error } = await supabase.from("projects").upsert(rows).select();
+  const { error } = await supabase.from("projects").upsert(rows);
   if (error) {
     console.error("Erro ao salvar projetos no Supabase:", error);
     logRlsIfNeeded(error);
     return false;
   }
-  console.log("Resposta Supabase:", data);
 
   const privateRows = projects.map((project) =>
     toPrivateProjectRow(project, userId)
