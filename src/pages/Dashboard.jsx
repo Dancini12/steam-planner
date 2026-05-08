@@ -333,7 +333,7 @@ export default function Dashboard({
       {/* Cabeçalho */}
       <div style={headerStyle}>
         <div>
-          <h1 style={titleStyle}>Meus Projetos STEAM</h1>
+          <h1 style={titleStyle}>Meus Projetos</h1>
           <p style={subtitleStyle}>
             {hasProjects
               ? `${projects.length} ${
