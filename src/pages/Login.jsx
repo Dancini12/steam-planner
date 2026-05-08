@@ -403,18 +403,29 @@ export default function Login({ onLogin }) {
                   path:nth-child(4) { animation-delay: 0.36s; }
                   path:nth-child(5) { animation-delay: 0.48s; }
                   path:nth-child(6) { animation-delay: 0.6s; }
-                  path:nth-child(7) { animation-delay: 0.72s; }
-                  path:nth-child(8) { animation-delay: 0.84s; }
-                  path:nth-child(9) { animation-delay: 0.96s; }
-                  path:nth-child(10) { animation-delay: 1.08s; }
-                  path:nth-child(11) { animation-delay: 1.2s; }
-                  path:nth-child(12) { animation-delay: 1.32s; }
-                  path:nth-child(13) { animation-delay: 1.44s; }
-                  path:nth-child(14) { animation-delay: 1.56s; }
-                  path:nth-child(15) { animation-delay: 1.68s; }
-                  path:nth-child(16) { animation-delay: 1.8s; }
+                  .maker-logo-text {
+                    animation: fadeMakerText 0.8s ease-in-out 1.1s forwards;
+                    opacity: 0;
+                  }
+                  @keyframes fadeMakerText {
+                    0% {
+                      opacity: 0;
+                      transform: translateY(10px);
+                    }
+                    100% {
+                      opacity: 1;
+                      transform: translateY(0);
+                    }
+                  }
                 `}
               </style>
+              <linearGradient id="makerTextGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#3FD64C" />
+                <stop offset="24%" stopColor="#3B95F2" />
+                <stop offset="50%" stopColor="#FF8C1A" />
+                <stop offset="75%" stopColor="#E8358A" />
+                <stop offset="100%" stopColor="#A050F0" />
+              </linearGradient>
             </defs>
             <g fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="11">
               <path
@@ -435,47 +446,20 @@ export default function Login({ onLogin }) {
                 d="M 320 116 C 318 88, 318 56, 320 26 C 330 50, 342 76, 348 88 C 356 76, 366 50, 372 26 C 374 56, 374 88, 372 116"
                 stroke="#A050F0"
               />
-              <path
-                d="M 16 228 C 14 202, 14 176, 18 150 C 28 172, 40 194, 48 208 C 58 190, 68 170, 76 150 C 78 176, 78 202, 76 228"
-                stroke="#3FD64C"
-              />
-              <path
-                d="M 96 228 C 102 202, 110 174, 120 150 C 132 176, 140 202, 146 228 M 104 202 C 116 198, 130 198, 140 202"
-                stroke="#3B95F2"
-              />
-              <path
-                d="M 166 228 C 164 202, 164 176, 166 150 C 184 150, 202 154, 204 174 C 206 190, 188 196, 170 194 M 184 194 C 194 206, 202 218, 210 228"
-                stroke="#FF8C1A"
-              />
-              <path
-                d="M 232 150 C 230 174, 230 204, 234 228 M 212 150 C 224 148, 244 148, 258 150"
-                stroke="#E8358A"
-              />
-              <path
-                d="M 278 150 C 276 176, 276 202, 278 228 M 278 190 C 292 176, 306 164, 320 150 M 288 190 C 300 202, 312 216, 324 228"
-                stroke="#A050F0"
-              />
-              <path
-                d="M 342 228 C 340 202, 340 176, 342 150 C 356 150, 372 154, 374 172 C 376 190, 360 196, 346 194 M 360 194 C 366 206, 372 218, 378 228"
-                stroke="#3FD64C"
-              />
-              <path
-                d="M 18 238 C 40 236, 62 236, 84 238"
-                stroke="#3B95F2"
-              />
-              <path
-                d="M 108 238 C 130 236, 154 236, 176 238"
-                stroke="#FF8C1A"
-              />
-              <path
-                d="M 200 238 C 222 236, 246 236, 268 238"
-                stroke="#E8358A"
-              />
-              <path
-                d="M 292 238 C 316 236, 342 236, 366 238"
-                stroke="#A050F0"
-              />
             </g>
+            <text
+              className="maker-logo-text"
+              x="190"
+              y="202"
+              textAnchor="middle"
+              fontFamily="'Plus Jakarta Sans', sans-serif"
+              fontSize="34"
+              fontWeight="800"
+              letterSpacing="2"
+              fill="url(#makerTextGradient)"
+            >
+              CULTURA MAKER
+            </text>
           </svg>
         </div>
 
