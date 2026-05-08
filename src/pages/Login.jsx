@@ -404,17 +404,18 @@ export default function Login({ onLogin }) {
                   path:nth-child(5) { animation-delay: 0.48s; }
                   path:nth-child(6) { animation-delay: 0.6s; }
                   .maker-logo-text {
-                    animation: fadeMakerText 0.8s ease-in-out 1.1s forwards;
-                    opacity: 0;
+                    animation: drawMakerText 2.5s ease-in-out 0.72s forwards;
+                    stroke-dasharray: 0, 1200;
+                    stroke-dashoffset: 0;
                   }
-                  @keyframes fadeMakerText {
+                  @keyframes drawMakerText {
                     0% {
-                      opacity: 0;
-                      transform: translateY(10px);
+                      stroke-dasharray: 0, 1200;
+                      fill-opacity: 0;
                     }
                     100% {
-                      opacity: 1;
-                      transform: translateY(0);
+                      stroke-dasharray: 1200, 0;
+                      fill-opacity: 0.12;
                     }
                   }
                 `}
@@ -450,13 +451,17 @@ export default function Login({ onLogin }) {
             <text
               className="maker-logo-text"
               x="190"
-              y="202"
+              y="205"
               textAnchor="middle"
               fontFamily="'Plus Jakarta Sans', sans-serif"
-              fontSize="34"
+              fontSize="40"
               fontWeight="800"
-              letterSpacing="2"
+              letterSpacing="1"
               fill="url(#makerTextGradient)"
+              fillOpacity="0"
+              stroke="url(#makerTextGradient)"
+              strokeWidth="2.8"
+              strokeLinejoin="round"
             >
               CULTURA MAKER
             </text>
