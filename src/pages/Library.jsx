@@ -167,6 +167,7 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
   // Estado: qual projeto da biblioteca está selecionado para visualização
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [selectedTheme, setSelectedTheme] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [publicProjects, setPublicProjects] = useState([]);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [creationError, setCreationError] = useState("");
@@ -227,12 +228,32 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
           ).length
   })).filter((category) => category.id === "all" || category.count > 0);
 
-  const filteredTemplates =
+  const baseFilteredTemplates =
     !selectedTheme || selectedTheme === "all"
       ? templates
       : templates.filter(
           (template) => getProjectThemeCategory(template) === selectedTheme
         );
+
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
+  const filteredTemplates = normalizedSearchTerm
+    ? baseFilteredTemplates.filter((template) => {
+        const searchableText = [
+          template.title,
+          template.theme,
+          template.grade,
+          template.guidingQuestion,
+          ...(template.objectives || []),
+          ...(template.bncc || []),
+          ...(template.materials || [])
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        return searchableText.includes(normalizedSearchTerm);
+      })
+    : baseFilteredTemplates;
 
   const selectedThemeLabel =
     selectedTheme === "all"
@@ -240,6 +261,7 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
       : THEME_CATEGORIES.find((category) => category.id === selectedTheme)?.name;
 
   const hasSelectedTheme = Boolean(selectedTheme);
+  const shouldShowProjects = hasSelectedTheme || Boolean(normalizedSearchTerm);
 
   // ----------------------------------------------------------
   // ESTILOS
@@ -291,6 +313,49 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
     gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
     gap: "0.75rem",
     marginBottom: "1.5rem"
+  };
+
+  const searchWrapperStyle = {
+    position: "relative",
+    marginBottom: "1rem"
+  };
+
+  const searchIconStyle = {
+    position: "absolute",
+    left: "1rem",
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: "rgba(255, 255, 255, 0.48)",
+    fontSize: "1rem",
+    pointerEvents: "none"
+  };
+
+  const searchInputStyle = {
+    width: "100%",
+    padding: "0.85rem 2.75rem",
+    border: "1px solid rgba(255, 255, 255, 0.14)",
+    borderRadius: "10px",
+    background: "rgba(255, 255, 255, 0.045)",
+    color: "#FFFFFF",
+    fontSize: "0.95rem",
+    fontFamily: "inherit",
+    outline: "none"
+  };
+
+  const clearSearchButtonStyle = {
+    position: "absolute",
+    right: "0.65rem",
+    top: "50%",
+    transform: "translateY(-50%)",
+    width: "30px",
+    height: "30px",
+    borderRadius: "50%",
+    border: "none",
+    background: "rgba(255, 255, 255, 0.08)",
+    color: "rgba(255, 255, 255, 0.7)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: "1rem"
   };
 
   const themeButtonStyle = (filter, isActive) => ({
@@ -538,13 +603,37 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
       {/* Submenu por tema */}
       <div style={submenuHeaderStyle}>
         <h2 style={submenuTitleStyle}>
-          {hasSelectedTheme ? "Projetos prontos por tema" : "Escolha um tema"}
+          {hasSelectedTheme || normalizedSearchTerm
+            ? "Projetos prontos"
+            : "Escolha um tema"}
         </h2>
         <p style={submenuTextStyle}>
-          {hasSelectedTheme
-            ? "Troque de tema a qualquer momento ou abra um projeto para ver objetivos, BNCC, materiais e referências."
-            : "Selecione um tema para encontrar exemplos prontos organizados pelo assunto principal do projeto."}
+          {hasSelectedTheme || normalizedSearchTerm
+            ? "Busque pelo nome do projeto ou troque de tema a qualquer momento para ver exemplos prontos."
+            : "Selecione um tema ou use a busca para encontrar exemplos prontos organizados pelo assunto principal do projeto."}
         </p>
+      </div>
+
+      <div style={searchWrapperStyle}>
+        <span style={searchIconStyle}>⌕</span>
+        <input
+          type="search"
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder="Buscar projeto por nome, tema, BNCC ou palavra-chave..."
+          style={searchInputStyle}
+          aria-label="Buscar projeto na biblioteca"
+        />
+        {searchTerm && (
+          <button
+            type="button"
+            style={clearSearchButtonStyle}
+            onClick={() => setSearchTerm("")}
+            aria-label="Limpar busca"
+          >
+            ×
+          </button>
+        )}
       </div>
 
       <div style={submenuStyle} aria-label="Filtrar projetos por tema">
@@ -574,18 +663,22 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
         })}
       </div>
 
-      {hasSelectedTheme && (
+      {shouldShowProjects && (
         <>
           <div style={libraryStatusStyle}>
             <button
               type="button"
               style={backToAreasButtonStyle}
-              onClick={() => setSelectedTheme(null)}
+              onClick={() => {
+                setSelectedTheme(null);
+                setSearchTerm("");
+              }}
             >
               ← Voltar ao menu de temas
             </button>
             <span>
-              {selectedThemeLabel} · {filteredTemplates.length}{" "}
+              {(selectedThemeLabel || "Resultados da busca")} ·{" "}
+              {filteredTemplates.length}{" "}
               {filteredTemplates.length === 1
                 ? "projeto pronto"
                 : "projetos prontos"}
@@ -594,7 +687,16 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
 
           {/* Grade com os cards dos projetos da biblioteca */}
           <div style={gridStyle}>
-            {filteredTemplates.map((template) => (
+            {filteredTemplates.length === 0 ? (
+              <Card>
+                <div style={cardContentStyle}>
+                  <h3 style={cardTitleStyle}>Nenhum projeto encontrado</h3>
+                  <p style={cardThemeStyle}>
+                    Tente buscar por outro nome, tema, habilidade BNCC ou palavra-chave.
+                  </p>
+                </div>
+              </Card>
+            ) : filteredTemplates.map((template) => (
               <Card
                 key={template.id}
                 variant="clickable"
