@@ -326,7 +326,7 @@ export default function Login({ onLogin }) {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    minHeight: "200px",
+    minHeight: "225px",
     marginBottom: "1rem"
   };
 
@@ -383,7 +383,7 @@ export default function Login({ onLogin }) {
         {/* Logo sempre visível */}
         <div style={logoContainerStyle}>
           <svg
-            viewBox="0 0 380 140"
+            viewBox="0 0 380 170"
             xmlns="http://www.w3.org/2000/svg"
             style={logoStyle}
           >
@@ -403,6 +403,14 @@ export default function Login({ onLogin }) {
                   path:nth-child(4) { animation-delay: 0.9s; }
                   path:nth-child(5) { animation-delay: 1.2s; }
                   path:nth-child(6) { animation-delay: 1.5s; }
+                  .maker-text {
+                    animation: fadeInMaker 1s ease-in-out 1.9s forwards;
+                    opacity: 0;
+                  }
+                  @keyframes fadeInMaker {
+                    from { opacity: 0; transform: translateY(8px); }
+                    to { opacity: 1; transform: translateY(0); }
+                  }
                 `}
               </style>
             </defs>
@@ -426,11 +434,24 @@ export default function Login({ onLogin }) {
                 stroke="#A050F0"
               />
             </g>
+            <g className="maker-text">
+              <text
+                x="190"
+                y="154"
+                textAnchor="middle"
+                fontFamily="'Plus Jakarta Sans', sans-serif"
+                fontSize="18"
+                fontWeight="800"
+                fill="#FFFFFF"
+              >
+                e CULTURA MAKER
+              </text>
+            </g>
           </svg>
         </div>
 
         {/* Subtítulo */}
-        <div style={subtitleStyle}>Planejamento e avaliação em fases</div>
+        <div style={subtitleStyle}>Planejamento, prototipagem e avaliação em fases</div>
 
         {activeTab === null && (
           <div style={{ textAlign: "center" }}>
