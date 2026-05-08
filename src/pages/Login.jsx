@@ -326,7 +326,7 @@ export default function Login({ onLogin }) {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    minHeight: "250px",
+    minHeight: "270px",
     marginBottom: "1rem"
   };
 
@@ -383,7 +383,7 @@ export default function Login({ onLogin }) {
         {/* Logo sempre visível */}
         <div style={logoContainerStyle}>
           <svg
-            viewBox="0 0 380 245"
+            viewBox="0 0 380 265"
             xmlns="http://www.w3.org/2000/svg"
             style={logoStyle}
           >
@@ -451,10 +451,26 @@ export default function Login({ onLogin }) {
             <text
               className="maker-logo-text"
               x="190"
-              y="205"
+              y="162"
               textAnchor="middle"
               fontFamily="'Plus Jakarta Sans', sans-serif"
-              fontSize="40"
+              fontSize="30"
+              fontWeight="800"
+              fill="url(#makerTextGradient)"
+              fillOpacity="0"
+              stroke="url(#makerTextGradient)"
+              strokeWidth="2.6"
+              strokeLinejoin="round"
+            >
+              E
+            </text>
+            <text
+              className="maker-logo-text"
+              x="190"
+              y="236"
+              textAnchor="middle"
+              fontFamily="'Plus Jakarta Sans', sans-serif"
+              fontSize="38"
               fontWeight="800"
               letterSpacing="1"
               fill="url(#makerTextGradient)"
