@@ -449,6 +449,43 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
     marginTop: "0.25rem"
   };
 
+  const readOnlyNoticeStyle = {
+    padding: "0.85rem 1rem",
+    border: "1px solid rgba(63, 214, 76, 0.24)",
+    borderRadius: "8px",
+    background: "rgba(63, 214, 76, 0.08)",
+    color: "rgba(255, 255, 255, 0.82)",
+    fontSize: "0.88rem",
+    lineHeight: 1.5,
+    marginBottom: "1.25rem"
+  };
+
+  const phasePreviewStyle = {
+    display: "grid",
+    gap: "0.8rem"
+  };
+
+  const phasePreviewItemStyle = {
+    padding: "0.85rem",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    borderRadius: "8px",
+    background: "rgba(255, 255, 255, 0.025)"
+  };
+
+  const phasePreviewTitleStyle = {
+    color: "#FFFFFF",
+    fontSize: "0.9rem",
+    fontWeight: 700,
+    margin: "0 0 0.35rem"
+  };
+
+  const phasePreviewTextStyle = {
+    color: "rgba(255, 255, 255, 0.76)",
+    fontSize: "0.88rem",
+    lineHeight: 1.55,
+    margin: 0
+  };
+
   // Estilos do modal de detalhes
   const modalSectionStyle = {
     marginBottom: "1.5rem"
@@ -613,6 +650,11 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
       >
         {selectedTemplate && (
           <div>
+            <div style={readOnlyNoticeStyle}>
+              Este é um projeto pronto para consulta, sem edição nesta aba.
+              Para adaptar à sua turma, clique em "Usar como cópia editável".
+            </div>
+
             {/* Informações principais */}
             <div style={modalSectionStyle}>
               <p style={cardThemeStyle}>{selectedTemplate.theme}</p>
@@ -673,6 +715,37 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
               </ul>
             </div>
 
+            {/* Planejamento por fases */}
+            {(selectedTemplate.phaseDetails || selectedTemplate.phases) && (
+              <div style={modalSectionStyle}>
+                <div style={modalSectionTitleStyle}>
+                  Planejamento por fases
+                </div>
+                <div style={phasePreviewStyle}>
+                  {[
+                    ["imersao", "Imersão"],
+                    ["ideacao", "Ideação"],
+                    ["prototipagem", "Prototipagem"],
+                    ["teste", "Teste"],
+                    ["compartilhamento", "Compartilhamento"]
+                  ].map(([phaseId, phaseName]) => {
+                    const text =
+                      selectedTemplate.phaseDetails?.[phaseId] ||
+                      selectedTemplate.phases?.[phaseId]?.plan;
+
+                    if (!text) return null;
+
+                    return (
+                      <div key={phaseId} style={phasePreviewItemStyle}>
+                        <h4 style={phasePreviewTitleStyle}>{phaseName}</h4>
+                        <p style={phasePreviewTextStyle}>{text}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {(selectedTemplate.bibliography?.length || 0) > 0 && (
               <div style={modalSectionStyle}>
                 <div style={modalSectionTitleStyle}>
@@ -704,7 +777,7 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
                 onClick={() => handleUseTemplate(selectedTemplate)}
                 disabled={isCreatingProject}
               >
-                {isCreatingProject ? "Criando..." : "Usar este projeto"}
+                {isCreatingProject ? "Criando..." : "Usar como cópia editável"}
               </Button>
             </div>
           </div>
