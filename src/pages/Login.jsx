@@ -316,7 +316,7 @@ export default function Login({ onLogin }) {
 
   const logoStyle = {
     width: "100%",
-    maxWidth: "340px",
+    maxWidth: "380px",
     height: "auto",
     display: "block",
     margin: "0 auto"
@@ -326,7 +326,7 @@ export default function Login({ onLogin }) {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    minHeight: "225px",
+    minHeight: "250px",
     marginBottom: "1rem"
   };
 
@@ -383,7 +383,7 @@ export default function Login({ onLogin }) {
         {/* Logo sempre visível */}
         <div style={logoContainerStyle}>
           <svg
-            viewBox="0 0 380 170"
+            viewBox="0 0 380 245"
             xmlns="http://www.w3.org/2000/svg"
             style={logoStyle}
           >
@@ -398,19 +398,21 @@ export default function Login({ onLogin }) {
                     animation: drawPath 2.5s ease-in-out forwards;
                   }
                   path:nth-child(1) { animation-delay: 0s; }
-                  path:nth-child(2) { animation-delay: 0.3s; }
-                  path:nth-child(3) { animation-delay: 0.6s; }
-                  path:nth-child(4) { animation-delay: 0.9s; }
-                  path:nth-child(5) { animation-delay: 1.2s; }
-                  path:nth-child(6) { animation-delay: 1.5s; }
-                  .maker-text {
-                    animation: fadeInMaker 1s ease-in-out 1.9s forwards;
-                    opacity: 0;
-                  }
-                  @keyframes fadeInMaker {
-                    from { opacity: 0; transform: translateY(8px); }
-                    to { opacity: 1; transform: translateY(0); }
-                  }
+                  path:nth-child(2) { animation-delay: 0.12s; }
+                  path:nth-child(3) { animation-delay: 0.24s; }
+                  path:nth-child(4) { animation-delay: 0.36s; }
+                  path:nth-child(5) { animation-delay: 0.48s; }
+                  path:nth-child(6) { animation-delay: 0.6s; }
+                  path:nth-child(7) { animation-delay: 0.72s; }
+                  path:nth-child(8) { animation-delay: 0.84s; }
+                  path:nth-child(9) { animation-delay: 0.96s; }
+                  path:nth-child(10) { animation-delay: 1.08s; }
+                  path:nth-child(11) { animation-delay: 1.2s; }
+                  path:nth-child(12) { animation-delay: 1.32s; }
+                  path:nth-child(13) { animation-delay: 1.44s; }
+                  path:nth-child(14) { animation-delay: 1.56s; }
+                  path:nth-child(15) { animation-delay: 1.68s; }
+                  path:nth-child(16) { animation-delay: 1.8s; }
                 `}
               </style>
             </defs>
@@ -433,19 +435,46 @@ export default function Login({ onLogin }) {
                 d="M 320 116 C 318 88, 318 56, 320 26 C 330 50, 342 76, 348 88 C 356 76, 366 50, 372 26 C 374 56, 374 88, 372 116"
                 stroke="#A050F0"
               />
-            </g>
-            <g className="maker-text">
-              <text
-                x="190"
-                y="154"
-                textAnchor="middle"
-                fontFamily="'Plus Jakarta Sans', sans-serif"
-                fontSize="18"
-                fontWeight="800"
-                fill="#FFFFFF"
-              >
-                e CULTURA MAKER
-              </text>
+              <path
+                d="M 16 228 C 14 202, 14 176, 18 150 C 28 172, 40 194, 48 208 C 58 190, 68 170, 76 150 C 78 176, 78 202, 76 228"
+                stroke="#3FD64C"
+              />
+              <path
+                d="M 96 228 C 102 202, 110 174, 120 150 C 132 176, 140 202, 146 228 M 104 202 C 116 198, 130 198, 140 202"
+                stroke="#3B95F2"
+              />
+              <path
+                d="M 166 228 C 164 202, 164 176, 166 150 C 184 150, 202 154, 204 174 C 206 190, 188 196, 170 194 M 184 194 C 194 206, 202 218, 210 228"
+                stroke="#FF8C1A"
+              />
+              <path
+                d="M 232 150 C 230 174, 230 204, 234 228 M 212 150 C 224 148, 244 148, 258 150"
+                stroke="#E8358A"
+              />
+              <path
+                d="M 278 150 C 276 176, 276 202, 278 228 M 278 190 C 292 176, 306 164, 320 150 M 288 190 C 300 202, 312 216, 324 228"
+                stroke="#A050F0"
+              />
+              <path
+                d="M 342 228 C 340 202, 340 176, 342 150 C 356 150, 372 154, 374 172 C 376 190, 360 196, 346 194 M 360 194 C 366 206, 372 218, 378 228"
+                stroke="#3FD64C"
+              />
+              <path
+                d="M 18 238 C 40 236, 62 236, 84 238"
+                stroke="#3B95F2"
+              />
+              <path
+                d="M 108 238 C 130 236, 154 236, 176 238"
+                stroke="#FF8C1A"
+              />
+              <path
+                d="M 200 238 C 222 236, 246 236, 268 238"
+                stroke="#E8358A"
+              />
+              <path
+                d="M 292 238 C 316 236, 342 236, 366 238"
+                stroke="#A050F0"
+              />
             </g>
           </svg>
         </div>
