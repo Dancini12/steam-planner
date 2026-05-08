@@ -59,11 +59,70 @@ export default function Dashboard({
   const [creationError, setCreationError] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [isDeletingProject, setIsDeletingProject] = useState(false);
+  const [pendingSaveConfirmation, setPendingSaveConfirmation] = useState(false);
+  const [saveConfirmationMessage, setSaveConfirmationMessage] = useState("");
 
   useEffect(() => {
     if (!isLoaded) return;
     console.log("Dados recebidos:", projects);
   }, [isLoaded, projects]);
+
+  useEffect(() => {
+    if (!pendingSaveConfirmation) return undefined;
+
+    const handleBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [pendingSaveConfirmation]);
+
+  const markPendingSaveConfirmation = (message) => {
+    setPendingSaveConfirmation(true);
+    setSaveConfirmationMessage(message);
+  };
+
+  const handleConfirmSave = () => {
+    setPendingSaveConfirmation(false);
+    setSaveConfirmationMessage("Alterações confirmadas com segurança.");
+  };
+
+  const confirmPendingSaveBefore = (nextAction) => {
+    if (!pendingSaveConfirmation) {
+      nextAction();
+      return;
+    }
+
+    const shouldSave = window.confirm(
+      "Você ainda não confirmou o salvamento das últimas alterações. Deseja salvar/confirmar agora?"
+    );
+
+    if (shouldSave) {
+      handleConfirmSave();
+      nextAction();
+    }
+  };
+
+  const handleLogoutClick = () => {
+    confirmPendingSaveBefore(onLogout);
+  };
+
+  const handleOpenLibraryClick = () => {
+    confirmPendingSaveBefore(onOpenLibrary);
+  };
+
+  const handleOpenProjectClick = (projectId) => {
+    confirmPendingSaveBefore(() => onOpenProject(projectId));
+  };
+
+  const handleShowAIModal = () => {
+    confirmPendingSaveBefore(() => setShowAIModal(true));
+  };
 
   // Cria projeto em branco e abre direto na edição
   const handleCreateBlank = async () => {
@@ -94,6 +153,9 @@ export default function Dashboard({
       setIsDeletingProject(true);
       try {
         await removeProject(projectToDelete);
+        markPendingSaveConfirmation(
+          "Projeto excluído no Supabase. Clique em Salvar alterações para confirmar."
+        );
         setProjectToDelete(null);
       } catch (error) {
         console.error("Erro ao excluir projeto:", error);
@@ -121,6 +183,9 @@ export default function Dashboard({
         { waitForPersist: true }
       );
       setShowAIModal(false);
+      markPendingSaveConfirmation(
+        "Projeto criado no Supabase. Clique em Salvar alterações para confirmar."
+      );
       onOpenProject(newProject.id);
     } catch (error) {
       console.error("Erro ao criar projeto gerado por IA:", error);
@@ -223,6 +288,21 @@ export default function Dashboard({
     flexWrap: "wrap"
   };
 
+  const saveAlertStyle = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "1rem",
+    padding: "0.9rem 1rem",
+    marginBottom: "1rem",
+    border: "1px solid rgba(255, 255, 255, 0.12)",
+    borderRadius: "10px",
+    background: "rgba(107, 47, 224, 0.12)",
+    color: "rgba(255, 255, 255, 0.82)",
+    fontSize: "0.9rem",
+    flexWrap: "wrap"
+  };
+
   // ----------------------------------------------------------
   // RENDERIZAÇÃO
   // ----------------------------------------------------------
@@ -244,7 +324,7 @@ export default function Dashboard({
           {currentUser?.name || currentUser?.email}
         </div>
         <div style={actionsStyle}>
-          <Button variant="ghost" onClick={onLogout}>
+          <Button variant="ghost" onClick={handleLogoutClick}>
             Sair
           </Button>
         </div>
@@ -265,10 +345,10 @@ export default function Dashboard({
 
         {hasProjects && (
           <div style={actionsStyle}>
-            <Button variant="ghost" onClick={onOpenLibrary}>
+            <Button variant="ghost" onClick={handleOpenLibraryClick}>
               Biblioteca
             </Button>
-            <Button variant="secondary" onClick={() => setShowAIModal(true)}>
+            <Button variant="secondary" onClick={handleShowAIModal}>
               ✨ Gerar com IA
             </Button>
             <Button
@@ -289,13 +369,24 @@ export default function Dashboard({
         </p>
       )}
 
+      {(pendingSaveConfirmation || saveConfirmationMessage) && (
+        <div style={saveAlertStyle}>
+          <span>{saveConfirmationMessage}</span>
+          {pendingSaveConfirmation && (
+            <Button variant="primary" size="small" onClick={handleConfirmSave}>
+              Salvar alterações
+            </Button>
+          )}
+        </div>
+      )}
+
       {hasProjects ? (
         <div style={gridStyle}>
           {projects.map((project) => (
             <ProjectCard
               key={project.id}
               project={project}
-              onClick={() => onOpenProject(project.id)}
+              onClick={() => handleOpenProjectClick(project.id)}
               onDelete={() => handleRequestDelete(project.id)}
             />
           ))}
@@ -315,10 +406,10 @@ export default function Dashboard({
             >
               {isCreatingProject ? "Criando..." : "+ Criar projeto em branco"}
             </Button>
-            <Button variant="secondary" onClick={() => setShowAIModal(true)}>
+            <Button variant="secondary" onClick={handleShowAIModal}>
               ✨ Gerar com IA
             </Button>
-            <Button variant="ghost" onClick={onOpenLibrary}>
+            <Button variant="ghost" onClick={handleOpenLibraryClick}>
               Explorar biblioteca
             </Button>
           </div>
