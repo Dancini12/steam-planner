@@ -139,88 +139,30 @@ export default function Dashboard({
   const containerStyle = {
     maxWidth: "1100px",
     margin: "0 auto",
-    padding: "2rem 1.5rem 3rem"
+    padding: "2.5rem 1.5rem"
   };
 
   const headerStyle = {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "stretch",
-    marginBottom: "1.5rem",
+    alignItems: "flex-end",
+    marginBottom: "2.5rem",
     flexWrap: "wrap",
-    gap: "1rem",
-    padding: "1.5rem",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-    borderRadius: "16px",
-    background:
-      "linear-gradient(135deg, rgba(107, 47, 224, 0.22), rgba(232, 53, 138, 0.08) 48%, rgba(63, 214, 76, 0.08))",
-    boxShadow: "0 18px 48px rgba(0, 0, 0, 0.16)"
-  };
-
-  const heroCopyStyle = {
-    flex: "1 1 430px",
-    minWidth: 0
-  };
-
-  const eyebrowStyle = {
-    color: "#BCA8FF",
-    fontSize: "0.78rem",
-    fontWeight: 700,
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-    marginBottom: "0.65rem"
+    gap: "1rem"
   };
 
   const titleStyle = {
-    fontSize: "clamp(2rem, 4vw, 3.25rem)",
-    fontWeight: 800,
+    fontSize: "2rem",
+    fontWeight: 700,
     color: "#FFFFFF",
     margin: 0,
-    lineHeight: 1.03,
-    letterSpacing: 0
+    letterSpacing: "-0.02em"
   };
 
   const subtitleStyle = {
-    fontSize: "1rem",
-    color: "rgba(255, 255, 255, 0.72)",
-    margin: "0.75rem 0 0",
-    lineHeight: 1.65,
-    maxWidth: "620px"
-  };
-
-  const heroPanelStyle = {
-    flex: "0 1 330px",
-    minWidth: "280px",
-    display: "grid",
-    gap: "0.75rem",
-    alignContent: "center"
-  };
-
-  const statsGridStyle = {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: "0.6rem"
-  };
-
-  const statBoxStyle = {
-    padding: "0.75rem",
-    border: "1px solid rgba(255, 255, 255, 0.1)",
-    borderRadius: "10px",
-    background: "rgba(10, 10, 31, 0.28)"
-  };
-
-  const statValueStyle = {
-    color: "#FFFFFF",
-    fontSize: "1.2rem",
-    fontWeight: 800,
-    lineHeight: 1
-  };
-
-  const statLabelStyle = {
-    color: "rgba(255, 255, 255, 0.56)",
-    fontSize: "0.72rem",
-    marginTop: "0.35rem",
-    lineHeight: 1.25
+    fontSize: "0.95rem",
+    color: "rgba(255, 255, 255, 0.55)",
+    margin: "0.5rem 0 0"
   };
 
   const actionsStyle = {
@@ -234,36 +176,13 @@ export default function Dashboard({
     justifyContent: "space-between",
     alignItems: "center",
     gap: "1rem",
-    marginBottom: "1rem",
+    marginBottom: "1.5rem",
     flexWrap: "wrap"
   };
 
   const userTextStyle = {
-    color: "rgba(255, 255, 255, 0.68)",
-    fontSize: "0.9rem",
-    fontWeight: 600
-  };
-
-  const sectionHeaderStyle = {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "1rem",
-    margin: "1.5rem 0 1rem",
-    flexWrap: "wrap"
-  };
-
-  const sectionTitleStyle = {
-    color: "#FFFFFF",
-    fontSize: "1.05rem",
-    fontWeight: 700,
-    margin: 0
-  };
-
-  const sectionTextStyle = {
-    color: "rgba(255, 255, 255, 0.5)",
-    fontSize: "0.85rem",
-    margin: "0.25rem 0 0"
+    color: "rgba(255, 255, 255, 0.55)",
+    fontSize: "0.9rem"
   };
 
   const gridStyle = {
@@ -275,16 +194,15 @@ export default function Dashboard({
   // Estado vazio (sem projetos ainda)
   const emptyStateStyle = {
     textAlign: "center",
-    padding: "3rem 2rem",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-    borderRadius: "16px",
-    background:
-      "linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018))"
+    padding: "4rem 2rem",
+    border: "1px dashed rgba(255, 255, 255, 0.1)",
+    borderRadius: "12px",
+    background: "rgba(255, 255, 255, 0.02)"
   };
 
   const emptyTitleStyle = {
-    fontSize: "1.5rem",
-    fontWeight: 800,
+    fontSize: "1.25rem",
+    fontWeight: 600,
     color: "#FFFFFF",
     marginBottom: "0.5rem"
   };
@@ -318,17 +236,12 @@ export default function Dashboard({
   }
 
   const hasProjects = projects.length > 0;
-  const totalReferences = projects.reduce(
-    (total, project) => total + (project.bibliography?.length || 0),
-    0
-  );
-  const userName = currentUser?.name || currentUser?.email || "professor";
 
   return (
     <div style={containerStyle}>
       <div style={userBarStyle}>
         <div style={userTextStyle}>
-          Olá, {userName}
+          {currentUser?.name || currentUser?.email}
         </div>
         <div style={actionsStyle}>
           <Button variant="ghost" onClick={onLogout}>
@@ -339,54 +252,34 @@ export default function Dashboard({
 
       {/* Cabeçalho */}
       <div style={headerStyle}>
-        <div style={heroCopyStyle}>
-          <div style={eyebrowStyle}>STEAM Planner</div>
-          <h1 style={titleStyle}>Planeje experiências STEAM com clareza.</h1>
+        <div>
+          <h1 style={titleStyle}>Meus Projetos STEAM</h1>
           <p style={subtitleStyle}>
             {hasProjects
-              ? "Continue seus projetos, explore modelos temáticos ou gere uma nova proposta para adaptar à sua turma."
-              : "Comece com um projeto em branco, use um modelo pronto por tema ou peça uma sugestão inicial à IA."}
+              ? `${projects.length} ${
+                  projects.length === 1 ? "projeto" : "projetos"
+                } no total`
+              : "Comece criando seu primeiro projeto"}
           </p>
         </div>
 
-        <div style={heroPanelStyle}>
-          <div style={statsGridStyle}>
-            <div style={statBoxStyle}>
-              <div style={statValueStyle}>{projects.length}</div>
-              <div style={statLabelStyle}>
-                {projects.length === 1 ? "projeto" : "projetos"}
-              </div>
-            </div>
-            <div style={statBoxStyle}>
-              <div style={statValueStyle}>16</div>
-              <div style={statLabelStyle}>modelos prontos</div>
-            </div>
-            <div style={statBoxStyle}>
-              <div style={statValueStyle}>{totalReferences}</div>
-              <div style={statLabelStyle}>referências salvas</div>
-            </div>
-          </div>
+        {hasProjects && (
           <div style={actionsStyle}>
+            <Button variant="ghost" onClick={onOpenLibrary}>
+              Biblioteca
+            </Button>
+            <Button variant="secondary" onClick={() => setShowAIModal(true)}>
+              ✨ Gerar com IA
+            </Button>
             <Button
               variant="primary"
-              size="large"
               onClick={handleCreateBlank}
               disabled={isCreatingProject}
             >
               {isCreatingProject ? "Criando..." : "+ Novo projeto"}
             </Button>
-            <Button variant="secondary" size="large" onClick={onOpenLibrary}>
-              Biblioteca
-            </Button>
-            <Button
-              variant="ghost"
-              size="large"
-              onClick={() => setShowAIModal(true)}
-            >
-              Gerar com IA
-            </Button>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Lista de projetos ou estado vazio */}
@@ -397,32 +290,22 @@ export default function Dashboard({
       )}
 
       {hasProjects ? (
-        <>
-          <div style={sectionHeaderStyle}>
-            <div>
-              <h2 style={sectionTitleStyle}>Projetos em andamento</h2>
-              <p style={sectionTextStyle}>
-                Abra um projeto para registrar fases, avaliações e referências.
-              </p>
-            </div>
-          </div>
-          <div style={gridStyle}>
-            {projects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onClick={() => onOpenProject(project.id)}
-                onDelete={() => handleRequestDelete(project.id)}
-              />
-            ))}
-          </div>
-        </>
+        <div style={gridStyle}>
+          {projects.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              onClick={() => onOpenProject(project.id)}
+              onDelete={() => handleRequestDelete(project.id)}
+            />
+          ))}
+        </div>
       ) : (
         <div style={emptyStateStyle}>
-          <div style={emptyTitleStyle}>Escolha seu ponto de partida</div>
+          <div style={emptyTitleStyle}>Nenhum projeto encontrado</div>
           <p style={emptyTextStyle}>
-            Você pode começar do zero, adaptar um exemplo da biblioteca temática
-            ou gerar uma proposta inicial para refinar com sua turma.
+            Crie um projeto do zero, escolha um modelo pronto na biblioteca
+            ou peça à IA uma sugestão inicial baseada num tema.
           </p>
           <div style={emptyActionsStyle}>
             <Button
