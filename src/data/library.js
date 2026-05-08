@@ -2196,6 +2196,631 @@ export const LIBRARY = [
       REF_IBGE_CARTOGRAPHY
     ],
     phaseDetails: createProjectPhases("mapa de ruído escolar e saúde ambiental")
+  },
+
+  {
+    id: "lib-arqueologia-objetos",
+    title: "Arqueologia dos Objetos da Escola",
+    theme: "História, cultura material e investigação maker",
+    grade: "6º e 7º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "A", "M"],
+    guidingQuestion:
+      "O que os objetos usados na escola revelam sobre hábitos, tecnologias e mudanças no tempo?",
+    objectives: [
+      "Compreender objetos como fontes históricas",
+      "Registrar características materiais e usos sociais",
+      "Criar fichas museológicas e linha do tempo",
+      "Montar uma exposição investigativa"
+    ],
+    bncc: ["EF06HI01", "EF06HI02", "EF69LP35"],
+    materials: [
+      "Objetos autorizados da escola",
+      "Fichas de catalogação",
+      "Régua, balança e câmera",
+      "Etiquetas e materiais de exposição",
+      "Cartolina ou ferramenta digital"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "FUNARI, Pedro Paulo. Arqueologia. São Paulo: Contexto, 2003.",
+      "IPHAN. Educação patrimonial: histórico, conceitos e processos. Brasília: IPHAN, 2014.",
+      "MUSEU DA PESSOA. Tecnologia social da memória. São Paulo: Museu da Pessoa, 2009."
+    ],
+    phaseDetails: createProjectPhases("arqueologia escolar, objetos cotidianos e cultura material")
+  },
+  {
+    id: "lib-cartas-para-passado",
+    title: "Cartas para o Passado",
+    theme: "História, empatia histórica e produção textual",
+    grade: "7º e 8º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["A", "T"],
+    guidingQuestion:
+      "Como escrever cartas ficcionais historicamente fundamentadas para personagens de outro tempo?",
+    objectives: [
+      "Pesquisar contextos históricos com fontes confiáveis",
+      "Produzir cartas considerando linguagem, época e ponto de vista",
+      "Construir envelopes, selos e suportes visuais",
+      "Apresentar uma instalação de correspondências históricas"
+    ],
+    bncc: ["EF07HI01", "EF08HI03", "EF69LP51"],
+    materials: [
+      "Fontes históricas selecionadas",
+      "Papéis, envelopes e materiais de envelhecimento visual",
+      "Computador para pesquisa",
+      "Painel expositivo",
+      "Roteiro de revisão histórica"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "BURKE, Peter. A escrita da história: novas perspectivas. São Paulo: UNESP, 1992.",
+      "PINSKY, Carla Bassanezi (org.). Fontes históricas. São Paulo: Contexto, 2005.",
+      "ALBERTI, Verena. Manual de história oral. 3. ed. Rio de Janeiro: FGV, 2013."
+    ],
+    phaseDetails: createProjectPhases("cartas históricas, empatia histórica e instalação maker")
+  },
+  {
+    id: "lib-mulheres-ciencia-historia",
+    title: "Mulheres que Transformaram a Ciência",
+    theme: "História da ciência, biografias e exposição interativa",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "T", "A"],
+    guidingQuestion:
+      "Como contar histórias de cientistas mulheres por meio de uma exposição interativa?",
+    objectives: [
+      "Pesquisar biografias e contextos históricos",
+      "Relacionar descobertas científicas a problemas de sua época",
+      "Criar painéis, QR codes ou áudios explicativos",
+      "Discutir representatividade na ciência"
+    ],
+    bncc: ["EF08HI19", "EF09HI09", "EF69LP35"],
+    materials: [
+      "Computadores para pesquisa",
+      "Cartolinas ou painéis digitais",
+      "QR codes ou gravadores de áudio",
+      "Materiais de montagem",
+      "Rubrica de curadoria"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "SCHIEBINGER, Londa. O feminismo mudou a ciência? Bauru: EDUSC, 2001.",
+      "UNESCO. Cracking the code: girls' and women's education in STEM. Paris: UNESCO, 2017.",
+      REF_UNESCO_MIL
+    ],
+    phaseDetails: createProjectPhases("história de cientistas mulheres e exposição interativa")
+  },
+
+  {
+    id: "lib-bacias-hidrograficas",
+    title: "Bacia Hidrográfica em Maquete",
+    theme: "Geografia física, água e modelagem do território",
+    grade: "6º e 7º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "E", "A", "M"],
+    guidingQuestion:
+      "Como uma maquete pode explicar o caminho da água em uma bacia hidrográfica?",
+    objectives: [
+      "Compreender nascente, rio principal, afluentes e divisor de águas",
+      "Construir maquete física com relevo",
+      "Simular escoamento e impactos do uso do solo",
+      "Relacionar bacias hidrográficas ao território local"
+    ],
+    bncc: ["EF06GE04", "EF06GE11", "EF06MA24"],
+    materials: [
+      "Argila, papelão ou massa de modelagem",
+      "Tinta e pincéis",
+      "Borrifador de água",
+      "Mapa da região",
+      "Materiais recicláveis"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_IBGE_CARTOGRAPHY,
+      "BRASIL. Agência Nacional de Águas e Saneamento Básico. Conjuntura dos recursos hídricos no Brasil. Brasília: ANA, 2023.",
+      REF_UNESCO_ESD
+    ],
+    phaseDetails: createProjectPhases("bacias hidrográficas, relevo e maquete territorial")
+  },
+  {
+    id: "lib-mapa-riscos-ambientais",
+    title: "Mapa de Riscos Ambientais do Entorno",
+    theme: "Geografia, território e prevenção",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "T", "M"],
+    guidingQuestion:
+      "Quais riscos ambientais existem no entorno da escola e como representá-los em um mapa útil?",
+    objectives: [
+      "Observar pontos de risco ambiental no território",
+      "Registrar evidências com fotos e coordenadas",
+      "Criar mapa temático com legenda",
+      "Propor medidas de prevenção e comunicação"
+    ],
+    bncc: ["EF08GE17", "EF08GE19", "EF09GE15"],
+    materials: [
+      "Celulares com GPS",
+      "Mapa impresso ou digital",
+      "Fichas de campo",
+      "Câmera",
+      "Editor de mapa"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_IBGE_CARTOGRAPHY,
+      "BRASIL. Ministério das Cidades. Mapeamento de riscos em encostas e margem de rios. Brasília: Ministério das Cidades, 2007.",
+      REF_UNESCO_ESD
+    ],
+    phaseDetails: createProjectPhases("mapa de riscos ambientais e prevenção territorial")
+  },
+
+  {
+    id: "lib-mural-interativo",
+    title: "Mural Interativo de Arte e Ciência",
+    theme: "Arte pública, circuitos simples e interação",
+    grade: "7º ao 9º ano",
+    duration: "6 semanas · 12 aulas",
+    steam: ["S", "T", "A"],
+    guidingQuestion:
+      "Como criar um mural que combine expressão artística, ciência e interação com luz ou som?",
+    objectives: [
+      "Planejar composição visual coletiva",
+      "Construir circuitos simples com LEDs ou sensores",
+      "Relacionar elementos visuais a conceitos científicos",
+      "Montar exposição interativa"
+    ],
+    bncc: ["EF69AR05", "EF69AR06", "EF07CI06"],
+    materials: [
+      "Painel ou papelão grande",
+      "Tintas e pincéis",
+      "LEDs, pilhas e fios",
+      "Fita cobre ou papel alumínio",
+      "Materiais recicláveis"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "MUNARI, Bruno. Das coisas nascem coisas. São Paulo: Martins Fontes, 1998.",
+      "NORMAN, Donald A. O design do dia a dia. Rio de Janeiro: Rocco, 2006.",
+      "MCROBERTS, Michael. Arduino básico. São Paulo: Novatec, 2011."
+    ],
+    phaseDetails: createProjectPhases("mural artístico interativo com circuitos simples")
+  },
+  {
+    id: "lib-stop-motion-cientifico",
+    title: "Stop Motion Científico",
+    theme: "Animação, narrativa visual e conceitos científicos",
+    grade: "6º ao 8º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "T", "A"],
+    guidingQuestion:
+      "Como explicar um fenômeno científico usando animação stop motion feita com materiais simples?",
+    objectives: [
+      "Selecionar fenômeno científico adequado",
+      "Criar roteiro visual e storyboard",
+      "Produzir personagens e cenários",
+      "Editar animação curta com narração ou legendas"
+    ],
+    bncc: ["EF69AR05", "EF69LP35", "EF06CI11"],
+    materials: [
+      "Celulares ou tablets",
+      "Massinha, papel e objetos",
+      "Aplicativo de stop motion",
+      "Tripé improvisado",
+      "Roteiro e storyboard"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "WILLIAMS, Richard. The animator's survival kit. London: Faber and Faber, 2001.",
+      REF_UNESCO_MIL,
+      "BUENO, Wilson da Costa. Comunicação científica e divulgação científica: aproximações e rupturas conceituais. Informação & Informação, Londrina, v. 15, n. esp., p. 1-12, 2010."
+    ],
+    phaseDetails: createProjectPhases("animação stop motion para explicar fenômenos científicos")
+  },
+  {
+    id: "lib-instrumentos-reciclados",
+    title: "Orquestra de Instrumentos Reciclados",
+    theme: "Som, música, reaproveitamento e acústica",
+    grade: "6º ao 8º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "E", "A", "M"],
+    guidingQuestion:
+      "Como construir instrumentos musicais com materiais reutilizados e compreender propriedades do som?",
+    objectives: [
+      "Investigar vibração, altura, intensidade e timbre",
+      "Construir instrumentos de corda, sopro ou percussão",
+      "Testar ajustes para alterar sons",
+      "Organizar apresentação musical coletiva"
+    ],
+    bncc: ["EF69AR16", "EF08CI02", "EF07MA32"],
+    materials: [
+      "Garrafas, latas, elásticos e tubos",
+      "Fitas, cola e tesoura",
+      "Aplicativo afinador opcional",
+      "Caderno de testes",
+      "Materiais de decoração"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "SCHAFER, R. Murray. O ouvido pensante. São Paulo: UNESP, 1991.",
+      "HEWITT, Paul G. Física conceitual. 12. ed. Porto Alegre: Bookman, 2015.",
+      REF_UNESCO_ESD
+    ],
+    phaseDetails: createProjectPhases("instrumentos reciclados, acústica e criação musical")
+  },
+  {
+    id: "lib-cenografia-feira",
+    title: "Cenografia Maker para Feira de Ciências",
+    theme: "Design de espaço, comunicação visual e exposição",
+    grade: "8º e 9º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["E", "A", "M"],
+    guidingQuestion:
+      "Como projetar uma cenografia que ajude visitantes a compreender uma feira de ciências?",
+    objectives: [
+      "Analisar circulação, leitura e acessibilidade do espaço",
+      "Criar identidade visual e sinalização",
+      "Construir módulos expositivos com materiais simples",
+      "Testar a experiência de visitação"
+    ],
+    bncc: ["EF69AR05", "EF69LP35", "EF08MA19"],
+    materials: [
+      "Papelão, tecidos e placas",
+      "Tintas e ferramentas de corte",
+      "Régua e trena",
+      "Fita dupla face",
+      "Planta do espaço"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "LUPTON, Ellen. Pensar com tipos. São Paulo: Cosac Naify, 2013.",
+      "MUNARI, Bruno. Das coisas nascem coisas. São Paulo: Martins Fontes, 1998.",
+      "NORMAN, Donald A. O design do dia a dia. Rio de Janeiro: Rocco, 2006."
+    ],
+    phaseDetails: createProjectPhases("cenografia maker e design de exposição científica")
+  },
+  {
+    id: "lib-design-embalagem-sustentavel",
+    title: "Design de Embalagem Sustentável",
+    theme: "Arte, design, consumo e sustentabilidade",
+    grade: "7º ao 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "E", "A", "M"],
+    guidingQuestion:
+      "Como redesenhar uma embalagem para reduzir resíduos e comunicar melhor suas informações?",
+    objectives: [
+      "Analisar embalagens do cotidiano",
+      "Estudar materiais, volume e comunicação visual",
+      "Criar protótipo de embalagem sustentável",
+      "Apresentar justificativa estética, ambiental e matemática"
+    ],
+    bncc: ["EF69AR05", "EF06CI11", "EF07MA32"],
+    materials: [
+      "Embalagens limpas para análise",
+      "Papel, papelão e materiais reaproveitados",
+      "Régua e tesoura",
+      "Materiais de desenho",
+      "Ficha comparativa"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_UNESCO_ESD,
+      "MUNARI, Bruno. Das coisas nascem coisas. São Paulo: Martins Fontes, 1998.",
+      "LUPTON, Ellen. Intuição, ação, criação: graphic design thinking. São Paulo: Gustavo Gili, 2013."
+    ],
+    phaseDetails: createProjectPhases("design de embalagem sustentável e prototipagem")
+  },
+
+  {
+    id: "lib-primeiros-socorros",
+    title: "Guia Escolar de Primeiros Socorros",
+    theme: "Prevenção, segurança e comunicação visual",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "A"],
+    guidingQuestion:
+      "Como produzir um guia visual de primeiros socorros adequado à realidade da escola?",
+    objectives: [
+      "Pesquisar orientações institucionais de primeiros socorros",
+      "Identificar situações comuns de cuidado na escola",
+      "Criar materiais visuais claros e responsáveis",
+      "Validar o material com profissionais da escola"
+    ],
+    bncc: ["EF09CI09", "EF69LP35", "EF69AR05"],
+    materials: [
+      "Fontes institucionais",
+      "Editor de cartazes",
+      "Painel informativo",
+      "Roteiro de revisão",
+      "Apoio da equipe escolar"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "BRASIL. Lei n. 13.722, de 4 de outubro de 2018. Torna obrigatória a capacitação em noções básicas de primeiros socorros. Brasília, DF, 2018.",
+      "WORLD HEALTH ORGANIZATION. Injuries and violence: the facts. Geneva: WHO, 2014.",
+      REF_UNESCO_MIL
+    ],
+    phaseDetails: createProjectPhases("guia visual de primeiros socorros na escola")
+  },
+
+  {
+    id: "lib-english-weather-report",
+    title: "English Weather Report",
+    theme: "Língua inglesa, clima e comunicação oral",
+    grade: "7º e 8º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["S", "T", "A"],
+    guidingQuestion:
+      "How can students present a weather forecast in English using local data?",
+    objectives: [
+      "Aprender vocabulário de clima em inglês",
+      "Coletar dados meteorológicos simples",
+      "Criar roteiro de previsão do tempo",
+      "Gravar apresentação oral em inglês"
+    ],
+    bncc: ["EF07LI01", "EF08LI03", "EF07CI12"],
+    materials: [
+      "Termômetro ou dados meteorológicos locais",
+      "Celular para gravação",
+      "Roteiro bilíngue",
+      "Mapa ou cenário",
+      "Editor de vídeo simples"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "CRYSTAL, David. English as a global language. 2. ed. Cambridge: Cambridge University Press, 2003.",
+      "COUNCIL OF EUROPE. Common European Framework of Reference for Languages. Cambridge: Cambridge University Press, 2001.",
+      REF_NASA_CLIMATE
+    ],
+    phaseDetails: createProjectPhases("previsão do tempo em inglês com dados locais")
+  },
+  {
+    id: "lib-english-maker-manual",
+    title: "Maker Manual in English",
+    theme: "Instruções, prototipagem e inglês funcional",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["T", "E", "A"],
+    guidingQuestion:
+      "How can students write an English manual for a handmade prototype?",
+    objectives: [
+      "Estudar verbos imperativos e sequência instrucional",
+      "Construir protótipo simples",
+      "Escrever manual ilustrado em inglês",
+      "Testar se colegas conseguem seguir as instruções"
+    ],
+    bncc: ["EF08LI13", "EF09LI03", "EF69LP35"],
+    materials: [
+      "Materiais reutilizáveis para protótipo",
+      "Papel ou editor de texto",
+      "Câmera",
+      "Dicionário/tradutor como apoio",
+      "Ficha de teste"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "BYRAM, Michael. Teaching and assessing intercultural communicative competence. Clevedon: Multilingual Matters, 1997.",
+      "CRYSTAL, David. English as a global language. 2. ed. Cambridge: Cambridge University Press, 2003.",
+      REF_UNESCO_MIL
+    ],
+    phaseDetails: createProjectPhases("manual maker em inglês para protótipo construído pelos estudantes")
+  },
+  {
+    id: "lib-english-eco-campaign",
+    title: "Eco Campaign in English",
+    theme: "Sustentabilidade, língua inglesa e campanha escolar",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "A", "T"],
+    guidingQuestion:
+      "How can we create an English campaign to encourage sustainable habits at school?",
+    objectives: [
+      "Pesquisar problemas ambientais locais",
+      "Construir vocabulário de sustentabilidade em inglês",
+      "Criar peças de campanha bilíngues",
+      "Avaliar clareza e alcance das mensagens"
+    ],
+    bncc: ["EF08LI13", "EF09LI16", "EF06CI11"],
+    materials: [
+      "Computadores ou celulares",
+      "Editor de cartazes",
+      "Dados ambientais da escola",
+      "Roteiro de revisão linguística",
+      "Painel de divulgação"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_UNESCO_ESD,
+      "CRYSTAL, David. English as a global language. 2. ed. Cambridge: Cambridge University Press, 2003.",
+      REF_UNESCO_MIL
+    ],
+    phaseDetails: createProjectPhases("campanha ambiental em língua inglesa")
+  },
+  {
+    id: "lib-english-board-game",
+    title: "Board Game Instructions in English",
+    theme: "Jogos, regras e comunicação em inglês",
+    grade: "7º e 8º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["A", "M", "T"],
+    guidingQuestion:
+      "How can students design a board game and write clear rules in English?",
+    objectives: [
+      "Criar jogo de tabuleiro com objetivo pedagógico",
+      "Escrever regras em inglês usando linguagem clara",
+      "Testar equilíbrio do jogo com colegas",
+      "Revisar instruções a partir do feedback"
+    ],
+    bncc: ["EF07LI15", "EF08LI13", "EF07MA34"],
+    materials: [
+      "Papelão e materiais de jogo",
+      "Dados, cartas e marcadores",
+      "Dicionário/tradutor como apoio",
+      "Ficha de feedback",
+      "Editor de texto"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "GRANDO, Regina Célia. O jogo e a matemática no contexto da sala de aula. São Paulo: Paulus, 2004.",
+      "BYRAM, Michael. Teaching and assessing intercultural communicative competence. Clevedon: Multilingual Matters, 1997.",
+      REF_UNESCO_MIL
+    ],
+    phaseDetails: createProjectPhases("jogo de tabuleiro com regras escritas em inglês")
+  },
+  {
+    id: "lib-english-virtual-tour",
+    title: "Virtual Tour of Our School",
+    theme: "Apresentação oral, espaço escolar e mídia digital",
+    grade: "6º e 7º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["T", "A"],
+    guidingQuestion:
+      "How can students present the school in English through a virtual tour?",
+    objectives: [
+      "Aprender vocabulário de espaços escolares",
+      "Planejar roteiro de tour em inglês",
+      "Gravar vídeos curtos em diferentes locais",
+      "Editar material para apresentação final"
+    ],
+    bncc: ["EF06LI01", "EF07LI01", "EF69LP35"],
+    materials: [
+      "Celulares para gravação",
+      "Roteiro em inglês",
+      "Mapa simples da escola",
+      "Editor de vídeo",
+      "Autorização para gravação"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "CRYSTAL, David. English as a global language. 2. ed. Cambridge: Cambridge University Press, 2003.",
+      "COUNCIL OF EUROPE. Common European Framework of Reference for Languages. Cambridge: Cambridge University Press, 2001.",
+      REF_UNESCO_MIL
+    ],
+    phaseDetails: createProjectPhases("tour virtual da escola em língua inglesa")
+  },
+  {
+    id: "lib-english-podcast",
+    title: "Mini Podcast in English",
+    theme: "Oralidade, cultura juvenil e edição de áudio",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["T", "A"],
+    guidingQuestion:
+      "How can students produce a short podcast episode in English about youth culture?",
+    objectives: [
+      "Planejar episódio curto em inglês",
+      "Praticar pronúncia, ritmo e colaboração oral",
+      "Editar áudio com vinheta e trilha livre",
+      "Publicar ou apresentar o episódio à turma"
+    ],
+    bncc: ["EF08LI01", "EF09LI03", "EF69LP35"],
+    materials: [
+      "Celulares ou microfone",
+      "Editor de áudio",
+      "Roteiro colaborativo",
+      "Trilhas livres",
+      "Rubrica de oralidade"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "JENKINS, Henry. Cultura da convergência. 2. ed. São Paulo: Aleph, 2009.",
+      "AUDACITY TEAM. Audacity manual. Disponível em: https://manual.audacityteam.org/.",
+      "CRYSTAL, David. English as a global language. 2. ed. Cambridge: Cambridge University Press, 2003."
+    ],
+    phaseDetails: createProjectPhases("podcast curto em inglês sobre cultura juvenil")
+  },
+  {
+    id: "lib-english-recipe-video",
+    title: "Recipe Video in English",
+    theme: "Culinária, procedimento e comunicação intercultural",
+    grade: "7º e 8º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["S", "A", "M"],
+    guidingQuestion:
+      "How can students explain a simple recipe in English using measurements and steps?",
+    objectives: [
+      "Aprender vocabulário de ingredientes e medidas",
+      "Escrever roteiro procedural em inglês",
+      "Gravar demonstração segura ou simulação",
+      "Comparar aspectos culturais da alimentação"
+    ],
+    bncc: ["EF07LI15", "EF08LI13", "EF07MA29"],
+    materials: [
+      "Receitas simples",
+      "Utensílios seguros ou materiais cenográficos",
+      "Celular para gravação",
+      "Roteiro de fala",
+      "Editor de vídeo"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "BRASIL. Ministério da Saúde. Guia alimentar para a população brasileira. 2. ed. Brasília: Ministério da Saúde, 2014.",
+      "BYRAM, Michael. Teaching and assessing intercultural communicative competence. Clevedon: Multilingual Matters, 1997.",
+      "CRYSTAL, David. English as a global language. 2. ed. Cambridge: Cambridge University Press, 2003."
+    ],
+    phaseDetails: createProjectPhases("vídeo de receita em inglês com medidas e procedimentos")
+  },
+  {
+    id: "lib-english-postcards",
+    title: "Digital Postcards Exchange",
+    theme: "Intercâmbio cultural, escrita curta e design",
+    grade: "6º ao 8º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["T", "A"],
+    guidingQuestion:
+      "How can digital postcards help us introduce our culture in English?",
+    objectives: [
+      "Produzir cartões digitais com textos curtos em inglês",
+      "Selecionar imagens representativas com cuidado cultural",
+      "Revisar vocabulário e estruturas simples",
+      "Compartilhar galeria digital da turma"
+    ],
+    bncc: ["EF06LI15", "EF08LI13", "EF69AR05"],
+    materials: [
+      "Celulares para fotos",
+      "Editor de imagem",
+      "Modelo de postcard",
+      "Dicionário/tradutor como apoio",
+      "Galeria digital"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "BYRAM, Michael. Teaching and assessing intercultural communicative competence. Clevedon: Multilingual Matters, 1997.",
+      REF_UNESCO_MIL,
+      "COUNCIL OF EUROPE. Common European Framework of Reference for Languages. Cambridge: Cambridge University Press, 2001."
+    ],
+    phaseDetails: createProjectPhases("cartões-postais digitais em inglês e interculturalidade")
+  },
+  {
+    id: "lib-english-science-pitch",
+    title: "Science Fair Pitch in English",
+    theme: "Feira de ciências, apresentação oral e protótipos",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "T", "A"],
+    guidingQuestion:
+      "How can students present a STEAM prototype in English for a science fair audience?",
+    objectives: [
+      "Preparar pitch curto em inglês",
+      "Explicar problema, protótipo, teste e resultado",
+      "Criar apoio visual bilíngue",
+      "Praticar respostas a perguntas simples"
+    ],
+    bncc: ["EF09LI03", "EF09LI16", "EF69LP35"],
+    materials: [
+      "Protótipo desenvolvido pela equipe",
+      "Cartaz bilíngue",
+      "Roteiro de pitch",
+      "Cronômetro",
+      "Ficha de perguntas"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "COUNCIL OF EUROPE. Common European Framework of Reference for Languages. Cambridge: Cambridge University Press, 2001.",
+      "BUENO, Wilson da Costa. Comunicação científica e divulgação científica: aproximações e rupturas conceituais. Informação & Informação, Londrina, v. 15, n. esp., p. 1-12, 2010.",
+      "CRYSTAL, David. English as a global language. 2. ed. Cambridge: Cambridge University Press, 2003."
+    ],
+    phaseDetails: createProjectPhases("pitch em inglês para apresentação de protótipo STEAM")
   }
 ];
 

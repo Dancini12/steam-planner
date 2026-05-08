@@ -30,7 +30,7 @@ function formatSupabaseError(error) {
   ].filter(Boolean).join(" | ");
 }
 
-const THEME_CATEGORIES = [
+const DISCIPLINE_CATEGORIES = [
   {
     id: "all",
     letter: "*",
@@ -39,121 +39,148 @@ const THEME_CATEGORIES = [
     color: "#FFFFFF"
   },
   {
-    id: "ambiente",
-    letter: "AM",
-    name: "Meio ambiente",
-    description: "Clima, água, biodiversidade, cidade e sustentabilidade",
-    color: "#3FD64C"
-  },
-  {
-    id: "tecnologia",
-    letter: "TR",
-    name: "Tecnologia e robótica",
-    description: "Sensores, automação, energia, programação e protótipos",
-    color: "#3B95F2"
-  },
-  {
-    id: "comunicacao",
-    letter: "CO",
-    name: "Comunicação e mídias",
-    description: "Podcast, jornal, inglês, divulgação científica e cultura digital",
+    id: "portugues",
+    letter: "LP",
+    name: "Língua Portuguesa",
+    description: "Leitura, escrita, oralidade, mídia e produção textual maker",
     color: "#E8358A"
   },
   {
-    id: "territorio",
-    letter: "TS",
-    name: "Território e sociedade",
-    description: "História, cartografia, memória, cultura e diversidade",
-    color: "#FF8C1A"
-  },
-  {
-    id: "dados",
-    letter: "DM",
-    name: "Dados e matemática",
-    description: "Estatística, medições, visualização e análise de dados",
+    id: "matematica",
+    letter: "MT",
+    name: "Matemática",
+    description: "Dados, geometria, educação financeira, medidas e modelagem",
     color: "#A050F0"
   },
   {
-    id: "saude",
-    letter: "SC",
-    name: "Saúde e corpo",
-    description: "Atividade física, fisiologia, hábitos e qualidade de vida",
+    id: "historia",
+    letter: "HI",
+    name: "História",
+    description: "Memória, patrimônio, cultura material e narrativas históricas",
+    color: "#FF8C1A"
+  },
+  {
+    id: "geografia",
+    letter: "GE",
+    name: "Geografia",
+    description: "Território, mapas, clima, mobilidade e sustentabilidade local",
+    color: "#3B95F2"
+  },
+  {
+    id: "ciencias",
+    letter: "CI",
+    name: "Ciências",
+    description: "Investigação, ambiente, saúde, energia, sensores e experimentos",
+    color: "#3FD64C"
+  },
+  {
+    id: "arte",
+    letter: "AR",
+    name: "Arte",
+    description: "Criação visual, design, som, audiovisual e exposições maker",
+    color: "#F5B841"
+  },
+  {
+    id: "educacao-fisica",
+    letter: "EF",
+    name: "Educação Física",
+    description: "Corpo, movimento, saúde, jogos, inclusão e bem-estar",
     color: "#33D6C6"
   },
   {
-    id: "outros",
-    letter: "OT",
-    name: "Outros temas",
-    description: "Projetos da comunidade ou sem tema principal definido",
-    color: "#B8C0CC"
+    id: "ingles",
+    letter: "LI",
+    name: "Língua Inglesa",
+    description: "Comunicação intercultural, apresentações, vídeos e inglês maker",
+    color: "#7C83FF"
   }
 ];
 
-const PROJECT_THEME_CATEGORY = {
-  "lib-estacao-meteorologica": "ambiente",
-  "lib-horta-hidroponica": "ambiente",
-  "lib-cidade-sustentavel": "ambiente",
-  "lib-robo-seguidor": "tecnologia",
-  "lib-podcast-cientifico": "comunicacao",
-  "lib-agua-potavel": "ambiente",
-  "lib-censo-biodiversidade": "ambiente",
-  "lib-energia-renovavel": "tecnologia",
-  "lib-estatistica-escolar": "dados",
-  "lib-memoria-viva": "territorio",
-  "lib-cartografia-bairro": "territorio",
-  "lib-jornal-escolar": "comunicacao",
-  "lib-connecting-cultures": "comunicacao",
-  "lib-arte-generativa": "tecnologia",
-  "lib-saude-dados": "saude",
-  "lib-dialogos-diversidade": "territorio",
-  "lib-compostagem-escolar": "ambiente",
-  "lib-ilhas-calor-escola": "ambiente",
-  "lib-consumo-agua-escola": "ambiente",
-  "lib-jardim-polinizadores": "ambiente",
-  "lib-qualidade-ar-sala": "ambiente",
-  "lib-app-agenda-estudos": "tecnologia",
-  "lib-irrigacao-automatizada": "tecnologia",
-  "lib-casa-inteligente-maquete": "tecnologia",
-  "lib-chatbot-biblioteca": "tecnologia",
-  "lib-jogo-reciclagem": "tecnologia",
-  "lib-semaforo-acessivel": "tecnologia",
-  "lib-ponte-palitos": "tecnologia",
-  "lib-video-divulgacao-cientifica": "comunicacao",
-  "lib-campanha-fake-news": "comunicacao",
-  "lib-fanzine-steam": "comunicacao",
-  "lib-radio-recreio": "comunicacao",
-  "lib-exposicao-fotografica-ciencia": "comunicacao",
-  "lib-storytelling-dados": "comunicacao",
-  "lib-guia-turistico-bilingue": "comunicacao",
-  "lib-linha-tempo-bairro": "territorio",
-  "lib-mapa-afetivo-escola": "territorio",
-  "lib-patrimonio-imaterial": "territorio",
-  "lib-rotas-seguras": "territorio",
-  "lib-atlas-cultural-digital": "territorio",
-  "lib-museu-virtual-escola": "territorio",
-  "lib-demografia-bairro": "territorio",
-  "lib-orcamento-feira": "dados",
-  "lib-pesquisa-alimentacao": "dados",
-  "lib-geometria-quadra": "dados",
-  "lib-probabilidade-jogos": "dados",
-  "lib-indice-leitura": "dados",
-  "lib-matematica-transporte": "dados",
-  "lib-simulador-juros": "dados",
-  "lib-censo-esportivo": "dados",
-  "lib-dashboard-biblioteca": "dados",
-  "lib-sono-aprendizagem": "saude",
-  "lib-ergonomia-mochila": "saude",
-  "lib-hidratacao-esporte": "saude",
-  "lib-pausa-ativa": "saude",
-  "lib-alimentacao-cores": "saude",
-  "lib-frequencia-cardiaca": "saude",
-  "lib-saude-mental-campanha": "saude",
-  "lib-acessibilidade-esporte": "saude",
-  "lib-mapa-ruido-escola": "saude"
+const PROJECT_DISCIPLINE_CATEGORY = {
+  "lib-podcast-cientifico": "portugues",
+  "lib-jornal-escolar": "portugues",
+  "lib-video-divulgacao-cientifica": "portugues",
+  "lib-campanha-fake-news": "portugues",
+  "lib-fanzine-steam": "portugues",
+  "lib-radio-recreio": "portugues",
+  "lib-storytelling-dados": "portugues",
+  "lib-indice-leitura": "portugues",
+  "lib-chatbot-biblioteca": "portugues",
+  "lib-app-agenda-estudos": "portugues",
+  "lib-estatistica-escolar": "matematica",
+  "lib-orcamento-feira": "matematica",
+  "lib-pesquisa-alimentacao": "matematica",
+  "lib-geometria-quadra": "matematica",
+  "lib-probabilidade-jogos": "matematica",
+  "lib-matematica-transporte": "matematica",
+  "lib-simulador-juros": "matematica",
+  "lib-dashboard-biblioteca": "matematica",
+  "lib-ponte-palitos": "matematica",
+  "lib-robo-seguidor": "matematica",
+  "lib-memoria-viva": "historia",
+  "lib-dialogos-diversidade": "historia",
+  "lib-linha-tempo-bairro": "historia",
+  "lib-patrimonio-imaterial": "historia",
+  "lib-museu-virtual-escola": "historia",
+  "lib-atlas-cultural-digital": "historia",
+  "lib-mapa-afetivo-escola": "historia",
+  "lib-arqueologia-objetos": "historia",
+  "lib-cartas-para-passado": "historia",
+  "lib-mulheres-ciencia-historia": "historia",
+  "lib-cidade-sustentavel": "geografia",
+  "lib-cartografia-bairro": "geografia",
+  "lib-ilhas-calor-escola": "geografia",
+  "lib-consumo-agua-escola": "geografia",
+  "lib-rotas-seguras": "geografia",
+  "lib-demografia-bairro": "geografia",
+  "lib-guia-turistico-bilingue": "geografia",
+  "lib-energia-renovavel": "geografia",
+  "lib-bacias-hidrograficas": "geografia",
+  "lib-mapa-riscos-ambientais": "geografia",
+  "lib-estacao-meteorologica": "ciencias",
+  "lib-horta-hidroponica": "ciencias",
+  "lib-agua-potavel": "ciencias",
+  "lib-censo-biodiversidade": "ciencias",
+  "lib-compostagem-escolar": "ciencias",
+  "lib-jardim-polinizadores": "ciencias",
+  "lib-qualidade-ar-sala": "ciencias",
+  "lib-irrigacao-automatizada": "ciencias",
+  "lib-alimentacao-cores": "ciencias",
+  "lib-mapa-ruido-escola": "ciencias",
+  "lib-arte-generativa": "arte",
+  "lib-exposicao-fotografica-ciencia": "arte",
+  "lib-casa-inteligente-maquete": "arte",
+  "lib-jogo-reciclagem": "arte",
+  "lib-semaforo-acessivel": "arte",
+  "lib-mural-interativo": "arte",
+  "lib-stop-motion-cientifico": "arte",
+  "lib-instrumentos-reciclados": "arte",
+  "lib-cenografia-feira": "arte",
+  "lib-design-embalagem-sustentavel": "arte",
+  "lib-saude-dados": "educacao-fisica",
+  "lib-censo-esportivo": "educacao-fisica",
+  "lib-sono-aprendizagem": "educacao-fisica",
+  "lib-ergonomia-mochila": "educacao-fisica",
+  "lib-hidratacao-esporte": "educacao-fisica",
+  "lib-pausa-ativa": "educacao-fisica",
+  "lib-frequencia-cardiaca": "educacao-fisica",
+  "lib-saude-mental-campanha": "educacao-fisica",
+  "lib-acessibilidade-esporte": "educacao-fisica",
+  "lib-primeiros-socorros": "educacao-fisica",
+  "lib-connecting-cultures": "ingles",
+  "lib-english-weather-report": "ingles",
+  "lib-english-maker-manual": "ingles",
+  "lib-english-eco-campaign": "ingles",
+  "lib-english-board-game": "ingles",
+  "lib-english-virtual-tour": "ingles",
+  "lib-english-podcast": "ingles",
+  "lib-english-recipe-video": "ingles",
+  "lib-english-postcards": "ingles",
+  "lib-english-science-pitch": "ingles"
 };
 
-function getProjectThemeCategory(project) {
-  return PROJECT_THEME_CATEGORY[project.id] || "outros";
+function getProjectDisciplineCategory(project) {
+  return PROJECT_DISCIPLINE_CATEGORY[project.id] || "all";
 }
 
 // ------------------------------------------------------------
@@ -166,7 +193,7 @@ function getProjectThemeCategory(project) {
 export default function Library({ currentUser, onBack, onOpenProject }) {
   // Estado: qual projeto da biblioteca está selecionado para visualização
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [selectedTheme, setSelectedTheme] = useState(null);
+  const [selectedDiscipline, setSelectedDiscipline] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [publicProjects, setPublicProjects] = useState([]);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
@@ -218,21 +245,21 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
     )
   ];
 
-  const themeFilters = THEME_CATEGORIES.map((category) => ({
+  const disciplineFilters = DISCIPLINE_CATEGORIES.map((category) => ({
     ...category,
     count:
       category.id === "all"
         ? templates.length
         : templates.filter(
-            (template) => getProjectThemeCategory(template) === category.id
+            (template) => getProjectDisciplineCategory(template) === category.id
           ).length
   })).filter((category) => category.id === "all" || category.count > 0);
 
   const baseFilteredTemplates =
-    !selectedTheme || selectedTheme === "all"
+    !selectedDiscipline || selectedDiscipline === "all"
       ? templates
       : templates.filter(
-          (template) => getProjectThemeCategory(template) === selectedTheme
+          (template) => getProjectDisciplineCategory(template) === selectedDiscipline
         );
 
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
@@ -255,13 +282,13 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
       })
     : baseFilteredTemplates;
 
-  const selectedThemeLabel =
-    selectedTheme === "all"
+  const selectedDisciplineLabel =
+    selectedDiscipline === "all"
       ? "Todos os projetos"
-      : THEME_CATEGORIES.find((category) => category.id === selectedTheme)?.name;
+      : DISCIPLINE_CATEGORIES.find((category) => category.id === selectedDiscipline)?.name;
 
-  const hasSelectedTheme = Boolean(selectedTheme);
-  const shouldShowProjects = hasSelectedTheme || Boolean(normalizedSearchTerm);
+  const hasSelectedDiscipline = Boolean(selectedDiscipline);
+  const shouldShowProjects = hasSelectedDiscipline || Boolean(normalizedSearchTerm);
 
   // ----------------------------------------------------------
   // ESTILOS
@@ -371,7 +398,7 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
     cursor: "pointer",
     textAlign: "left",
     fontFamily: "inherit",
-    minHeight: hasSelectedTheme ? "96px" : "128px",
+    minHeight: hasSelectedDiscipline ? "96px" : "128px",
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
@@ -600,17 +627,17 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
         </p>
       </div>
 
-      {/* Submenu por tema */}
+      {/* Submenu por disciplina */}
       <div style={submenuHeaderStyle}>
         <h2 style={submenuTitleStyle}>
-          {hasSelectedTheme || normalizedSearchTerm
+          {hasSelectedDiscipline || normalizedSearchTerm
             ? "Projetos prontos"
-            : "Escolha um tema"}
+            : "Escolha uma disciplina"}
         </h2>
         <p style={submenuTextStyle}>
-          {hasSelectedTheme || normalizedSearchTerm
-            ? "Busque pelo nome do projeto ou troque de tema a qualquer momento para ver exemplos prontos."
-            : "Selecione um tema ou use a busca para encontrar exemplos prontos organizados pelo assunto principal do projeto."}
+          {hasSelectedDiscipline || normalizedSearchTerm
+            ? "Busque pelo nome do projeto ou troque de disciplina a qualquer momento para ver exemplos prontos."
+            : "Selecione uma disciplina ou use a busca para encontrar exemplos STEAM Maker para as aulas básicas."}
         </p>
       </div>
 
@@ -620,7 +647,7 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
           type="search"
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
-          placeholder="Buscar projeto por nome, tema, BNCC ou palavra-chave..."
+          placeholder="Buscar projeto por nome, disciplina, BNCC ou palavra-chave..."
           style={searchInputStyle}
           aria-label="Buscar projeto na biblioteca"
         />
@@ -636,16 +663,16 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
         )}
       </div>
 
-      <div style={submenuStyle} aria-label="Filtrar projetos por tema">
-        {themeFilters.map((filter) => {
-          const isActive = selectedTheme === filter.id;
+      <div style={submenuStyle} aria-label="Filtrar projetos por disciplina">
+        {disciplineFilters.map((filter) => {
+          const isActive = selectedDiscipline === filter.id;
 
           return (
             <button
               key={filter.id}
               type="button"
               style={themeButtonStyle(filter, isActive)}
-              onClick={() => setSelectedTheme(filter.id)}
+              onClick={() => setSelectedDiscipline(filter.id)}
               aria-pressed={isActive}
             >
               <span style={themeButtonTopStyle}>
@@ -670,14 +697,14 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
               type="button"
               style={backToAreasButtonStyle}
               onClick={() => {
-                setSelectedTheme(null);
+                setSelectedDiscipline(null);
                 setSearchTerm("");
               }}
             >
-              ← Voltar ao menu de temas
+              ← Voltar ao menu de disciplinas
             </button>
             <span>
-              {(selectedThemeLabel || "Resultados da busca")} ·{" "}
+              {(selectedDisciplineLabel || "Resultados da busca")} ·{" "}
               {filteredTemplates.length}{" "}
               {filteredTemplates.length === 1
                 ? "projeto pronto"
@@ -692,7 +719,7 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
                 <div style={cardContentStyle}>
                   <h3 style={cardTitleStyle}>Nenhum projeto encontrado</h3>
                   <p style={cardThemeStyle}>
-                    Tente buscar por outro nome, tema, habilidade BNCC ou palavra-chave.
+                    Tente buscar por outro nome, disciplina, habilidade BNCC ou palavra-chave.
                   </p>
                 </div>
               </Card>
