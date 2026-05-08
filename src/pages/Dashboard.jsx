@@ -199,6 +199,15 @@ export default function Dashboard({
   const [sortMode, setSortMode] = useState("recentes");
   const [viewMode, setViewMode] = useState("grid");
   const [favorites, setFavorites] = useState(() => new Set());
+  const [isDark, setIsDark] = useState(() => localStorage.getItem("steam-theme") === "dark");
+
+  const toggleTheme = () => {
+    setIsDark(prev => {
+      const next = !prev;
+      localStorage.setItem("steam-theme", next ? "dark" : "light");
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -396,10 +405,10 @@ export default function Dashboard({
   }
 
   return (
-    <div style={pageStyle}>
+    <div className={isDark ? "is-dark" : ""} style={isDark ? pageDarkStyle : pageStyle}>
       <style>{dashboardCss}</style>
 
-      <aside style={sidebarStyle}>
+      <aside style={isDark ? sidebarDarkStyle : sidebarStyle}>
         <div>
           <div style={brandStyle}>
             <div style={brandMarkStyle}>SP</div>
@@ -425,18 +434,21 @@ export default function Dashboard({
         </div>
 
         <div style={sidebarFooterStyle}>
-          <div style={motivationCardStyle}>
-            <div style={motivationIconStyle}>A+</div>
+          <div style={motivationCardStyle} className="dash-motivation-card">
+            <div style={motivationIconStyle} className="dash-motivation-icon">A+</div>
             <strong>Ideia para hoje</strong>
             <p>Transforme uma pergunta da turma em protótipo, teste e reflexão.</p>
           </div>
 
-          <button className="theme-toggle" type="button">
+          <button className="theme-toggle" type="button" onClick={toggleTheme}>
             <Icon name="moon" />
-            <span>Modo claro</span>
+            <span>Modo {isDark ? "escuro" : "claro"}</span>
+            <div className={`toggle-switch${isDark ? " is-on" : ""}`}>
+              <div className="toggle-knob" />
+            </div>
           </button>
 
-          <div style={userCardStyle}>
+          <div style={userCardStyle} className="dash-user-card">
             <div style={avatarStyle}>{firstName.charAt(0).toUpperCase()}</div>
             <div style={{ minWidth: 0 }}>
               <strong style={userNameStyle}>{professorName}</strong>
@@ -491,7 +503,7 @@ export default function Dashboard({
           </div>
         )}
 
-        <section style={heroStyle}>
+        <section style={heroStyle} className="dash-hero">
           <div style={heroContentStyle}>
             <span style={heroBadgeStyle}>Projetos STEAM e Cultura Maker</span>
             <h2 style={heroTitleStyle}>Transforme ideias em experiências STEAM</h2>
@@ -629,7 +641,7 @@ export default function Dashboard({
           </div>
         </section>
 
-        <section style={bottomSectionStyle}>
+        <section style={bottomSectionStyle} className="dash-bottom">
           <div style={progressPanelStyle}>
             <span style={panelKickerStyle}>Continue de onde parou</span>
             <h3 style={panelTitleStyle}>
@@ -795,6 +807,14 @@ const pageStyle = {
   display: "flex"
 };
 
+const pageDarkStyle = {
+  minHeight: "100vh",
+  background: "linear-gradient(135deg, #0D1117 0%, #0F0F2D 60%, #080818 100%)",
+  color: "#E2E8F0",
+  fontFamily: "'Plus Jakarta Sans', 'Poppins', 'Outfit', 'Sora', sans-serif",
+  display: "flex"
+};
+
 const loadingStyle = {
   minHeight: "100vh",
   display: "grid",
@@ -827,6 +847,22 @@ const sidebarStyle = {
   justifyContent: "space-between",
   gap: "1.5rem",
   boxShadow: "18px 0 50px rgba(15, 23, 42, 0.05)"
+};
+
+const sidebarDarkStyle = {
+  width: "286px",
+  minHeight: "100vh",
+  position: "sticky",
+  top: 0,
+  padding: "1.35rem",
+  background: "rgba(10, 10, 30, 0.97)",
+  borderRight: "1px solid rgba(255, 255, 255, 0.08)",
+  backdropFilter: "blur(22px)",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "space-between",
+  gap: "1.5rem",
+  boxShadow: "18px 0 50px rgba(0, 0, 0, 0.4)"
 };
 
 const brandStyle = {
@@ -1264,7 +1300,7 @@ const dashboardCss = `
   .theme-toggle {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     gap: 0.55rem;
     width: 100%;
     padding: 0.72rem;
@@ -1658,5 +1694,188 @@ const dashboardCss = `
     .project-card-modern.is-list {
       grid-template-columns: 1fr;
     }
+  }
+
+  /* ===== TOGGLE SWITCH ===== */
+  .toggle-switch {
+    width: 44px;
+    height: 24px;
+    border-radius: 999px;
+    background: #CBD5E1;
+    position: relative;
+    transition: background 0.25s ease;
+    flex: 0 0 auto;
+  }
+
+  .toggle-switch.is-on {
+    background: #2563EB;
+  }
+
+  .toggle-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: #FFFFFF;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: transform 0.25s ease;
+  }
+
+  .toggle-switch.is-on .toggle-knob {
+    transform: translateX(20px);
+  }
+
+  /* ===== DARK MODE ===== */
+  .is-dark .dashboard-nav-item { color: #8B9BB4 !important; }
+  .is-dark .dashboard-nav-item:hover,
+  .is-dark .dashboard-nav-item.is-active {
+    background: rgba(37, 99, 235, 0.18) !important;
+    color: #60A5FA !important;
+  }
+
+  .is-dark .theme-toggle {
+    background: rgba(255, 255, 255, 0.07) !important;
+    color: #8B9BB4 !important;
+    border-color: rgba(255, 255, 255, 0.09) !important;
+  }
+
+  .is-dark .icon-button {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #8B9BB4 !important;
+  }
+
+  .is-dark .notification-button {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #94A3B8 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .is-dark .search-input { color: #E2E8F0 !important; }
+  .is-dark .search-input::placeholder { color: #475569 !important; }
+
+  .is-dark header label {
+    background: rgba(15, 20, 45, 0.8) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .is-dark .dash-motivation-card {
+    background: rgba(20, 28, 65, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #E2E8F0 !important;
+  }
+
+  .is-dark .dash-motivation-card strong { color: #E2E8F0 !important; }
+  .is-dark .dash-motivation-card p { color: #94A3B8 !important; }
+
+  .is-dark .dash-motivation-icon {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #60A5FA !important;
+  }
+
+  .is-dark .dash-user-card {
+    background: rgba(14, 18, 45, 0.95) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .is-dark .dash-user-card strong { color: #E2E8F0 !important; }
+  .is-dark .dash-user-card span { color: #64748B !important; }
+
+  .is-dark header h1 { color: #E2E8F0 !important; }
+
+  .is-dark .dash-hero {
+    background: linear-gradient(135deg, rgba(20, 25, 60, 0.95), rgba(15, 20, 50, 0.9)) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .is-dark .dash-hero h2 { color: #E2E8F0 !important; }
+  .is-dark .dash-hero p { color: rgba(148, 163, 184, 0.9) !important; }
+
+  .is-dark .floating-card {
+    background: rgba(15, 20, 50, 0.88) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .is-dark .floating-card span { color: #64748B !important; }
+  .is-dark .floating-card strong { color: #E2E8F0 !important; }
+
+  .is-dark .action-card {
+    background: rgba(18, 22, 55, 0.95) !important;
+    color: #E2E8F0 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .is-dark .action-card strong { color: #E2E8F0 !important; }
+  .is-dark .action-card small { color: #8B9BB4 !important; }
+
+  .is-dark .filter-select {
+    background: rgba(18, 22, 55, 0.9) !important;
+    color: #E2E8F0 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+
+  .is-dark .view-button { color: #64748B !important; }
+
+  .is-dark .view-button.is-active {
+    background: rgba(37, 99, 235, 0.2) !important;
+    color: #60A5FA !important;
+    box-shadow: none !important;
+  }
+
+  .is-dark [style*="rgba(255, 255, 255, 0.76)"] {
+    background: rgba(14, 18, 45, 0.92) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .is-dark [style*="rgba(255, 255, 255, 0.76)"] h2 { color: #E2E8F0 !important; }
+  .is-dark [style*="rgba(255, 255, 255, 0.76)"] p { color: #94A3B8 !important; }
+
+  .is-dark .project-card-modern {
+    background: rgba(14, 18, 45, 0.95) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .is-dark .project-body h3 { color: #E2E8F0 !important; }
+  .is-dark .project-body p { color: #94A3B8 !important; }
+
+  .is-dark .project-meta span {
+    background: rgba(255, 255, 255, 0.07) !important;
+    color: #94A3B8 !important;
+  }
+
+  .is-dark .project-card-actions button {
+    background: rgba(37, 99, 235, 0.18) !important;
+    color: #60A5FA !important;
+  }
+
+  .is-dark .project-card-actions .delete-project-button {
+    background: rgba(220, 38, 38, 0.15) !important;
+    color: #F87171 !important;
+  }
+
+  .is-dark .favorite-button {
+    background: rgba(255, 255, 255, 0.07) !important;
+    color: #475569 !important;
+  }
+
+  .is-dark .favorite-button.is-favorite {
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: #F97316 !important;
+  }
+
+  .is-dark .dash-bottom > div {
+    background: rgba(14, 18, 45, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .is-dark .dash-bottom h3 { color: #E2E8F0 !important; }
+  .is-dark .dash-bottom p { color: #94A3B8 !important; }
+  .is-dark .dash-bottom span { color: #60A5FA !important; }
+
+  .is-dark [style*="rgba(219, 234, 254"] {
+    background: rgba(30, 35, 80, 0.9) !important;
+    border-color: rgba(37, 99, 235, 0.3) !important;
+    color: #93C5FD !important;
   }
 `;
