@@ -24,6 +24,15 @@ import Modal from "../components/ui/Modal.jsx";
 import ProjectCard from "../components/project/ProjectCard.jsx";
 import AIGeneratorModal from "../components/project/AIGeneratorModal.jsx";
 
+function formatSupabaseError(error) {
+  return [
+    error?.message,
+    error?.details,
+    error?.hint,
+    error?.code ? `Código: ${error.code}` : ""
+  ].filter(Boolean).join(" | ");
+}
+
 // ------------------------------------------------------------
 // COMPONENTE DASHBOARD
 // ------------------------------------------------------------
@@ -46,6 +55,10 @@ export default function Dashboard({
 
   // Estado: modal de geração via IA
   const [showAIModal, setShowAIModal] = useState(false);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [creationError, setCreationError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -53,9 +66,20 @@ export default function Dashboard({
   }, [isLoaded, projects]);
 
   // Cria projeto em branco e abre direto na edição
-  const handleCreateBlank = () => {
-    const newProject = addBlankProject();
-    onOpenProject(newProject.id);
+  const handleCreateBlank = async () => {
+    setIsCreatingProject(true);
+    setCreationError("");
+    try {
+      const newProject = await addBlankProject({ waitForPersist: true });
+      onOpenProject(newProject.id);
+    } catch (error) {
+      console.error("Erro ao criar projeto em branco:", error);
+      setCreationError(
+        `Não foi possível salvar o projeto no Supabase. ${formatSupabaseError(error)}`
+      );
+    } finally {
+      setIsCreatingProject(false);
+    }
   };
 
   // Abre confirmação de exclusão
@@ -64,27 +88,48 @@ export default function Dashboard({
   };
 
   // Confirma e executa exclusão
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (projectToDelete) {
-      removeProject(projectToDelete);
-      setProjectToDelete(null);
+      setDeleteError("");
+      setIsDeletingProject(true);
+      try {
+        await removeProject(projectToDelete);
+        setProjectToDelete(null);
+      } catch (error) {
+        console.error("Erro ao excluir projeto:", error);
+        setDeleteError(
+          `Não foi possível excluir o projeto no Supabase. ${formatSupabaseError(error)}`
+        );
+      } finally {
+        setIsDeletingProject(false);
+      }
     }
   };
 
   // Recebe projeto gerado pela IA e cria no app
-  const handleAIProjectGenerated = (generatedProject) => {
+  const handleAIProjectGenerated = async (generatedProject) => {
     // Usa addProjectFromTemplate porque o projeto da IA tem
     // a mesma estrutura de um template da biblioteca
-    const newProject = addProjectFromTemplate({
-      ...generatedProject,
-      source: "ai"
-    });
-    setShowAIModal(false);
-    // Aguarda o React processar o estado antes de navegar
-    // (caso contrário, ProjectEditor não acha o projeto na lista)
-    setTimeout(() => {
+    setIsCreatingProject(true);
+    setCreationError("");
+    try {
+      const newProject = await addProjectFromTemplate(
+        {
+          ...generatedProject,
+          source: "ai"
+        },
+        { waitForPersist: true }
+      );
+      setShowAIModal(false);
       onOpenProject(newProject.id);
-    }, 50);
+    } catch (error) {
+      console.error("Erro ao criar projeto gerado por IA:", error);
+      setCreationError(
+        `Não foi possível salvar o projeto no Supabase. ${formatSupabaseError(error)}`
+      );
+    } finally {
+      setIsCreatingProject(false);
+    }
   };
 
   // ----------------------------------------------------------
@@ -226,14 +271,24 @@ export default function Dashboard({
             <Button variant="secondary" onClick={() => setShowAIModal(true)}>
               ✨ Gerar com IA
             </Button>
-            <Button variant="primary" onClick={handleCreateBlank}>
-              + Novo projeto
+            <Button
+              variant="primary"
+              onClick={handleCreateBlank}
+              disabled={isCreatingProject}
+            >
+              {isCreatingProject ? "Criando..." : "+ Novo projeto"}
             </Button>
           </div>
         )}
       </div>
 
       {/* Lista de projetos ou estado vazio */}
+      {creationError && (
+        <p style={{ color: "#FF8A8A", marginBottom: "1rem" }}>
+          {creationError}
+        </p>
+      )}
+
       {hasProjects ? (
         <div style={gridStyle}>
           {projects.map((project) => (
@@ -253,8 +308,12 @@ export default function Dashboard({
             ou peça à IA uma sugestão inicial baseada num tema.
           </p>
           <div style={emptyActionsStyle}>
-            <Button variant="primary" onClick={handleCreateBlank}>
-              + Criar projeto em branco
+            <Button
+              variant="primary"
+              onClick={handleCreateBlank}
+              disabled={isCreatingProject}
+            >
+              {isCreatingProject ? "Criando..." : "+ Criar projeto em branco"}
             </Button>
             <Button variant="secondary" onClick={() => setShowAIModal(true)}>
               ✨ Gerar com IA
@@ -285,6 +344,11 @@ export default function Dashboard({
             registros do diário e avaliações serão perdidos. Esta ação
             não pode ser desfeita.
           </p>
+          {deleteError && (
+            <p style={{ color: "#FF8A8A", marginBottom: "1rem" }}>
+              {deleteError}
+            </p>
+          )}
           <div
             style={{
               display: "flex",
@@ -298,8 +362,12 @@ export default function Dashboard({
             >
               Cancelar
             </Button>
-            <Button variant="danger" onClick={handleConfirmDelete}>
-              Excluir definitivamente
+            <Button
+              variant="danger"
+              onClick={handleConfirmDelete}
+              disabled={isDeletingProject}
+            >
+              {isDeletingProject ? "Excluindo..." : "Excluir definitivamente"}
             </Button>
           </div>
         </div>

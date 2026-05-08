@@ -47,6 +47,12 @@ export const LIBRARY = [
       "Protoboard, jumpers e resistores",
       "Computador com Arduino IDE instalado"
     ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "INSTITUTO NACIONAL DE METEOROLOGIA. Manual de observações meteorológicas. Brasília: INMET, 1999.",
+      "MONK, Simon. Programação com Arduino: começando com sketches. Porto Alegre: Bookman, 2017.",
+      "BANZI, Massimo; SHILOH, Michael. Primeiros passos com Arduino. São Paulo: Novatec, 2015."
+    ],
     phaseDetails: {
       imersao:
         "Roda de conversa sobre fenômenos climáticos observáveis no cotidiano dos estudantes. Análise comparativa de previsões do tempo de diferentes serviços (Climatempo, Inmet, AccuWeather). Levantamento da questão central: por que diferentes sites mostram valores diferentes para a mesma cidade?",
@@ -87,6 +93,12 @@ export const LIBRARY = [
       "Sensores de pH e TDS (sólidos totais dissolvidos)",
       "Sementes de alface, manjericão e rúcula",
       "Timer programável ou Arduino com módulo relé"
+    ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "FAO. Criar cidades mais verdes. Roma: Organização das Nações Unidas para a Alimentação e a Agricultura, 2012.",
+      "TAIZ, Lincoln et al. Fisiologia e desenvolvimento vegetal. 6. ed. Porto Alegre: Artmed, 2017.",
+      "RESH, Howard M. Hydroponic food production. 7. ed. Boca Raton: CRC Press, 2012."
     ],
     phaseDetails: {
       imersao:
@@ -129,6 +141,12 @@ export const LIBRARY = [
       "Régua, esquadro, trena e calculadora",
       "Câmera ou celular para registro fotográfico"
     ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "BRASIL. Estatuto da Cidade: Lei n. 10.257, de 10 de julho de 2001. Brasília, DF, 2001.",
+      "GEHL, Jan. Cidades para pessoas. São Paulo: Perspectiva, 2013.",
+      "LEITE, Carlos; AWAD, Juliana di Cesare Marques. Cidades sustentáveis, cidades inteligentes. Porto Alegre: Bookman, 2012."
+    ],
     phaseDetails: {
       imersao:
         "Caminhada observacional pelo entorno da escola com registro fotográfico dirigido. Mapeamento coletivo dos problemas urbanos percebidos pelos estudantes. Leitura e discussão de reportagens sobre cidades sustentáveis pelo mundo.",
@@ -170,6 +188,12 @@ export const LIBRARY = [
       "Fita isolante preta e papel branco para a pista",
       "Computador com Arduino IDE instalado"
     ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "MCROBERTS, Michael. Arduino básico. São Paulo: Novatec, 2011.",
+      "MONK, Simon. Programação com Arduino: começando com sketches. Porto Alegre: Bookman, 2017.",
+      "MARGOLIS, Michael. Arduino cookbook. 2. ed. Sebastopol: O'Reilly Media, 2011."
+    ],
     phaseDetails: {
       imersao:
         "Exibição de vídeos sobre robôs autônomos reais, do Mars Rover aos carros sem motorista. Debate sobre autonomia computacional e ética em inteligência artificial. Desafio inicial de desenhar em papel o fluxo de decisão que o robô deveria seguir.",
@@ -209,6 +233,12 @@ export const LIBRARY = [
       "Computador ou tablet para edição",
       "Plataforma gratuita de publicação (Spotify for Podcasters)",
       "Modelo de roteiro em documento compartilhado"
+    ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "BUENO, Wilson da Costa. Comunicação científica e divulgação científica: aproximações e rupturas conceituais. Informação & Informação, Londrina, v. 15, n. esp., p. 1-12, 2010.",
+      "JENKINS, Henry. Cultura da convergência. 2. ed. São Paulo: Aleph, 2009.",
+      "AUDACITY TEAM. Audacity manual. Disponível em: https://manual.audacityteam.org/."
     ],
     phaseDetails: {
       imersao:
@@ -250,6 +280,12 @@ export const LIBRARY = [
       "Algodão, TNT ou gaze",
       "Amostras de água turva (preparadas em sala)",
       "Becker, proveta, fita de pH e papel filtro"
+    ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "BRASIL. Fundação Nacional de Saúde. Manual de saneamento. 5. ed. Brasília: Funasa, 2019.",
+      "SPERLING, Marcos von. Introdução à qualidade das águas e ao tratamento de esgotos. 4. ed. Belo Horizonte: UFMG, 2014.",
+      "UNICEF; WHO. Progress on household drinking water, sanitation and hygiene 2000-2022. Geneva: World Health Organization, 2023."
     ],
     phaseDetails: {
       imersao:
@@ -296,6 +332,12 @@ export const LIBRARY = [
       "Computador para organização do inventário",
       "Mapa impresso do entorno escolar"
     ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "PRIMACK, Richard B.; RODRIGUES, Efraim. Biologia da conservação. Londrina: E. Rodrigues, 2001.",
+      "ODUM, Eugene P.; BARRETT, Gary W. Fundamentos de ecologia. 5. ed. São Paulo: Cengage Learning, 2007.",
+      "INATURALIST. iNaturalist teacher's guide. Disponível em: https://www.inaturalist.org/pages/teacher's+guide."
+    ],
     phaseDetails: {
       imersao:
         "Discussão sobre o conceito de biodiversidade e sua importância. Análise de notícias sobre espécies em extinção no Brasil. Provocação inicial: você sabe quantas espécies vivem ao redor da sua escola? Levantamento de hipóteses iniciais.",
@@ -337,6 +379,12 @@ export const LIBRARY = [
       "LEDs de baixo consumo para teste de carga",
       "Fios, conectores e protoboard"
     ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "BRASIL. Empresa de Pesquisa Energética. Balanço energético nacional. Rio de Janeiro: EPE, 2024.",
+      "HEWITT, Paul G. Física conceitual. 12. ed. Porto Alegre: Bookman, 2015.",
+      "VILLALVA, Marcelo Gradella. Energia solar fotovoltaica: conceitos e aplicações. 2. ed. São Paulo: Érica, 2015."
+    ],
     phaseDetails: {
       imersao:
         "Análise crítica da matriz energética brasileira com dados do ONS. Visita virtual a uma usina hidrelétrica, eólica ou solar. Levantamento do consumo elétrico da própria escola (com base na conta de luz fornecida pela direção).",
@@ -376,6 +424,12 @@ export const LIBRARY = [
       "Calculadora científica",
       "Computador para análise e gráficos",
       "Aplicativo de infográficos (Canva, Piktochart)"
+    ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "CRESPO, Antônio Arnot. Estatística fácil. 19. ed. São Paulo: Saraiva, 2009.",
+      "BUSSAB, Wilton O.; MORETTIN, Pedro A. Estatística básica. 9. ed. São Paulo: Saraiva, 2017.",
+      "IBGE. Normas de apresentação tabular. 3. ed. Rio de Janeiro: IBGE, 1993."
     ],
     phaseDetails: {
       imersao:
@@ -418,6 +472,12 @@ export const LIBRARY = [
       "Fotos antigas trazidas pelos estudantes",
       "Mapa do bairro para contextualização geográfica"
     ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "ALBERTI, Verena. Manual de história oral. 3. ed. Rio de Janeiro: FGV, 2013.",
+      "THOMPSON, Paul. A voz do passado: história oral. 3. ed. Rio de Janeiro: Paz e Terra, 2002.",
+      "MUSEU DA PESSOA. Tecnologia social da memória. São Paulo: Museu da Pessoa, 2009."
+    ],
     phaseDetails: {
       imersao:
         "Audição de trechos do projeto Memórias do Brasil (Museu da Pessoa). Discussão sobre o que é história oral e patrimônio imaterial. Provocação: quantas histórias importantes do nosso bairro nunca foram registradas? Levantamento de moradores antigos conhecidos pelos estudantes.",
@@ -458,6 +518,12 @@ export const LIBRARY = [
       "Aplicativo de bússola e medição de distâncias",
       "Pranchetas com mapas impressos do bairro",
       "Câmera para registro fotográfico georreferenciado"
+    ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "FITZ, Paulo Roberto. Cartografia básica. São Paulo: Oficina de Textos, 2008.",
+      "IBGE. Noções básicas de cartografia. Rio de Janeiro: IBGE, 1999.",
+      "OPENSTREETMAP FOUNDATION. OpenStreetMap wiki: beginners' guide. Disponível em: https://wiki.openstreetmap.org/wiki/Beginners%27_guide."
     ],
     phaseDetails: {
       imersao:
@@ -500,6 +566,12 @@ export const LIBRARY = [
       "Crachás de imprensa improvisados",
       "Modelo de pauta editorial e ficha de entrevista"
     ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "LAGE, Nilson. Estrutura da notícia. 6. ed. São Paulo: Ática, 2006.",
+      "KOVACH, Bill; ROSENSTIEL, Tom. Os elementos do jornalismo. São Paulo: Geração Editorial, 2004.",
+      "WARDLE, Claire; DERAKHSHAN, Hossein. Information disorder: toward an interdisciplinary framework for research and policy making. Strasbourg: Council of Europe, 2017."
+    ],
     phaseDetails: {
       imersao:
         "Análise comparativa de matérias do mesmo fato em diferentes veículos brasileiros. Discussão sobre fake news, viés editorial e responsabilidade jornalística. Reflexão sobre quais histórias da escola merecem ser contadas e ainda não são.",
@@ -541,6 +613,12 @@ export const LIBRARY = [
       "Tradutor offline para apoio (DeepL, Google Translate)",
       "Caderno bilíngue para vocabulário e expressões"
     ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "BYRAM, Michael. Teaching and assessing intercultural communicative competence. Clevedon: Multilingual Matters, 1997.",
+      "CRYSTAL, David. English as a global language. 2. ed. Cambridge: Cambridge University Press, 2003.",
+      "COUNCIL OF EUROPE. Common European Framework of Reference for Languages: learning, teaching, assessment. Cambridge: Cambridge University Press, 2001."
+    ],
     phaseDetails: {
       imersao:
         "Análise de vídeos curtos de jovens de diferentes países falando sobre seu cotidiano. Discussão sobre estereótipos culturais e a importância do contato direto com falantes. Levantamento de aspectos da cultura brasileira que os estudantes gostariam de compartilhar.",
@@ -580,6 +658,12 @@ export const LIBRARY = [
       "Tablets com canetas (opcional, para esboços)",
       "Telão ou TV grande para exposição",
       "Folhas para esboços e anotações de algoritmos"
+    ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "REAS, Casey; FRY, Ben. Processing: a programming handbook for visual designers and artists. 2. ed. Cambridge: MIT Press, 2014.",
+      "SHIFFMAN, Daniel. The nature of code. New York: The Coding Train, 2012.",
+      "MCCARTHY, Lauren et al. Getting started with p5.js. Sebastopol: Maker Media, 2015."
     ],
     phaseDetails: {
       imersao:
@@ -621,6 +705,12 @@ export const LIBRARY = [
       "Fita métrica e balança (saúde escolar)",
       "Planilhas eletrônicas para registro",
       "Cartilha sobre privacidade de dados de saúde"
+    ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "NAHAS, Markus Vinicius. Atividade física, saúde e qualidade de vida. 7. ed. Florianópolis: Ed. do Autor, 2017.",
+      "GUEDES, Dartagnan Pinto; GUEDES, Joana Elisabete Ribeiro Pinto. Manual prático para avaliação em educação física. Barueri: Manole, 2006.",
+      "WORLD HEALTH ORGANIZATION. WHO guidelines on physical activity and sedentary behaviour. Geneva: WHO, 2020."
     ],
     phaseDetails: {
       imersao:
@@ -674,6 +764,12 @@ export const LIBRARY = [
       "Materiais de arte diversos (tintas, tecidos, materiais de cada cultura)",
       "Espaço amplo na escola para o festival final",
       "Convites e divulgação para a comunidade externa"
+    ],
+    bibliography: [
+      "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.",
+      "UNESCO. Educação para a cidadania global: tópicos e objetivos de aprendizagem. Brasília: UNESCO, 2015.",
+      "SANTOS, Boaventura de Sousa. Um discurso sobre as ciências. 7. ed. São Paulo: Cortez, 2010.",
+      "D'AMBROSIO, Ubiratan. Etnomatemática: elo entre as tradições e a modernidade. 5. ed. Belo Horizonte: Autêntica, 2013."
     ],
     phaseDetails: {
       imersao:

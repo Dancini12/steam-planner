@@ -16,9 +16,13 @@
 import { PHASES } from "../data/phases.js";
 
 // Gera um ID único baseado em timestamp + aleatório.
-// Suficiente para uso local (não para sistemas distribuídos).
+// Usa UUID para ser compatível com colunas uuid no Supabase.
 function generateId() {
-  return `proj-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
 }
 
 // Cria a estrutura padrão de uma fase vazia.

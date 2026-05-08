@@ -81,11 +81,14 @@ export function useProjects(userId) {
     return loaded;
   }, [userId]);
 
-  const createRemoteProjectAndRefresh = useCallback(async (project) => {
+  const createRemoteProjectAndRefresh = useCallback(async (project, options = {}) => {
     try {
       await createProject(userId, project);
     } catch (error) {
       console.error("Projeto criado localmente, mas nao foi salvo no Supabase:", error);
+      if (options.throwOnError) {
+        throw error;
+      }
     } finally {
       await refreshProjects();
     }
@@ -96,7 +99,7 @@ export function useProjects(userId) {
   // ----------------------------------------------------------
 
   // Cria um projeto em branco e adiciona à lista
-  const addBlankProject = useCallback(() => {
+  const addBlankProject = useCallback((options = {}) => {
     const newProject = createBlankProject();
     newProject.ownerId = userId || null;
     newProject.isPublic = true;
@@ -104,13 +107,18 @@ export function useProjects(userId) {
     const nextProjects = [...projects, newProject];
     skipNextSaveRef.current = true;
     setProjects(nextProjects);
-    createRemoteProjectAndRefresh(newProject);
+    const persisted = createRemoteProjectAndRefresh(newProject, {
+      throwOnError: options.waitForPersist
+    });
     trackEvent(userId, "project_created", { source: "blank" });
+    if (options.waitForPersist) {
+      return persisted.then(() => newProject);
+    }
     return newProject;
   }, [createRemoteProjectAndRefresh, projects, userId]);
 
   // Cria um projeto a partir de um template (biblioteca ou IA)
-  const addProjectFromTemplate = useCallback((template) => {
+  const addProjectFromTemplate = useCallback((template, options = {}) => {
     const newProject = createProjectFromTemplate(template);
     newProject.ownerId = userId || null;
     newProject.isPublic = true;
@@ -118,8 +126,13 @@ export function useProjects(userId) {
     const nextProjects = [...projects, newProject];
     skipNextSaveRef.current = true;
     setProjects(nextProjects);
-    createRemoteProjectAndRefresh(newProject);
+    const persisted = createRemoteProjectAndRefresh(newProject, {
+      throwOnError: options.waitForPersist
+    });
     trackEvent(userId, "project_created", { source: newProject.createdVia });
+    if (options.waitForPersist) {
+      return persisted.then(() => newProject);
+    }
     return newProject;
   }, [createRemoteProjectAndRefresh, projects, userId]);
 
@@ -135,9 +148,9 @@ export function useProjects(userId) {
   }, []);
 
   // Remove um projeto da lista
-  const removeProject = useCallback((projectId) => {
+  const removeProject = useCallback(async (projectId) => {
+    await deleteProject(projectId, userId);
     setProjects((prev) => prev.filter((p) => p.id !== projectId));
-    deleteProject(projectId, userId);
   }, [userId]);
 
   // Busca um projeto pelo ID

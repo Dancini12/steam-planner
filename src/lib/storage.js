@@ -18,6 +18,32 @@ import { createBlankProject } from "./project.js";
 
 const STORAGE_KEY = "steam_planner_projects";
 
+function createProjectId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+}
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value || ""
+  );
+}
+
+function normalizeProjectIdentity(project) {
+  if (!project?.id || isUuid(project.id)) {
+    return project;
+  }
+
+  return {
+    ...project,
+    id: createProjectId(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
 function canUseRemoteStorage(userId) {
   if (supabase && isSupabaseConfigured && Boolean(userId)) {
     return true;
@@ -25,6 +51,30 @@ function canUseRemoteStorage(userId) {
 
   console.warn("Supabase indisponível");
   return false;
+}
+
+async function getSessionUserId(context) {
+  if (!supabase) {
+    console.warn(`${context}: Supabase indisponível`);
+    return null;
+  }
+
+  const {
+    data: { session },
+    error
+  } = await supabase.auth.getSession();
+
+  if (error) {
+    console.warn(`${context}: erro ao obter sessão`, error);
+    return null;
+  }
+
+  if (!session?.user?.id) {
+    console.warn(`${context}: sem sessão ativa`);
+    return null;
+  }
+
+  return session.user.id;
 }
 
 function sanitizePublicProject(project) {
@@ -97,6 +147,7 @@ function toProjectRow(project, userId) {
   return {
     id: project.id,
     owner_id: ownerId,
+    usuario_id: ownerId,
     title: project.title || "Projeto sem título",
     theme: project.theme || "",
     grade: project.grade || "",
@@ -139,7 +190,14 @@ export function loadLocalProjects() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+
+    const normalized = parsed.map(normalizeProjectIdentity);
+    if (normalized.some((project, index) => project.id !== parsed[index]?.id)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    }
+
+    return normalized;
   } catch (error) {
     console.warn("Erro ao ler projetos do localStorage:", error);
     return [];
@@ -159,14 +217,17 @@ export async function loadProjects(userId) {
     return localProjects;
   }
 
-  const { data: { session } } = await supabase.auth.getSession();
-  const effectiveUserId = session?.user?.id || userId;
+  const effectiveUserId = await getSessionUserId("loadProjects");
+  if (!effectiveUserId) {
+    console.log("loadProjects: sem sessão, usando dados locais", localProjects);
+    return localProjects;
+  }
 
   console.log("loadProjects: buscando no Supabase", { effectiveUserId });
 
   const { data, error } = await supabase
     .from("projects")
-    .select("project_data")
+    .select("id, owner_id, project_data, updated_at")
     .eq("owner_id", effectiveUserId)
     .order("updated_at", { ascending: false });
 
@@ -178,8 +239,14 @@ export async function loadProjects(userId) {
   console.log("loadProjects: dados recebidos do Supabase", data);
 
   const remoteProjects = (data || [])
-    .map((row) => row.project_data)
+    .map((row) => ({
+      ...row.project_data,
+      id: row.id,
+      ownerId: row.owner_id
+    }))
     .filter(Boolean);
+
+  console.log("loadProjects: projetos remotos normalizados", remoteProjects.length);
 
   if (remoteProjects.length > 0) {
     const { data: privateRows, error: privateError } = await supabase
@@ -222,6 +289,13 @@ export function saveLocalProjects(projects) {
   }
 }
 
+function deleteLocalProject(projectId) {
+  const remainingProjects = loadLocalProjects().filter(
+    (project) => project.id !== projectId
+  );
+  saveLocalProjects(remainingProjects);
+}
+
 function createDefaultProject(userId) {
   const project = createBlankProject();
   return {
@@ -247,27 +321,34 @@ export async function createProject(userId, data = null) {
 
   console.log("createProject: projeto preparado", project);
 
+  // Salva localmente antes de qualquer await para que a navegação imediata
+  // para o editor encontre o projeto mesmo enquanto o Supabase persiste.
   saveLocalProjects([
     project,
     ...loadLocalProjects().filter((item) => item.id !== project.id)
   ]);
 
-  if (!canUseRemoteStorage(project.ownerId)) {
+  const sessionUserId = await getSessionUserId("createProject");
+  if (sessionUserId) {
+    project.ownerId = sessionUserId;
+    saveLocalProjects([
+      project,
+      ...loadLocalProjects().filter((item) => item.id !== project.id)
+    ]);
+  }
+
+  if (!canUseRemoteStorage(project.ownerId) || !sessionUserId) {
     console.log("createProject: Supabase indisponível, projeto salvo localmente", [project]);
     return [project];
   }
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    console.warn("createProject: sem sessão ativa, projeto salvo apenas localmente");
-    return [project];
-  }
-
-  const row = toProjectRow(project, session.user.id);
+  const row = toProjectRow(project, sessionUserId);
   console.log("createProject: inserindo projeto principal", project);
-  const { data: result, error } = await supabase
+  const { data: savedProject, error } = await supabase
     .from("projects")
-    .insert([row]);
+    .upsert([row])
+    .select("id, owner_id, project_data")
+    .single();
 
   if (error) {
     console.error("createProject: erro ao inserir em projects", error);
@@ -275,9 +356,9 @@ export async function createProject(userId, data = null) {
     throw error;
   }
 
-  console.log("createProject: projeto principal salvo", result);
+  console.log("createProject: projeto principal salvo", savedProject);
 
-  const privateRow = toPrivateProjectRow(project, userId);
+  const privateRow = toPrivateProjectRow(project, sessionUserId);
   console.log("createProject: inserindo dados privados", privateRow);
   const { error: privateError } = await supabase
     .from("project_private_data")
@@ -288,8 +369,13 @@ export async function createProject(userId, data = null) {
     logRlsIfNeeded(privateError);
   }
 
-  console.log("createProject: resposta Supabase", result);
-  return result;
+  return [
+    {
+      ...project,
+      id: savedProject.id,
+      ownerId: savedProject.owner_id
+    }
+  ];
 }
 
 export async function saveProjects(projects, userId) {
@@ -299,14 +385,14 @@ export async function saveProjects(projects, userId) {
     return true;
   }
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
+  const sessionUserId = await getSessionUserId("saveProjects");
+  if (!sessionUserId) {
     console.warn("saveProjects: sem sessão ativa, salvando apenas localmente");
     return false;
   }
 
   const rows = projects
-    .map((project) => toProjectRow(project, session.user.id))
+    .map((project) => toProjectRow(project, sessionUserId))
     .filter((row) => Boolean(row.owner_id));
 
   if (rows.length === 0) return true;
@@ -318,8 +404,10 @@ export async function saveProjects(projects, userId) {
     return false;
   }
 
+  console.log("saveProjects: projetos salvos no Supabase", rows.length);
+
   const privateRows = projects.map((project) =>
-    toPrivateProjectRow(project, userId)
+    toPrivateProjectRow(project, sessionUserId)
   );
 
   const { error: privateError } = await supabase
@@ -327,9 +415,8 @@ export async function saveProjects(projects, userId) {
     .upsert(privateRows);
 
   if (privateError) {
-    console.error("Erro ao salvar dados privados no Supabase:", privateError);
+    console.warn("saveProjects: erro ao salvar dados privados no Supabase:", privateError);
     logRlsIfNeeded(privateError);
-    return false;
   }
 
   return true;
@@ -337,20 +424,54 @@ export async function saveProjects(projects, userId) {
 
 export async function deleteProject(projectId, userId) {
   if (!canUseRemoteStorage(userId)) {
+    deleteLocalProject(projectId);
     return true;
   }
 
-  const { error } = await supabase
-    .from("projects")
-    .delete()
-    .eq("id", projectId)
-    .eq("owner_id", userId);
-
-  if (error) {
-    console.error("Erro ao excluir projeto no Supabase:", error);
+  const sessionUserId = await getSessionUserId("deleteProject");
+  if (!sessionUserId) {
+    console.warn("deleteProject: sem sessão ativa, excluindo apenas localmente");
+    deleteLocalProject(projectId);
     return false;
   }
 
+  const { error: privateError } = await supabase
+    .from("project_private_data")
+    .delete()
+    .eq("project_id", projectId)
+    .eq("owner_id", sessionUserId);
+
+  if (privateError) {
+    console.warn("deleteProject: erro ao excluir dados privados:", privateError);
+    logRlsIfNeeded(privateError);
+  }
+
+  const { count, error } = await supabase
+    .from("projects")
+    .delete({ count: "exact" })
+    .eq("id", projectId)
+    .or(`owner_id.eq.${sessionUserId},usuario_id.eq.${sessionUserId}`);
+
+  if (error) {
+    console.error("Erro ao excluir projeto no Supabase:", error);
+    logRlsIfNeeded(error);
+    throw error;
+  }
+
+  if (count === 0) {
+    const error = new Error(
+      "Nenhuma linha foi excluída em public.projects. Verifique RLS/policies ou se owner_id/usuario_id pertencem ao usuário logado."
+    );
+    error.code = "DELETE_COUNT_0";
+    console.error("deleteProject: nenhuma linha excluída no Supabase", {
+      projectId,
+      sessionUserId
+    });
+    throw error;
+  }
+
+  console.log("deleteProject: projeto excluído no Supabase", { projectId, count });
+  deleteLocalProject(projectId);
   return true;
 }
 
