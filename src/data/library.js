@@ -19,6 +19,45 @@
 // - 1 projeto interdisciplinar ambicioso integrando todas as áreas
 // ============================================================
 
+const REF_BNCC =
+  "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.";
+
+const REF_UNESCO_ESD =
+  "UNESCO. Education for sustainable development: a roadmap. Paris: UNESCO, 2020. Disponível em: https://unesdoc.unesco.org/ark:/48223/pf0000374802.";
+
+const REF_NASA_CLIMATE =
+  "NASA. Earth's vital signs. Washington, DC: National Aeronautics and Space Administration. Disponível em: https://www.nasa.gov/earth/climate-change/vital-signs/.";
+
+const REF_UNESCO_MIL =
+  "UNESCO. Media and information literacy curriculum for educators and learners. 2. ed. Paris: UNESCO, 2021. Disponível em: https://www.unesco.org/mil4teachers/en/curriculum.";
+
+const REF_UNICEF_AI =
+  "UNICEF. Policy guidance on AI for children. Version 2.0. New York: UNICEF, 2021. Disponível em: https://www.unicef.org/innocenti/reports/policy-guidance-ai-children.";
+
+const REF_WHO_ACTIVITY =
+  "WORLD HEALTH ORGANIZATION. WHO guidelines on physical activity and sedentary behaviour. Geneva: WHO, 2020. Disponível em: https://www.who.int/publications/i/item/9789240015128.";
+
+const REF_IBGE_CARTOGRAPHY =
+  "IBGE. Noções básicas de cartografia. Rio de Janeiro: IBGE, 1999.";
+
+const REF_IBGE_TABLES =
+  "IBGE. Normas de apresentação tabular. 3. ed. Rio de Janeiro: IBGE, 1993.";
+
+function createProjectPhases(context) {
+  return {
+    imersao:
+      `Levantamento de conhecimentos prévios e análise de exemplos reais sobre ${context}. A turma registra dúvidas, hipóteses e situações do cotidiano escolar que podem orientar a investigação.`,
+    ideacao:
+      `Pesquisa guiada em fontes confiáveis, seleção do recorte do problema e planejamento da solução ou produto relacionado a ${context}. As equipes definem papéis, critérios de sucesso e forma de registro.`,
+    prototipagem:
+      `Construção de protótipos, materiais de comunicação, experimentos ou bases de dados sobre ${context}, com registros no diário de bordo e acompanhamento do professor.`,
+    teste:
+      `Validação com colegas ou público escolar, comparação dos resultados com os critérios definidos e revisão dos materiais a partir das evidências coletadas.`,
+    compartilhamento:
+      `Socialização em mostra, mural, relatório, oficina ou apresentação pública, destacando aprendizagens, limites do projeto e possibilidades de continuidade na escola.`
+  };
+}
+
 export const LIBRARY = [
   // ----------------------------------------------------------
   // PROJETO 1 — Estação Meteorológica Inteligente
@@ -783,6 +822,1380 @@ export const LIBRARY = [
       compartilhamento:
         "Festival Cultural-Científico aberto à comunidade escolar e externa. Visitação guiada pelos próprios estudantes em todas as estações. Roda final de diálogo entre todos os participantes sobre o que aprenderam. Publicação digital permanente do projeto com fotos, vídeos e textos. Possível desdobramento como tradição anual da escola."
     }
+  },
+
+  // ============================================================
+  // NOVOS PROJETOS — completar 10 projetos por tema
+  // ============================================================
+
+  {
+    id: "lib-compostagem-escolar",
+    title: "Compostagem Escolar Inteligente",
+    theme: "Resíduos orgânicos, decomposição e monitoramento",
+    grade: "6º e 7º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "T", "E", "M"],
+    guidingQuestion:
+      "Como transformar resíduos orgânicos da escola em adubo monitorando temperatura, umidade e tempo de decomposição?",
+    objectives: [
+      "Compreender decomposição e ciclagem de nutrientes",
+      "Planejar uma composteira adequada ao espaço escolar",
+      "Coletar dados de temperatura, umidade e volume de resíduos",
+      "Comunicar práticas de redução de lixo orgânico"
+    ],
+    bncc: ["EF06CI11", "EF07CI08", "EF06MA24", "EF07MA35"],
+    materials: [
+      "Baldes ou caixas empilháveis",
+      "Terra, folhas secas e resíduos orgânicos selecionados",
+      "Termômetro e borrifador",
+      "Balança simples",
+      "Planilha para registro semanal"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_UNESCO_ESD,
+      "BRASIL. Ministério do Meio Ambiente. Manual para implantação de compostagem e de coleta seletiva no âmbito de consórcios públicos. Brasília: MMA, 2010.",
+      "EPSTEIN, Eliot. The science of composting. Boca Raton: CRC Press, 1996."
+    ],
+    phaseDetails: createProjectPhases("compostagem escolar e gestão de resíduos orgânicos")
+  },
+  {
+    id: "lib-ilhas-calor-escola",
+    title: "Mapa das Ilhas de Calor da Escola",
+    theme: "Clima urbano, temperatura e conforto térmico",
+    grade: "8º e 9º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["S", "T", "M"],
+    guidingQuestion:
+      "Quais lugares da escola ficam mais quentes e que intervenções podem melhorar o conforto térmico?",
+    objectives: [
+      "Medir temperatura em diferentes pontos da escola",
+      "Representar dados térmicos em mapas simples",
+      "Relacionar materiais, sombra e vegetação ao conforto térmico",
+      "Propor ações de mitigação baseadas em evidências"
+    ],
+    bncc: ["EF07CI13", "EF08GE19", "EF08MA23", "EF09MA22"],
+    materials: [
+      "Termômetros digitais",
+      "Mapa impresso da escola",
+      "Celulares para registro fotográfico",
+      "Planilha eletrônica",
+      "Cartolina ou ferramenta digital de mapa"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_NASA_CLIMATE,
+      REF_UNESCO_ESD,
+      "OKE, T. R. Boundary layer climates. 2. ed. London: Routledge, 1987."
+    ],
+    phaseDetails: createProjectPhases("ilhas de calor, sombra, vegetação e conforto térmico")
+  },
+  {
+    id: "lib-consumo-agua-escola",
+    title: "Auditoria do Consumo de Água",
+    theme: "Uso racional da água e matemática aplicada",
+    grade: "6º e 7º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["S", "E", "M"],
+    guidingQuestion:
+      "Como medir o consumo de água da escola e propor formas concretas de reduzir desperdícios?",
+    objectives: [
+      "Investigar pontos de consumo e possíveis vazamentos",
+      "Calcular estimativas de volume e desperdício",
+      "Construir campanha de uso consciente",
+      "Propor intervenções de baixo custo"
+    ],
+    bncc: ["EF06CI04", "EF06CI08", "EF06MA24", "EF07MA36"],
+    materials: [
+      "Conta de água ou dados fornecidos pela escola",
+      "Recipientes graduados",
+      "Cronômetro",
+      "Planilhas",
+      "Materiais para campanha"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_UNESCO_ESD,
+      "BRASIL. Agência Nacional de Águas e Saneamento Básico. Conjuntura dos recursos hídricos no Brasil. Brasília: ANA, 2023.",
+      "BRASIL. Fundação Nacional de Saúde. Manual de saneamento. 5. ed. Brasília: Funasa, 2019."
+    ],
+    phaseDetails: createProjectPhases("consumo de água, vazão, desperdício e uso racional")
+  },
+  {
+    id: "lib-jardim-polinizadores",
+    title: "Jardim de Polinizadores",
+    theme: "Biodiversidade, plantas nativas e ecologia",
+    grade: "6º e 7º ano",
+    duration: "6 semanas · 12 aulas",
+    steam: ["S", "E", "A", "M"],
+    guidingQuestion:
+      "Como criar um jardim que atraia polinizadores e aumente a biodiversidade no espaço escolar?",
+    objectives: [
+      "Compreender relações ecológicas entre plantas e polinizadores",
+      "Pesquisar espécies nativas adequadas ao contexto local",
+      "Planejar canteiros considerando área, iluminação e manutenção",
+      "Registrar visitas de insetos e outros animais ao jardim"
+    ],
+    bncc: ["EF06CI11", "EF07CI07", "EF07CI08", "EF06MA24"],
+    materials: [
+      "Sementes ou mudas de plantas nativas",
+      "Terra e ferramentas simples de jardinagem",
+      "Trena e caderno de campo",
+      "Placas de identificação",
+      "Celular para registro fotográfico"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_UNESCO_ESD,
+      "IMPERATRIZ-FONSECA, Vera Lúcia; CANHOS, Dora Ann Lange; ALVES, Denise de Araujo; SARAIVA, Antonio Mauro. Polinizadores no Brasil. São Paulo: EDUSP, 2012.",
+      "PRIMACK, Richard B.; RODRIGUES, Efraim. Biologia da conservação. Londrina: E. Rodrigues, 2001."
+    ],
+    phaseDetails: createProjectPhases("polinizadores, plantas nativas e biodiversidade escolar")
+  },
+  {
+    id: "lib-qualidade-ar-sala",
+    title: "Qualidade do Ar na Sala de Aula",
+    theme: "Ar, ventilação e saúde ambiental",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "T", "E", "M"],
+    guidingQuestion:
+      "Como investigar a ventilação das salas e propor melhorias para a qualidade do ar?",
+    objectives: [
+      "Relacionar ventilação, ocupação e qualidade do ar",
+      "Medir variáveis ambientais possíveis com sensores simples",
+      "Analisar padrões por horário e número de pessoas",
+      "Propor melhorias de ventilação e ocupação"
+    ],
+    bncc: ["EF08CI15", "EF09CI13", "EF08MA23", "EF09MA22"],
+    materials: [
+      "Sensor de CO2 didático ou medidor emprestado",
+      "Termômetro e higrômetro",
+      "Planilha de coleta",
+      "Planta baixa da sala",
+      "Cartazes para recomendações"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "WORLD HEALTH ORGANIZATION. WHO global air quality guidelines. Geneva: WHO, 2021.",
+      "ANVISA. Qualidade do ar interior em ambientes climatizados artificialmente de uso público e coletivo. Resolução RE n. 9, de 16 de janeiro de 2003.",
+      REF_UNESCO_ESD
+    ],
+    phaseDetails: createProjectPhases("qualidade do ar, ventilação e saúde ambiental na escola")
+  },
+
+  {
+    id: "lib-app-agenda-estudos",
+    title: "App de Agenda de Estudos",
+    theme: "Organização escolar, prototipagem e tecnologia",
+    grade: "8º e 9º ano",
+    duration: "6 semanas · 12 aulas",
+    steam: ["T", "E", "A", "M"],
+    guidingQuestion:
+      "Como criar um protótipo de aplicativo que ajude estudantes a organizar tarefas, provas e projetos?",
+    objectives: [
+      "Mapear necessidades reais dos estudantes",
+      "Criar fluxos de tela e protótipos navegáveis",
+      "Aplicar lógica de priorização e calendário",
+      "Testar usabilidade com colegas"
+    ],
+    bncc: ["EF69LP07", "EF08MA23", "EF09MA22"],
+    materials: [
+      "Papel para wireframes",
+      "Computadores ou tablets",
+      "Ferramenta gratuita de prototipagem",
+      "Questionários de teste",
+      "Quadro Kanban"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "NIELSEN, Jakob. Usability engineering. San Francisco: Morgan Kaufmann, 1993.",
+      "BROWN, Tim. Design thinking: uma metodologia poderosa para decretar o fim das velhas ideias. Rio de Janeiro: Alta Books, 2020.",
+      REF_UNICEF_AI
+    ],
+    phaseDetails: createProjectPhases("prototipagem de aplicativo e organização de estudos")
+  },
+  {
+    id: "lib-irrigacao-automatizada",
+    title: "Irrigação Automatizada de Baixo Custo",
+    theme: "Automação, sensores e uso eficiente da água",
+    grade: "8º e 9º ano",
+    duration: "7 semanas · 14 aulas",
+    steam: ["S", "T", "E", "M"],
+    guidingQuestion:
+      "Como automatizar a irrigação de uma planta usando sensores de umidade do solo?",
+    objectives: [
+      "Compreender sensores e atuadores em sistemas automatizados",
+      "Montar circuito com microcontrolador e bomba ou LED indicador",
+      "Testar parâmetros de umidade para acionar irrigação",
+      "Avaliar economia de água e confiabilidade do sistema"
+    ],
+    bncc: ["EF08CI01", "EF09CI04", "EF09MA13"],
+    materials: [
+      "Arduino ou micro:bit",
+      "Sensor de umidade do solo",
+      "Módulo relé ou LED",
+      "Bomba pequena opcional",
+      "Vaso com planta"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "MONK, Simon. Programação com Arduino: começando com sketches. Porto Alegre: Bookman, 2017.",
+      "BANZI, Massimo; SHILOH, Michael. Primeiros passos com Arduino. São Paulo: Novatec, 2015.",
+      REF_UNESCO_ESD
+    ],
+    phaseDetails: createProjectPhases("irrigação automatizada com sensor de umidade do solo")
+  },
+  {
+    id: "lib-casa-inteligente-maquete",
+    title: "Casa Inteligente em Maquete",
+    theme: "Internet das coisas, energia e acessibilidade",
+    grade: "8º e 9º ano",
+    duration: "6 semanas · 12 aulas",
+    steam: ["T", "E", "A", "M"],
+    guidingQuestion:
+      "Como uma casa pode usar sensores simples para economizar energia e melhorar a acessibilidade?",
+    objectives: [
+      "Investigar aplicações de automação residencial",
+      "Construir maquete com sensores e iluminação",
+      "Relacionar automação a segurança, acessibilidade e consumo",
+      "Apresentar solução com justificativa técnica"
+    ],
+    bncc: ["EF09CI04", "EF09MA13", "EF69LP35"],
+    materials: [
+      "Papelão e materiais de maquete",
+      "LEDs, sensores LDR ou presença",
+      "Arduino ou circuito simples",
+      "Pilhas e fios",
+      "Materiais de acabamento"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "MCROBERTS, Michael. Arduino básico. São Paulo: Novatec, 2011.",
+      REF_UNICEF_AI,
+      "NORMAN, Donald A. O design do dia a dia. Rio de Janeiro: Rocco, 2006."
+    ],
+    phaseDetails: createProjectPhases("maquete de casa inteligente com automação e acessibilidade")
+  },
+  {
+    id: "lib-chatbot-biblioteca",
+    title: "Chatbot da Biblioteca Escolar",
+    theme: "Busca de informação, linguagem e inteligência artificial",
+    grade: "8º e 9º ano",
+    duration: "6 semanas · 12 aulas",
+    steam: ["T", "A"],
+    guidingQuestion:
+      "Como criar um assistente conversacional simples para orientar estudantes na biblioteca escolar?",
+    objectives: [
+      "Mapear perguntas frequentes dos usuários da biblioteca",
+      "Organizar respostas em fluxos de decisão",
+      "Discutir limites e cuidados éticos em sistemas de IA",
+      "Testar clareza e utilidade das respostas"
+    ],
+    bncc: ["EF69LP32", "EF69LP35", "EF89LP24"],
+    materials: [
+      "Computador com editor de texto",
+      "Ferramenta gratuita de fluxograma",
+      "Catálogo ou lista de livros da biblioteca",
+      "Questionário de avaliação",
+      "Plataforma simples de chatbot ou apresentação interativa"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_UNICEF_AI,
+      REF_UNESCO_MIL,
+      "NIELSEN, Jakob. Usability engineering. San Francisco: Morgan Kaufmann, 1993."
+    ],
+    phaseDetails: createProjectPhases("chatbot escolar, curadoria de informação e uso ético de IA")
+  },
+  {
+    id: "lib-jogo-reciclagem",
+    title: "Jogo Digital da Reciclagem",
+    theme: "Programação, educação ambiental e game design",
+    grade: "6º e 7º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "T", "A"],
+    guidingQuestion:
+      "Como criar um jogo simples que ensine separação correta de resíduos?",
+    objectives: [
+      "Pesquisar regras de coleta seletiva",
+      "Planejar mecânicas de jogo e pontuação",
+      "Programar interações simples em Scratch ou similar",
+      "Testar o jogo com estudantes de outra turma"
+    ],
+    bncc: ["EF06CI11", "EF69LP07", "EF07MA05"],
+    materials: [
+      "Computadores com Scratch",
+      "Tabela de tipos de resíduos",
+      "Roteiro de jogo",
+      "Imagens ou sprites autorais",
+      "Ficha de feedback"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_UNESCO_ESD,
+      "RESNICK, Mitchel. Jardim de infância para a vida toda. Porto Alegre: Penso, 2020.",
+      "BRASIL. Ministério do Meio Ambiente. Coleta seletiva. Brasília: MMA."
+    ],
+    phaseDetails: createProjectPhases("jogo digital educativo sobre reciclagem e coleta seletiva")
+  },
+  {
+    id: "lib-semaforo-acessivel",
+    title: "Semáforo Acessível",
+    theme: "Mobilidade, acessibilidade e eletrônica",
+    grade: "7º e 8º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["T", "E", "A", "M"],
+    guidingQuestion:
+      "Como projetar um semáforo didático que comunique sinais por luz e som?",
+    objectives: [
+      "Discutir acessibilidade na mobilidade urbana",
+      "Construir circuito de LEDs e sinal sonoro",
+      "Programar sequência temporizada",
+      "Avaliar clareza dos sinais para diferentes usuários"
+    ],
+    bncc: ["EF07CI06", "EF07MA23", "EF69LP35"],
+    materials: [
+      "Arduino ou circuito com temporizador",
+      "LEDs vermelho, amarelo e verde",
+      "Buzzer",
+      "Resistores e fios",
+      "Papelão para estrutura"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "BRASIL. Lei n. 13.146, de 6 de julho de 2015. Estatuto da Pessoa com Deficiência. Brasília, DF, 2015.",
+      "MONK, Simon. Programação com Arduino: começando com sketches. Porto Alegre: Bookman, 2017.",
+      "NORMAN, Donald A. O design do dia a dia. Rio de Janeiro: Rocco, 2006."
+    ],
+    phaseDetails: createProjectPhases("semáforo acessível com sinais luminosos e sonoros")
+  },
+  {
+    id: "lib-ponte-palitos",
+    title: "Ponte de Palitos: Estruturas que Suportam",
+    theme: "Engenharia estrutural, forças e otimização",
+    grade: "7º e 8º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["S", "E", "M"],
+    guidingQuestion:
+      "Como construir uma ponte leve que suporte a maior carga possível?",
+    objectives: [
+      "Investigar compressão, tração e distribuição de forças",
+      "Comparar treliças e formatos estruturais",
+      "Calcular massa, carga suportada e eficiência",
+      "Iterar protótipos a partir de testes"
+    ],
+    bncc: ["EF07CI01", "EF07MA32", "EF08MA13"],
+    materials: [
+      "Palitos de madeira",
+      "Cola branca ou cola quente",
+      "Pesos para teste",
+      "Balança",
+      "Régua e papel milimetrado"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "HEWITT, Paul G. Física conceitual. 12. ed. Porto Alegre: Bookman, 2015.",
+      "GERE, James M.; GOODNO, Barry J. Mecânica dos materiais. São Paulo: Cengage Learning, 2018.",
+      REF_UNESCO_ESD
+    ],
+    phaseDetails: createProjectPhases("pontes, treliças e resistência de materiais")
+  },
+
+  {
+    id: "lib-video-divulgacao-cientifica",
+    title: "Vídeo Curto de Divulgação Científica",
+    theme: "Ciência, roteiro e produção audiovisual",
+    grade: "7º, 8º e 9º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["S", "T", "A"],
+    guidingQuestion:
+      "Como explicar um conceito científico em até dois minutos com rigor e linguagem acessível?",
+    objectives: [
+      "Selecionar fontes confiáveis",
+      "Transformar conteúdo científico em roteiro curto",
+      "Produzir vídeo com recursos simples",
+      "Avaliar clareza, precisão e impacto comunicativo"
+    ],
+    bncc: ["EF69LP07", "EF69LP35", "EF08CI12"],
+    materials: [
+      "Celulares para gravação",
+      "Editor de vídeo simples",
+      "Roteiro em documento compartilhado",
+      "Banco de imagens livres",
+      "Rubrica de avaliação"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_UNESCO_MIL,
+      "BUENO, Wilson da Costa. Comunicação científica e divulgação científica: aproximações e rupturas conceituais. Informação & Informação, Londrina, v. 15, n. esp., p. 1-12, 2010.",
+      "WARDLE, Claire; DERAKHSHAN, Hossein. Information disorder. Strasbourg: Council of Europe, 2017."
+    ],
+    phaseDetails: createProjectPhases("vídeo curto de divulgação científica para jovens")
+  },
+  {
+    id: "lib-campanha-fake-news",
+    title: "Campanha contra Fake News",
+    theme: "Educação midiática, checagem e cidadania digital",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["T", "A"],
+    guidingQuestion:
+      "Como ajudar a comunidade escolar a identificar informação falsa ou manipulada?",
+    objectives: [
+      "Diferenciar fato, opinião, erro e desinformação",
+      "Aplicar procedimentos básicos de checagem",
+      "Criar peças de comunicação para a escola",
+      "Avaliar impacto da campanha"
+    ],
+    bncc: ["EF69LP01", "EF69LP02", "EF89LP24"],
+    materials: [
+      "Exemplos de notícias e postagens",
+      "Computadores ou celulares",
+      "Ferramentas de busca reversa",
+      "Canva ou editor similar",
+      "Questionário pré e pós-campanha"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_UNESCO_MIL,
+      "WARDLE, Claire; DERAKHSHAN, Hossein. Information disorder. Strasbourg: Council of Europe, 2017.",
+      "UNESCO. Journalism, fake news & disinformation: handbook for journalism education and training. Paris: UNESCO, 2018."
+    ],
+    phaseDetails: createProjectPhases("campanha escolar de checagem de informação e combate à desinformação")
+  },
+  {
+    id: "lib-fanzine-steam",
+    title: "Fanzine STEAM",
+    theme: "Leitura, autoria, artes gráficas e ciência",
+    grade: "6º e 7º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["S", "A"],
+    guidingQuestion:
+      "Como criar uma publicação autoral para comunicar descobertas STEAM de forma criativa?",
+    objectives: [
+      "Pesquisar tema científico ou tecnológico",
+      "Produzir textos curtos, ilustrações e diagramas",
+      "Compor páginas com leitura clara",
+      "Distribuir o fanzine na comunidade escolar"
+    ],
+    bncc: ["EF69LP07", "EF69LP35", "EF69AR05"],
+    materials: [
+      "Papéis, canetas e materiais de colagem",
+      "Computador ou celular para diagramação opcional",
+      "Copiadora ou impressora",
+      "Referências visuais",
+      "Tesoura e cola"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_UNESCO_MIL,
+      "LUPTON, Ellen. Pensar com tipos. São Paulo: Cosac Naify, 2013.",
+      "MUNARI, Bruno. Das coisas nascem coisas. São Paulo: Martins Fontes, 1998."
+    ],
+    phaseDetails: createProjectPhases("fanzine escolar sobre descobertas STEAM")
+  },
+  {
+    id: "lib-radio-recreio",
+    title: "Rádio Recreio",
+    theme: "Áudio, oralidade e comunicação escolar",
+    grade: "6º, 7º e 8º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["T", "A"],
+    guidingQuestion:
+      "Como criar boletins de áudio para informar, entreter e mobilizar a escola?",
+    objectives: [
+      "Planejar quadros e pautas de interesse escolar",
+      "Desenvolver oralidade e roteiro radiofônico",
+      "Gravar e editar áudio com qualidade básica",
+      "Organizar programação responsável"
+    ],
+    bncc: ["EF69LP07", "EF69LP11", "EF69LP35"],
+    materials: [
+      "Celulares ou microfone USB",
+      "Editor de áudio gratuito",
+      "Roteiros impressos",
+      "Caixa de som",
+      "Trilhas livres de direitos"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_UNESCO_MIL,
+      "JENKINS, Henry. Cultura da convergência. 2. ed. São Paulo: Aleph, 2009.",
+      "AUDACITY TEAM. Audacity manual. Disponível em: https://manual.audacityteam.org/."
+    ],
+    phaseDetails: createProjectPhases("rádio escolar, roteiro e edição de áudio")
+  },
+  {
+    id: "lib-exposicao-fotografica-ciencia",
+    title: "Exposição Fotográfica: Ciência no Cotidiano",
+    theme: "Imagem, observação e narrativa visual",
+    grade: "6º ao 9º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["S", "A"],
+    guidingQuestion:
+      "Como fotografias podem revelar fenômenos científicos presentes no cotidiano da escola?",
+    objectives: [
+      "Observar fenômenos científicos no ambiente próximo",
+      "Produzir fotografias com intenção investigativa",
+      "Escrever legendas explicativas",
+      "Organizar curadoria para exposição"
+    ],
+    bncc: ["EF69AR05", "EF69LP35", "EF06CI11"],
+    materials: [
+      "Celulares com câmera",
+      "Roteiro de observação",
+      "Impressão das fotos ou galeria digital",
+      "Cartelas de legenda",
+      "Painéis de exposição"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "SONTAG, Susan. Sobre fotografia. São Paulo: Companhia das Letras, 2004.",
+      "BARTHES, Roland. A câmara clara. Rio de Janeiro: Nova Fronteira, 1984.",
+      REF_UNESCO_MIL
+    ],
+    phaseDetails: createProjectPhases("exposição fotográfica sobre ciência no cotidiano")
+  },
+  {
+    id: "lib-storytelling-dados",
+    title: "Histórias com Dados",
+    theme: "Narrativa, gráficos e comunicação pública",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["T", "A", "M"],
+    guidingQuestion:
+      "Como transformar dados da escola em uma narrativa visual clara e responsável?",
+    objectives: [
+      "Escolher uma pergunta investigável com dados",
+      "Construir visualizações adequadas",
+      "Escrever narrativa baseada em evidências",
+      "Apresentar conclusões sem distorcer informações"
+    ],
+    bncc: ["EF08MA23", "EF09MA22", "EF69LP35"],
+    materials: [
+      "Planilhas",
+      "Dados coletados pela turma",
+      "Editor de infográficos",
+      "Projetor",
+      "Ficha de revisão ética"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_IBGE_TABLES,
+      "CAIRO, Alberto. The truthful art. Berkeley: New Riders, 2016.",
+      "KNAFLIC, Cole Nussbaumer. Storytelling with data. Hoboken: Wiley, 2015."
+    ],
+    phaseDetails: createProjectPhases("narrativas visuais baseadas em dados escolares")
+  },
+  {
+    id: "lib-guia-turistico-bilingue",
+    title: "Guia Turístico Bilíngue do Bairro",
+    theme: "Língua inglesa, cultura local e mídia digital",
+    grade: "8º e 9º ano",
+    duration: "6 semanas · 12 aulas",
+    steam: ["T", "A"],
+    guidingQuestion:
+      "Como apresentar pontos importantes do bairro em português e inglês para visitantes?",
+    objectives: [
+      "Pesquisar lugares de valor cultural no território",
+      "Produzir descrições bilíngues adequadas",
+      "Criar mapa ou página digital do guia",
+      "Praticar comunicação intercultural"
+    ],
+    bncc: ["EF08LI13", "EF09LI03", "EF69LP35", "EF08GE19"],
+    materials: [
+      "Celulares para fotos",
+      "Mapa do bairro",
+      "Dicionários e tradutores como apoio",
+      "Editor de página ou apresentação",
+      "Roteiro de revisão linguística"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "BYRAM, Michael. Teaching and assessing intercultural communicative competence. Clevedon: Multilingual Matters, 1997.",
+      "CRYSTAL, David. English as a global language. 2. ed. Cambridge: Cambridge University Press, 2003.",
+      REF_UNESCO_MIL
+    ],
+    phaseDetails: createProjectPhases("guia turístico bilíngue do bairro e comunicação intercultural")
+  },
+
+  {
+    id: "lib-linha-tempo-bairro",
+    title: "Linha do Tempo do Bairro",
+    theme: "Memória local, história e visualização temporal",
+    grade: "7º e 8º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["T", "A", "M"],
+    guidingQuestion:
+      "Como organizar acontecimentos do bairro em uma linha do tempo visual e confiável?",
+    objectives: [
+      "Pesquisar eventos significativos da comunidade",
+      "Trabalhar noções de temporalidade e fonte histórica",
+      "Construir linha do tempo física ou digital",
+      "Apresentar relações entre memória e identidade"
+    ],
+    bncc: ["EF07HI16", "EF08HI21", "EF69LP35"],
+    materials: [
+      "Entrevistas e fotos antigas",
+      "Cartolinas ou ferramenta digital",
+      "Scanner ou celular",
+      "Fichas de fonte histórica",
+      "Mapa do bairro"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "ALBERTI, Verena. Manual de história oral. 3. ed. Rio de Janeiro: FGV, 2013.",
+      "THOMPSON, Paul. A voz do passado: história oral. 3. ed. Rio de Janeiro: Paz e Terra, 2002.",
+      "MUSEU DA PESSOA. Tecnologia social da memória. São Paulo: Museu da Pessoa, 2009."
+    ],
+    phaseDetails: createProjectPhases("linha do tempo histórica do bairro")
+  },
+  {
+    id: "lib-mapa-afetivo-escola",
+    title: "Mapa Afetivo da Escola",
+    theme: "Território, pertencimento e cartografia social",
+    grade: "6º e 7º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["A", "M"],
+    guidingQuestion:
+      "Quais lugares da escola têm significado para os estudantes e como representá-los em um mapa afetivo?",
+    objectives: [
+      "Compreender mapas como representações sociais",
+      "Coletar percepções sobre espaços escolares",
+      "Criar símbolos e legendas autorais",
+      "Dialogar sobre convivência e pertencimento"
+    ],
+    bncc: ["EF06GE08", "EF06MA24", "EF69AR05"],
+    materials: [
+      "Planta baixa ou croqui da escola",
+      "Post-its e adesivos coloridos",
+      "Canetas e cartolinas",
+      "Questionário breve",
+      "Painel para exposição"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_IBGE_CARTOGRAPHY,
+      "ACSELRAD, Henri. Cartografias sociais e território. Rio de Janeiro: IPPUR/UFRJ, 2008.",
+      "TUAN, Yi-Fu. Espaço e lugar: a perspectiva da experiência. Londrina: Eduel, 2013."
+    ],
+    phaseDetails: createProjectPhases("mapa afetivo, pertencimento e cartografia social")
+  },
+  {
+    id: "lib-patrimonio-imaterial",
+    title: "Patrimônio Imaterial da Comunidade",
+    theme: "Cultura, memória e registro audiovisual",
+    grade: "7º, 8º e 9º ano",
+    duration: "6 semanas · 12 aulas",
+    steam: ["T", "A"],
+    guidingQuestion:
+      "Quais práticas culturais da comunidade merecem ser registradas e valorizadas pela escola?",
+    objectives: [
+      "Identificar manifestações culturais locais",
+      "Registrar relatos, imagens e sons com consentimento",
+      "Compreender patrimônio material e imaterial",
+      "Criar acervo digital escolar"
+    ],
+    bncc: ["EF07HI16", "EF08HI21", "EF69AR34", "EF69LP35"],
+    materials: [
+      "Celulares para áudio e vídeo",
+      "Termo de autorização",
+      "Roteiro de entrevista",
+      "Pasta digital organizada",
+      "Painel ou site simples"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "IPHAN. Educação patrimonial: histórico, conceitos e processos. Brasília: IPHAN, 2014.",
+      "UNESCO. Convention for the safeguarding of the intangible cultural heritage. Paris: UNESCO, 2003.",
+      "ALBERTI, Verena. Manual de história oral. 3. ed. Rio de Janeiro: FGV, 2013."
+    ],
+    phaseDetails: createProjectPhases("patrimônio imaterial e acervo cultural comunitário")
+  },
+  {
+    id: "lib-rotas-seguras",
+    title: "Rotas Seguras até a Escola",
+    theme: "Mobilidade, território e segurança viária",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["T", "E", "M"],
+    guidingQuestion:
+      "Como mapear rotas de deslocamento e propor caminhos mais seguros até a escola?",
+    objectives: [
+      "Coletar dados sobre deslocamento dos estudantes",
+      "Mapear pontos de risco no entorno",
+      "Analisar padrões de mobilidade",
+      "Propor intervenções e recomendações"
+    ],
+    bncc: ["EF08GE17", "EF08GE19", "EF09MA22"],
+    materials: [
+      "Mapas impressos ou digitais",
+      "Celulares com GPS",
+      "Formulário de pesquisa",
+      "Planilha",
+      "Materiais para relatório"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_IBGE_CARTOGRAPHY,
+      "BRASIL. Código de Trânsito Brasileiro: Lei n. 9.503, de 23 de setembro de 1997. Brasília, DF, 1997.",
+      "WORLD HEALTH ORGANIZATION. Global plan for the decade of action for road safety 2021-2030. Geneva: WHO, 2021."
+    ],
+    phaseDetails: createProjectPhases("rotas seguras, mobilidade escolar e mapeamento territorial")
+  },
+  {
+    id: "lib-atlas-cultural-digital",
+    title: "Atlas Cultural Digital",
+    theme: "Geografia cultural, memória e mídias digitais",
+    grade: "8º e 9º ano",
+    duration: "7 semanas · 14 aulas",
+    steam: ["T", "A", "M"],
+    guidingQuestion:
+      "Como criar um atlas digital que represente lugares, histórias e práticas culturais do território?",
+    objectives: [
+      "Selecionar categorias culturais para mapeamento",
+      "Registrar dados com localização e descrição",
+      "Organizar mapa digital com legenda clara",
+      "Discutir representação e responsabilidade cultural"
+    ],
+    bncc: ["EF08GE19", "EF09GE15", "EF69LP35"],
+    materials: [
+      "Google My Maps ou OpenStreetMap",
+      "Celulares com câmera",
+      "Fichas de campo",
+      "Termos de autorização",
+      "Computadores"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_IBGE_CARTOGRAPHY,
+      "IPHAN. Educação patrimonial: histórico, conceitos e processos. Brasília: IPHAN, 2014.",
+      REF_UNESCO_MIL
+    ],
+    phaseDetails: createProjectPhases("atlas cultural digital do território")
+  },
+  {
+    id: "lib-museu-virtual-escola",
+    title: "Museu Virtual da Escola",
+    theme: "Memória institucional, curadoria e tecnologia",
+    grade: "7º ao 9º ano",
+    duration: "6 semanas · 12 aulas",
+    steam: ["T", "A"],
+    guidingQuestion:
+      "Como transformar objetos, fotos e relatos da escola em uma exposição virtual?",
+    objectives: [
+      "Selecionar itens significativos da história escolar",
+      "Escrever textos curatoriais curtos",
+      "Digitalizar imagens e organizar arquivos",
+      "Montar exposição virtual acessível"
+    ],
+    bncc: ["EF07HI16", "EF69LP35", "EF69AR34"],
+    materials: [
+      "Fotos e documentos autorizados",
+      "Scanner ou celular",
+      "Editor de apresentação ou site",
+      "Roteiro curatorial",
+      "Computadores"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "MUSEU DA PESSOA. Tecnologia social da memória. São Paulo: Museu da Pessoa, 2009.",
+      "IPHAN. Educação patrimonial: histórico, conceitos e processos. Brasília: IPHAN, 2014.",
+      REF_UNESCO_MIL
+    ],
+    phaseDetails: createProjectPhases("museu virtual da escola e curadoria de memória")
+  },
+  {
+    id: "lib-demografia-bairro",
+    title: "Retrato Demográfico do Bairro",
+    theme: "População, território e leitura de dados públicos",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["T", "M"],
+    guidingQuestion:
+      "O que os dados públicos revelam sobre a população e as transformações do nosso bairro?",
+    objectives: [
+      "Ler tabelas e mapas demográficos",
+      "Comparar indicadores de diferentes recortes territoriais",
+      "Produzir síntese visual dos achados",
+      "Discutir limites e cuidados na interpretação de dados públicos"
+    ],
+    bncc: ["EF08GE17", "EF09GE14", "EF09MA22"],
+    materials: [
+      "Computadores com internet",
+      "Dados do IBGE",
+      "Planilhas",
+      "Mapas do município",
+      "Editor de infográfico"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_IBGE_TABLES,
+      "IBGE. Censo demográfico 2022: características da população e dos domicílios. Rio de Janeiro: IBGE, 2023.",
+      REF_IBGE_CARTOGRAPHY
+    ],
+    phaseDetails: createProjectPhases("retrato demográfico do bairro com dados públicos")
+  },
+
+  {
+    id: "lib-orcamento-feira",
+    title: "Orçamento de uma Feira Escolar",
+    theme: "Educação financeira, porcentagem e planejamento",
+    grade: "7º e 8º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["M", "T"],
+    guidingQuestion:
+      "Como planejar o orçamento de uma feira escolar equilibrando custos, preços e metas?",
+    objectives: [
+      "Levantar custos fixos e variáveis",
+      "Calcular porcentagens, margem e ponto de equilíbrio",
+      "Construir planilhas de orçamento",
+      "Tomar decisões financeiras responsáveis"
+    ],
+    bncc: ["EF07MA02", "EF07MA05", "EF08MA04", "EF08MA23"],
+    materials: [
+      "Planilha eletrônica",
+      "Lista de insumos",
+      "Calculadora",
+      "Tabela de preços pesquisados",
+      "Modelo de orçamento"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "BANCO CENTRAL DO BRASIL. Caderno de educação financeira: gestão de finanças pessoais. Brasília: BCB, 2013.",
+      "OECD. PISA 2018 financial literacy framework. Paris: OECD Publishing, 2019.",
+      REF_IBGE_TABLES
+    ],
+    phaseDetails: createProjectPhases("orçamento de feira escolar e educação financeira")
+  },
+  {
+    id: "lib-pesquisa-alimentacao",
+    title: "Pesquisa sobre Alimentação na Escola",
+    theme: "Estatística, hábitos alimentares e saúde",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "M"],
+    guidingQuestion:
+      "Quais são os hábitos alimentares dos estudantes e como representá-los com responsabilidade?",
+    objectives: [
+      "Planejar questionário ético e anônimo",
+      "Tabular respostas e calcular frequências",
+      "Produzir gráficos adequados",
+      "Debater alimentação saudável sem exposição individual"
+    ],
+    bncc: ["EF08MA23", "EF09MA22", "EF09CI09"],
+    materials: [
+      "Google Forms ou formulários impressos",
+      "Planilhas",
+      "Guia alimentar",
+      "Editor de gráficos",
+      "Termos de privacidade"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_IBGE_TABLES,
+      "BRASIL. Ministério da Saúde. Guia alimentar para a população brasileira. 2. ed. Brasília: Ministério da Saúde, 2014.",
+      REF_WHO_ACTIVITY
+    ],
+    phaseDetails: createProjectPhases("pesquisa estatística sobre hábitos alimentares")
+  },
+  {
+    id: "lib-geometria-quadra",
+    title: "Geometria da Quadra Escolar",
+    theme: "Medidas, escala e desenho geométrico",
+    grade: "6º e 7º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["E", "M"],
+    guidingQuestion:
+      "Como representar a quadra da escola em escala e propor melhorias no espaço?",
+    objectives: [
+      "Medir dimensões reais do espaço",
+      "Calcular perímetro, área e escala",
+      "Criar planta baixa simplificada",
+      "Propor reorganização do espaço com justificativa matemática"
+    ],
+    bncc: ["EF06MA24", "EF06MA28", "EF07MA32"],
+    materials: [
+      "Trena",
+      "Papel quadriculado",
+      "Régua e esquadro",
+      "Calculadora",
+      "Software de desenho opcional"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "DOLCE, Osvaldo; POMPEO, José Nicolau. Fundamentos de matemática elementar: geometria plana. São Paulo: Atual, 2013.",
+      REF_IBGE_CARTOGRAPHY,
+      "BRASIL. Ministério da Educação. Parâmetros básicos de infraestrutura para instituições de educação infantil. Brasília: MEC, 2006."
+    ],
+    phaseDetails: createProjectPhases("geometria, escala e reorganização da quadra escolar")
+  },
+  {
+    id: "lib-probabilidade-jogos",
+    title: "Probabilidade em Jogos de Tabuleiro",
+    theme: "Jogos, chance e tomada de decisão",
+    grade: "7º e 8º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["A", "M"],
+    guidingQuestion:
+      "Como a probabilidade influencia estratégias e equilíbrio em jogos de tabuleiro?",
+    objectives: [
+      "Simular eventos aleatórios com dados e cartas",
+      "Calcular frequências e probabilidades simples",
+      "Modificar regras para equilibrar um jogo",
+      "Explicar decisões com base em dados"
+    ],
+    bncc: ["EF07MA34", "EF08MA22", "EF08MA23"],
+    materials: [
+      "Dados, cartas e fichas",
+      "Planilhas de registro",
+      "Protótipos de tabuleiro",
+      "Calculadora",
+      "Materiais de arte"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "MORGADO, Augusto César et al. Análise combinatória e probabilidade. Rio de Janeiro: SBM, 1991.",
+      "GRANDO, Regina Célia. O jogo e a matemática no contexto da sala de aula. São Paulo: Paulus, 2004.",
+      REF_IBGE_TABLES
+    ],
+    phaseDetails: createProjectPhases("probabilidade e equilíbrio em jogos de tabuleiro")
+  },
+  {
+    id: "lib-indice-leitura",
+    title: "Índice de Leitura da Turma",
+    theme: "Dados, leitura e visualização",
+    grade: "6º ao 9º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["T", "M"],
+    guidingQuestion:
+      "Como medir e visualizar hábitos de leitura da turma sem expor dados pessoais?",
+    objectives: [
+      "Coletar dados anônimos sobre leitura",
+      "Criar indicadores simples",
+      "Construir gráficos e painéis",
+      "Planejar ações de incentivo à leitura"
+    ],
+    bncc: ["EF69LP49", "EF08MA23", "EF09MA22"],
+    materials: [
+      "Formulário anônimo",
+      "Planilha",
+      "Acervo da biblioteca",
+      "Editor de gráficos",
+      "Painel de metas coletivas"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_IBGE_TABLES,
+      "FAILLA, Zoara (org.). Retratos da leitura no Brasil. 5. ed. Rio de Janeiro: Sextante, 2021.",
+      REF_UNESCO_MIL
+    ],
+    phaseDetails: createProjectPhases("indicadores de leitura e visualização de hábitos da turma")
+  },
+  {
+    id: "lib-matematica-transporte",
+    title: "Matemática do Transporte Escolar",
+    theme: "Tempo, distância, custo e otimização",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["T", "E", "M"],
+    guidingQuestion:
+      "Como analisar rotas, tempos e custos de deslocamento para chegar à escola?",
+    objectives: [
+      "Coletar tempos e distâncias de deslocamento",
+      "Calcular médias, variações e custos aproximados",
+      "Representar rotas em mapa",
+      "Discutir alternativas sustentáveis e seguras"
+    ],
+    bncc: ["EF08MA23", "EF09MA13", "EF09MA22"],
+    materials: [
+      "Formulário anônimo",
+      "Mapas digitais",
+      "Planilha",
+      "Calculadora",
+      "Infográfico"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_IBGE_CARTOGRAPHY,
+      REF_IBGE_TABLES,
+      "BRASIL. Código de Trânsito Brasileiro: Lei n. 9.503, de 23 de setembro de 1997. Brasília, DF, 1997."
+    ],
+    phaseDetails: createProjectPhases("tempos, distâncias e custos do transporte escolar")
+  },
+  {
+    id: "lib-simulador-juros",
+    title: "Simulador de Juros no Cotidiano",
+    theme: "Educação financeira e funções",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["T", "M"],
+    guidingQuestion:
+      "Como juros simples e compostos afetam compras parceladas e metas de economia?",
+    objectives: [
+      "Comparar juros simples e compostos",
+      "Criar simulador em planilha",
+      "Analisar compras parceladas com senso crítico",
+      "Comunicar decisões financeiras fundamentadas"
+    ],
+    bncc: ["EF08MA04", "EF09MA05", "EF09MA06"],
+    materials: [
+      "Planilha eletrônica",
+      "Exemplos de anúncios",
+      "Calculadora",
+      "Roteiro de análise",
+      "Projetor"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "BANCO CENTRAL DO BRASIL. Caderno de educação financeira: gestão de finanças pessoais. Brasília: BCB, 2013.",
+      "OECD. PISA 2018 financial literacy framework. Paris: OECD Publishing, 2019.",
+      "IEZZI, Gelson; MURAKAMI, Carlos. Fundamentos de matemática elementar: conjuntos e funções. São Paulo: Atual, 2013."
+    ],
+    phaseDetails: createProjectPhases("simulador de juros simples e compostos em planilha")
+  },
+  {
+    id: "lib-censo-esportivo",
+    title: "Censo Esportivo da Escola",
+    theme: "Estatística, esporte e participação",
+    grade: "7º ao 9º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["M", "S"],
+    guidingQuestion:
+      "Quais práticas corporais os estudantes conhecem, praticam ou gostariam de experimentar?",
+    objectives: [
+      "Planejar pesquisa estatística sobre práticas corporais",
+      "Tabular dados por turma e faixa etária",
+      "Construir gráficos comparativos",
+      "Sugerir ações para ampliar participação"
+    ],
+    bncc: ["EF89EF02", "EF08MA23", "EF09MA22"],
+    materials: [
+      "Questionário anônimo",
+      "Planilha",
+      "Gráficos impressos",
+      "Quadro de propostas",
+      "Rubrica de apresentação"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_WHO_ACTIVITY,
+      REF_IBGE_TABLES,
+      "NAHAS, Markus Vinicius. Atividade física, saúde e qualidade de vida. 7. ed. Florianópolis: Ed. do Autor, 2017."
+    ],
+    phaseDetails: createProjectPhases("censo esportivo escolar e análise estatística")
+  },
+  {
+    id: "lib-dashboard-biblioteca",
+    title: "Dashboard da Biblioteca Escolar",
+    theme: "Dados, acervo e tomada de decisão",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["T", "M"],
+    guidingQuestion:
+      "Como os dados de empréstimos e acervo podem apoiar decisões da biblioteca escolar?",
+    objectives: [
+      "Organizar dados de acervo e circulação",
+      "Criar indicadores e gráficos",
+      "Identificar padrões de uso da biblioteca",
+      "Propor ações de incentivo à leitura"
+    ],
+    bncc: ["EF08MA23", "EF09MA22", "EF69LP49"],
+    materials: [
+      "Dados autorizados da biblioteca",
+      "Planilha eletrônica",
+      "Editor de dashboard",
+      "Computador",
+      "Roteiro de privacidade"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_IBGE_TABLES,
+      "KNAFLIC, Cole Nussbaumer. Storytelling with data. Hoboken: Wiley, 2015.",
+      REF_UNESCO_MIL
+    ],
+    phaseDetails: createProjectPhases("dashboard de acervo e empréstimos da biblioteca escolar")
+  },
+
+  {
+    id: "lib-sono-aprendizagem",
+    title: "Sono e Aprendizagem",
+    theme: "Hábitos de sono, saúde e análise de dados",
+    grade: "8º e 9º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["S", "M"],
+    guidingQuestion:
+      "Como hábitos de sono se relacionam com disposição, concentração e rotina escolar?",
+    objectives: [
+      "Pesquisar recomendações de sono para adolescentes",
+      "Coletar dados anônimos sobre rotina de sono",
+      "Analisar padrões sem expor indivíduos",
+      "Criar campanha de cuidado com o sono"
+    ],
+    bncc: ["EF09CI09", "EF08MA23", "EF89EF14"],
+    materials: [
+      "Formulário anônimo",
+      "Planilhas",
+      "Materiais de campanha",
+      "Diário voluntário de sono",
+      "Cartazes"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "WORLD HEALTH ORGANIZATION. Adolescent health. Geneva: WHO. Disponível em: https://www.who.int/health-topics/adolescent-health.",
+      REF_WHO_ACTIVITY,
+      "LOUZADA, Fernando; MENNA-BARRETO, Luiz. O sono na sala de aula: tempo escolar e tempo biológico. Rio de Janeiro: Vieira & Lent, 2007."
+    ],
+    phaseDetails: createProjectPhases("sono, rotina escolar e aprendizagem")
+  },
+  {
+    id: "lib-ergonomia-mochila",
+    title: "Mochila, Postura e Ergonomia",
+    theme: "Corpo, medidas e prevenção",
+    grade: "6º e 7º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["S", "M"],
+    guidingQuestion:
+      "Como avaliar o peso das mochilas e propor cuidados ergonômicos para estudantes?",
+    objectives: [
+      "Medir massas de mochilas de forma ética",
+      "Calcular proporções e médias",
+      "Pesquisar recomendações de ergonomia",
+      "Criar orientações para a comunidade escolar"
+    ],
+    bncc: ["EF06MA24", "EF07MA36", "EF89EF14"],
+    materials: [
+      "Balança",
+      "Formulário anônimo",
+      "Planilha",
+      "Cartazes",
+      "Fita métrica"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_WHO_ACTIVITY,
+      "IIDA, Itiro; BUARQUE, Lia. Ergonomia: projeto e produção. 3. ed. São Paulo: Blucher, 2016.",
+      REF_IBGE_TABLES
+    ],
+    phaseDetails: createProjectPhases("ergonomia, peso da mochila e prevenção de desconfortos")
+  },
+  {
+    id: "lib-hidratacao-esporte",
+    title: "Hidratação e Esporte",
+    theme: "Atividade física, água e autorregulação",
+    grade: "7º ao 9º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["S", "M"],
+    guidingQuestion:
+      "Como planejar hidratação segura antes, durante e depois de atividades físicas escolares?",
+    objectives: [
+      "Compreender a importância da hidratação",
+      "Medir intensidade percebida e tempo de atividade",
+      "Criar protocolo de hidratação para aulas práticas",
+      "Comunicar cuidados sem substituir orientação médica"
+    ],
+    bncc: ["EF89EF02", "EF89EF14", "EF09CI09"],
+    materials: [
+      "Garrafas identificadas",
+      "Cronômetros",
+      "Escala de percepção de esforço",
+      "Cartazes",
+      "Planilha de observação"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_WHO_ACTIVITY,
+      "BRASIL. Ministério da Saúde. Guia alimentar para a população brasileira. 2. ed. Brasília: Ministério da Saúde, 2014.",
+      "NAHAS, Markus Vinicius. Atividade física, saúde e qualidade de vida. 7. ed. Florianópolis: Ed. do Autor, 2017."
+    ],
+    phaseDetails: createProjectPhases("hidratação, atividade física e cuidado corporal")
+  },
+  {
+    id: "lib-pausa-ativa",
+    title: "Pausas Ativas na Rotina Escolar",
+    theme: "Movimento, bem-estar e aprendizagem",
+    grade: "6º ao 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "A", "M"],
+    guidingQuestion:
+      "Como pequenas pausas de movimento podem impactar bem-estar e atenção durante a rotina escolar?",
+    objectives: [
+      "Pesquisar benefícios de atividade física regular",
+      "Planejar pausas ativas curtas e inclusivas",
+      "Coletar percepções antes e depois das práticas",
+      "Criar repertório de atividades para professores"
+    ],
+    bncc: ["EF89EF02", "EF89EF14", "EF08MA23"],
+    materials: [
+      "Cronômetro",
+      "Música opcional",
+      "Questionários rápidos",
+      "Planilha",
+      "Cartões de atividade"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_WHO_ACTIVITY,
+      "NAHAS, Markus Vinicius. Atividade física, saúde e qualidade de vida. 7. ed. Florianópolis: Ed. do Autor, 2017.",
+      REF_IBGE_TABLES
+    ],
+    phaseDetails: createProjectPhases("pausas ativas, bem-estar e atenção na rotina escolar")
+  },
+  {
+    id: "lib-alimentacao-cores",
+    title: "Prato Colorido: Alimentação e Nutrientes",
+    theme: "Alimentação saudável, cores e composição nutricional",
+    grade: "6º e 7º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["S", "A", "M"],
+    guidingQuestion:
+      "Como as cores dos alimentos podem ajudar a conversar sobre variedade alimentar?",
+    objectives: [
+      "Investigar grupos alimentares e diversidade no prato",
+      "Criar representações visuais de refeições equilibradas",
+      "Analisar hábitos coletivos com cuidado ético",
+      "Produzir campanha educativa"
+    ],
+    bncc: ["EF05CI08", "EF06CI04", "EF06MA24"],
+    materials: [
+      "Guia alimentar",
+      "Cartolinas e materiais de arte",
+      "Imagens de alimentos",
+      "Planilha simples",
+      "Questionário anônimo"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "BRASIL. Ministério da Saúde. Guia alimentar para a população brasileira. 2. ed. Brasília: Ministério da Saúde, 2014.",
+      REF_WHO_ACTIVITY,
+      REF_UNESCO_ESD
+    ],
+    phaseDetails: createProjectPhases("alimentação saudável, variedade alimentar e comunicação visual")
+  },
+  {
+    id: "lib-frequencia-cardiaca",
+    title: "Frequência Cardíaca em Movimento",
+    theme: "Fisiologia, exercício e gráficos",
+    grade: "8º e 9º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["S", "M"],
+    guidingQuestion:
+      "Como a frequência cardíaca muda em diferentes intensidades de movimento?",
+    objectives: [
+      "Medir frequência cardíaca com segurança",
+      "Comparar repouso, atividade leve e atividade intensa",
+      "Construir gráficos de variação",
+      "Discutir limites dos dados coletados"
+    ],
+    bncc: ["EF09CI09", "EF89EF02", "EF08MA23"],
+    materials: [
+      "Cronômetros",
+      "Planilhas",
+      "Espaço para atividade física",
+      "Ficha de consentimento conforme orientação escolar",
+      "Cartões de intensidade"
+    ],
+    bibliography: [
+      REF_BNCC,
+      REF_WHO_ACTIVITY,
+      "GUEDES, Dartagnan Pinto; GUEDES, Joana Elisabete Ribeiro Pinto. Manual prático para avaliação em educação física. Barueri: Manole, 2006.",
+      "NAHAS, Markus Vinicius. Atividade física, saúde e qualidade de vida. 7. ed. Florianópolis: Ed. do Autor, 2017."
+    ],
+    phaseDetails: createProjectPhases("frequência cardíaca, intensidade de exercício e gráficos")
+  },
+  {
+    id: "lib-saude-mental-campanha",
+    title: "Campanha de Bem-Estar Emocional",
+    theme: "Saúde mental, convivência e comunicação responsável",
+    grade: "8º e 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["A", "T"],
+    guidingQuestion:
+      "Como comunicar cuidados de bem-estar emocional de forma acolhedora e responsável na escola?",
+    objectives: [
+      "Pesquisar fontes institucionais sobre saúde mental",
+      "Mapear situações de estresse na rotina escolar sem expor pessoas",
+      "Criar peças de comunicação cuidadosas",
+      "Indicar canais de apoio disponíveis na escola"
+    ],
+    bncc: ["EF89EF14", "EF69LP35", "EF69AR05"],
+    materials: [
+      "Fontes institucionais",
+      "Editor de cartazes",
+      "Roteiro de linguagem responsável",
+      "Painel de divulgação",
+      "Apoio da coordenação/orientação"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "WORLD HEALTH ORGANIZATION. Mental health of adolescents. Geneva: WHO. Disponível em: https://www.who.int/news-room/fact-sheets/detail/adolescent-mental-health.",
+      REF_UNESCO_MIL,
+      "BRASIL. Ministério da Saúde. Saúde mental. Brasília: Ministério da Saúde."
+    ],
+    phaseDetails: createProjectPhases("campanha escolar de bem-estar emocional e convivência")
+  },
+  {
+    id: "lib-acessibilidade-esporte",
+    title: "Esporte para Todos",
+    theme: "Inclusão, adaptação de regras e acessibilidade",
+    grade: "6º ao 9º ano",
+    duration: "5 semanas · 10 aulas",
+    steam: ["E", "A", "M"],
+    guidingQuestion:
+      "Como adaptar jogos e esportes para ampliar a participação de todos os estudantes?",
+    objectives: [
+      "Analisar barreiras de participação em práticas corporais",
+      "Adaptar regras, espaços e materiais",
+      "Testar versões inclusivas de jogos",
+      "Registrar feedback e refinar propostas"
+    ],
+    bncc: ["EF89EF01", "EF89EF02", "EF89EF14"],
+    materials: [
+      "Bolas variadas",
+      "Cones e fitas",
+      "Vendas ou sinalizadores",
+      "Ficha de observação",
+      "Materiais reaproveitados"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "BRASIL. Lei n. 13.146, de 6 de julho de 2015. Estatuto da Pessoa com Deficiência. Brasília, DF, 2015.",
+      REF_WHO_ACTIVITY,
+      "FREIRE, João Batista. Educação de corpo inteiro. São Paulo: Scipione, 1997."
+    ],
+    phaseDetails: createProjectPhases("adaptação inclusiva de jogos e esportes escolares")
+  },
+  {
+    id: "lib-mapa-ruido-escola",
+    title: "Mapa do Ruído Escolar",
+    theme: "Audição, ambiente e saúde coletiva",
+    grade: "7º ao 9º ano",
+    duration: "4 semanas · 8 aulas",
+    steam: ["S", "T", "M"],
+    guidingQuestion:
+      "Quais espaços da escola têm maior nível de ruído e como reduzir incômodos?",
+    objectives: [
+      "Medir níveis de ruído com aplicativo ou decibelímetro",
+      "Mapear horários e locais críticos",
+      "Analisar efeitos do ruído no bem-estar",
+      "Propor combinados e intervenções"
+    ],
+    bncc: ["EF08CI15", "EF08MA23", "EF89EF14"],
+    materials: [
+      "Aplicativo medidor de decibéis ou decibelímetro",
+      "Mapa da escola",
+      "Planilha",
+      "Cartazes",
+      "Relógio"
+    ],
+    bibliography: [
+      REF_BNCC,
+      "WORLD HEALTH ORGANIZATION. Environmental noise guidelines for the European Region. Copenhagen: WHO Regional Office for Europe, 2018.",
+      REF_WHO_ACTIVITY,
+      REF_IBGE_CARTOGRAPHY
+    ],
+    phaseDetails: createProjectPhases("mapa de ruído escolar e saúde ambiental")
   }
 ];
 
