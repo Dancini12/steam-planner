@@ -43,7 +43,7 @@ async function checkUsageLimit(userId: string, discipline: string): Promise<bool
       .single()
 
     if (error && error.code !== 'PGRST116') return false
-    return (usage?.count || 0) >= 5
+    return (usage?.count || 0) >= 10
   } catch {
     return false
   }
@@ -223,7 +223,7 @@ Deno.serve(async (req) => {
     const limitReached = await checkUsageLimit(userId, discipline)
     if (limitReached) {
       return new Response(
-        JSON.stringify({ error: 'Limite diário atingido', message: `Você atingiu o limite diário de 5 projetos para ${discipline}. Tente novamente amanhã.`, limitReached: true }),
+        JSON.stringify({ error: 'Limite diário atingido', message: `Você atingiu o limite diário de 10 projetos para ${discipline}. Tente novamente amanhã.`, limitReached: true }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
