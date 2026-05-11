@@ -1,6 +1,6 @@
 // ============================================================
 // AIGeneratorModal.jsx
-// Modal para geração de projetos via IA (Gemini)
+// Modal para geração de projetos via IA profissional
 // ============================================================
 //
 // Apresenta ao professor um formulário com 3 campos:
@@ -9,10 +9,11 @@
 // - Áreas STEAM contempladas (botões selecionáveis)
 //
 // Ao submeter, mostra indicador de carregamento enquanto
-// a IA gera o projeto. Em caso de sucesso, retorna o
-// projeto gerado para o componente pai (Dashboard) que
-// faz a criação efetiva e a navegação para edição.
+// a IA gera o projeto usando a arquitetura de providers.
+// Em caso de sucesso, retorna o projeto gerado para o
+// componente pai (Dashboard) que faz a criação efetiva.
 //
+// Regras obrigatórias: STEAM + Cultura Maker + BNCC + saída pronta para impressão.
 // Posicionamento pedagógico: a IA é ASSISTENTE, não autora.
 // O professor edita livremente o resultado depois.
 // ============================================================
@@ -236,8 +237,8 @@ export default function AIGeneratorModal({
         <div>
           <p style={introStyle}>
             A IA vai gerar uma <strong>sugestão inicial</strong> de projeto
-            STEAM com fases, BNCC e materiais. Você poderá editar tudo
-            livremente depois — a IA é assistente, não autora final.
+            STEAM com fases, BNCC, Cultura Maker e formato pronto para impressão.
+            Você poderá editar tudo livremente depois — a IA é assistente, não autora final.
           </p>
 
           <div style={fieldGroupStyle}>

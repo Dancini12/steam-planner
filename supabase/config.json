@@ -1,0 +1,21 @@
+{
+  "project_id": "hgfsvequhesliqknmysz",
+  "api_url": "https://hgfsvequhesliqknmysz.supabase.co",
+  "functions": {
+    "claude": {
+      "verify_jwt": false
+    },
+    "copilot": {
+      "verify_jwt": false
+    },
+    "pedagogical-planner": {
+      "verify_jwt": false
+    },
+    "gemini": {
+      "verify_jwt": false
+    },
+    "ai-router": {
+      "verify_jwt": false
+    }
+  }
+}

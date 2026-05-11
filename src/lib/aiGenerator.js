@@ -1,13 +1,10 @@
 // ============================================================
 // aiGenerator.js
-// Geração de projetos STEAM via API Gemini
+// Geração de projetos STEAM usando camada centralizada de providers de IA
 // ============================================================
 
 import { STEAM_AREAS } from "../data/steamAreas.js";
-
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const MODEL = "gemini-2.5-flash";
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+import { AIProviderManager } from "./ai/AIProviderManager.js";
 
 function buildPrompt(theme, grade, steamAreas) {
   const areasNames = steamAreas
@@ -30,10 +27,12 @@ Diretrizes:
 2. Questão norteadora aberta e investigativa
 3. Objetivos mensuráveis adequados ao ano
 4. BNCC reais (códigos como EFXXMA01, EFXXCI03)
-5. Matriz STEAM com contribuição, atividade e evidência para cada área selecionada
-6. 5 fases: Imersão, Ideação, Prototipagem, Teste, Compartilhamento
-7. Cada fase com ${phaseDetailLevel}, atividades concretas
-8. 5 a 8 referências bibliográficas em formato ABNT sobre o tema
+5. Cultura Maker obrigatória em todas as etapas, com mão na massa, prototipagem e iteração
+6. Matriz STEAM com contribuição, atividade e evidência para cada área selecionada
+7. 5 fases: Imersão, Ideação, Prototipagem, Teste, Compartilhamento
+8. Cada fase com ${phaseDetailLevel}, atividades concretas
+9. Formato pronto para impressão: cada atividade em nova página, seções claras e layout sequencial
+10. 5 a 8 referências bibliográficas em formato ABNT sobre o tema
 
 Responda APENAS com JSON válido:
 
@@ -230,10 +229,6 @@ function validateProjectStructure(data) {
 }
 
 export async function generateBibliographyWithAI({ title, theme, grade, steamAreas }) {
-  if (!API_KEY) {
-    throw new Error("Chave da Gemini não configurada. Verifique o arquivo .env.");
-  }
-
   const areasNames = (steamAreas || [])
     .map((letter) => STEAM_AREAS[letter]?.name || letter)
     .join(", ");
@@ -256,31 +251,12 @@ As referências devem:
 Responda APENAS com um array JSON válido de strings, sem texto adicional:
 ["Referência 1 em ABNT", "Referência 2 em ABNT"]`;
 
-  let response;
-  try {
-    response = await fetch(`${API_URL}?key=${API_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.7,
-          topP: 0.95,
-          maxOutputTokens: 2048,
-          responseMimeType: "text/plain"
-        }
-      })
-    });
-  } catch {
-    throw new Error("Falha de conexão com a Gemini. Verifique sua internet.");
-  }
+  const response = await AIProviderManager.request({
+    requestType: 'bibliography',
+    prompt
+  });
 
-  if (!response.ok) {
-    throw new Error(`Erro na API Gemini (${response.status}).`);
-  }
-
-  const data = await response.json();
-  const generatedText = getGeneratedText(data);
+  const generatedText = response.content;
 
   if (!generatedText) {
     throw new Error("A IA não retornou conteúdo.");
@@ -304,10 +280,6 @@ Responda APENAS com um array JSON válido de strings, sem texto adicional:
 }
 
 export async function generateProjectWithAI({ theme, grade, steamAreas }) {
-  if (!API_KEY) {
-    throw new Error("Chave da Gemini não configurada. Verifique o arquivo .env.");
-  }
-
   if (!theme || theme.trim().length < 3) {
     throw new Error("O tema é muito curto. Descreva melhor o que deseja.");
   }
@@ -318,66 +290,22 @@ export async function generateProjectWithAI({ theme, grade, steamAreas }) {
 
   const prompt = buildPrompt(theme, grade, steamAreas);
 
-  const requestBody = {
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: {
-      temperature: 0.8,
-      topP: 0.95,
-      maxOutputTokens: 8192,
-      responseMimeType: "text/plain"
-    }
-  };
+  const response = await AIProviderManager.request({
+    requestType: 'project',
+    prompt
+  })
 
-  let response;
+  let generatedText = response.content
 
-  try {
-    response = await fetch(`${API_URL}?key=${API_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody)
-    });
-  } catch (networkError) {
-    throw new Error("Falha de conexão com a Gemini. Verifique sua internet.");
+  if (!generatedText || typeof generatedText !== "string") {
+    throw new Error("A IA não retornou conteúdo extraível. Verifique se a resposta está válida.");
   }
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-
-    if (response.status === 400) {
-      throw new Error("Requisição inválida. Verifique a chave da API.");
-    }
-
-    if (response.status === 403) {
-      throw new Error("Acesso negado. A chave da API pode estar inválida.");
-    }
-
-    if (response.status === 429) {
-      throw new Error("Limite de uso da API atingido. Tente novamente em alguns minutos.");
-    }
-
-    throw new Error(`Erro na API Gemini (${response.status}). ${errorText.substring(0, 100)}`);
-  }
-
-  const data = await response.json();
-  const generatedText = getGeneratedText(data);
-
-  if (!generatedText) {
-    throw new Error(
-      "A IA não retornou conteúdo extraível. Verifique se a Gemini está retornando texto válido."
-    );
-  }
-
-  console.log("RESPOSTA BRUTA DA IA:", generatedText);
-
-  let projectData;
 
   try {
     const cleaned = cleanJsonResponse(generatedText);
-    console.log("APÓS LIMPEZA:", cleaned);
-    projectData = JSON.parse(cleaned);
+    const projectData = JSON.parse(cleaned);
 
     validateProjectStructure(projectData);
-
     projectData.grade = grade;
     projectData.steam = steamAreas;
 

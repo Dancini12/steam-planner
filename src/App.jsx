@@ -23,6 +23,7 @@ import Library from "./pages/Library.jsx";
 import ProjectEditor from "./pages/ProjectEditor.jsx";
 import PhaseEditor from "./pages/PhaseEditor.jsx";
 import BibliographyEditor from "./pages/BibliographyEditor.jsx";
+import Settings from "./pages/Settings.jsx";
 import Login from "./pages/Login.jsx";
 import { supabase } from "./lib/supabaseClient.js";
 import { getUserData, trackEvent } from "./lib/analytics.js";
@@ -38,7 +39,8 @@ const SCREENS = {
   LIBRARY: "library",
   PROJECT_EDITOR: "project_editor",
   PHASE_EDITOR: "phase_editor",
-  BIBLIOGRAPHY_EDITOR: "bibliography_editor"
+  BIBLIOGRAPHY_EDITOR: "bibliography_editor",
+  SETTINGS: "settings"
 };
 
 // ------------------------------------------------------------
@@ -168,6 +170,11 @@ export default function App() {
     setCurrentScreen(SCREENS.BIBLIOGRAPHY_EDITOR);
   };
 
+  // Vai para as configurações
+  const goToSettings = () => {
+    setCurrentScreen(SCREENS.SETTINGS);
+  };
+
   // Troca a fase atual mantendo o mesmo projeto
   const changePhase = (newPhaseId) => {
     setActivePhaseId(newPhaseId);
@@ -222,6 +229,7 @@ export default function App() {
           onLogout={handleLogout}
           onOpenProject={goToProjectEditor}
           onOpenLibrary={goToLibrary}
+          onOpenSettings={goToSettings}
         />
       )}
 
@@ -260,6 +268,13 @@ export default function App() {
           projectId={activeProjectId}
           currentUser={currentUser}
           onBack={goBackToProject}
+        />
+      )}
+
+      {currentScreen === SCREENS.SETTINGS && (
+        <Settings
+          currentUser={currentUser}
+          onBack={goToDashboard}
         />
       )}
     </div>
