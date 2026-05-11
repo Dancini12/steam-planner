@@ -20,27 +20,8 @@ import { useProjects } from "../hooks/useProjects.js";
 import { PHASES, getPhaseById } from "../data/phases.js";
 
 import PhaseHeader from "../components/phase/PhaseHeader.jsx";
-import DiaryEntry from "../components/phase/DiaryEntry.jsx";
-import DiaryEntryForm from "../components/phase/DiaryEntryForm.jsx";
-import EvaluationForm from "../components/phase/EvaluationForm.jsx";
 import TextField from "../components/ui/TextField.jsx";
 import Button from "../components/ui/Button.jsx";
-
-function getTodayInputValue() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function formatDate(value) {
-  if (!value) return "";
-  try {
-    const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
-      ? new Date(`${value}T12:00:00`)
-      : new Date(value);
-    return date.toLocaleDateString("pt-BR");
-  } catch {
-    return "";
-  }
-}
 
 // ------------------------------------------------------------
 // COMPONENTE PHASE EDITOR
@@ -61,12 +42,6 @@ export default function PhaseEditor({
   const {
     getProjectById,
     editPhasePlan,
-    addEntry,
-    removeEntry,
-    editEntry,
-    addStudentEntry,
-    removeStudentEntry,
-    editPhaseEvaluation,
     isLoaded
   } = useProjects(currentUser?.id);
 
@@ -75,9 +50,6 @@ export default function PhaseEditor({
 
   // Estado local do plano pedagógico
   const [plan, setPlan] = useState("");
-  const [selectedStudentId, setSelectedStudentId] = useState("");
-  const [studentEntryDate, setStudentEntryDate] = useState(getTodayInputValue());
-  const [studentEntryText, setStudentEntryText] = useState("");
 
   // Sincroniza plano local com o projeto carregado
   useEffect(() => {
@@ -89,45 +61,6 @@ export default function PhaseEditor({
   // Salva o plano pedagógico
   const handleSavePlan = () => {
     editPhasePlan(projectId, phaseId, plan);
-  };
-
-  // Adiciona registro no diário
-  const handleAddDiaryEntry = (text, date) => {
-    addEntry(projectId, phaseId, text, date);
-  };
-
-  // Remove registro do diário
-  const handleDeleteDiaryEntry = (entryId) => {
-    removeEntry(projectId, phaseId, entryId);
-  };
-
-  // Edita data/texto de um registro do diário
-  const handleEditDiaryEntry = (entryId, updates) => {
-    editEntry(projectId, phaseId, entryId, updates);
-  };
-
-  const handleAddStudentDiaryEntry = () => {
-    if (!selectedStudentId || !studentEntryText.trim()) return;
-    addStudentEntry(
-      projectId,
-      phaseId,
-      selectedStudentId,
-      studentEntryText,
-      studentEntryDate
-    );
-    setStudentEntryText("");
-  };
-
-  const handleDeleteStudentDiaryEntry = (studentId, entryId) => {
-    if (confirm("Excluir este registro individual?")) {
-      removeStudentEntry(projectId, phaseId, studentId, entryId);
-    }
-  };
-
-  // Salva avaliação da fase
-  const handleSaveEvaluation = (evaluation) => {
-    editPhaseEvaluation(projectId, phaseId, evaluation);
-    alert("Avaliação salva!");
   };
 
   // Navegação entre fases (anterior e próxima)
@@ -200,76 +133,6 @@ export default function PhaseEditor({
     marginTop: "0.5rem"
   };
 
-  const diaryEntriesStyle = {
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.75rem"
-  };
-
-  const emptyDiaryStyle = {
-    fontSize: "0.9rem",
-    color: "rgba(255, 255, 255, 0.4)",
-    fontStyle: "italic",
-    textAlign: "center",
-    padding: "1.5rem",
-    border: "1px dashed rgba(255, 255, 255, 0.08)",
-    borderRadius: "8px"
-  };
-
-  const individualBoxStyle = {
-    background: "rgba(255, 255, 255, 0.03)",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-    borderRadius: "8px",
-    padding: "1rem",
-    marginBottom: "1rem"
-  };
-
-  const individualFormStyle = {
-    display: "grid",
-    gridTemplateColumns: "1fr 150px",
-    gap: "0.75rem",
-    alignItems: "start"
-  };
-
-  const selectStyle = {
-    width: "100%",
-    padding: "0.75rem 1rem",
-    borderRadius: "8px",
-    background: "rgba(255, 255, 255, 0.04)",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-    color: "#FFFFFF",
-    fontSize: "0.95rem",
-    fontFamily: "inherit",
-    outline: "none",
-    boxSizing: "border-box"
-  };
-
-  const dateInputStyle = {
-    ...selectStyle,
-    fontWeight: 700,
-    colorScheme: "dark",
-    WebkitTextFillColor: "#FFFFFF"
-  };
-
-  const studentEntryStyle = {
-    background: "rgba(255, 255, 255, 0.035)",
-    border: "1px solid rgba(255, 255, 255, 0.07)",
-    borderRadius: "8px",
-    padding: "0.8rem 1rem"
-  };
-
-  const studentEntryHeaderStyle = {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "1rem",
-    marginBottom: "0.4rem",
-    color: "rgba(255, 255, 255, 0.5)",
-    fontSize: "0.78rem",
-    fontWeight: 700,
-    textTransform: "uppercase",
-    letterSpacing: "0.04em"
-  };
-
   const bottomNavStyle = {
     display: "flex",
     justifyContent: "space-between",
@@ -308,15 +171,7 @@ export default function PhaseEditor({
 
   const phaseData = project.phases[phaseId] || {
     plan: "",
-    entries: [],
-    studentEntries: {},
-    evaluation: {}
   };
-  const students = project.students || [];
-  const selectedStudent = students.find((student) => student.id === selectedStudentId);
-  const selectedStudentEntries = selectedStudent
-    ? phaseData.studentEntries?.[selectedStudent.id] || []
-    : [];
 
   // ----------------------------------------------------------
   // RENDERIZAÇÃO
@@ -374,160 +229,6 @@ export default function PhaseEditor({
             Salvar plano
           </Button>
         </div>
-      </div>
-
-      {/* SEÇÃO 3 — DIÁRIO DE BORDO */}
-      <div style={sectionStyle}>
-        <div style={sectionTitleStyle(phase.color)}>
-          <span style={sectionLabelStyle}>Componente 2</span>
-          Diário de bordo da fase
-        </div>
-
-        {/* Formulário para novo registro */}
-        <DiaryEntryForm onSubmit={handleAddDiaryEntry} />
-
-        {/* Lista de registros já feitos */}
-        {phaseData.entries.length === 0 ? (
-          <div style={emptyDiaryStyle}>
-            Nenhum registro ainda. Use o formulário acima para
-            documentar o que aconteceu nas aulas desta fase.
-          </div>
-        ) : (
-          <div style={diaryEntriesStyle}>
-            {phaseData.entries
-              .slice()
-              .reverse()
-              .map((entry) => (
-                <DiaryEntry
-                  key={entry.id}
-                  entry={entry}
-                  onDelete={handleDeleteDiaryEntry}
-                  onEdit={handleEditDiaryEntry}
-                />
-              ))}
-          </div>
-        )}
-      </div>
-
-      {/* SEÇÃO 4 — AVALIAÇÃO EM FASES */}
-      <div style={sectionStyle}>
-        <div style={sectionTitleStyle(phase.color)}>
-          <span style={sectionLabelStyle}>Componente 3</span>
-          Diário individual dos alunos
-        </div>
-
-        {students.length === 0 ? (
-          <div style={emptyDiaryStyle}>
-            Nenhum aluno cadastrado neste projeto. Volte ao projeto e cadastre
-            a turma para registrar observações individuais.
-          </div>
-        ) : (
-          <>
-            <div style={individualBoxStyle}>
-              <div style={individualFormStyle}>
-                <div>
-                  <label style={sectionLabelStyle}>Aluno</label>
-                  <select
-                    style={selectStyle}
-                    value={selectedStudentId}
-                    onChange={(e) => setSelectedStudentId(e.target.value)}
-                  >
-                    <option value="">Selecione um aluno...</option>
-                    {students.map((student) => (
-                      <option key={student.id} value={student.id}>
-                        {student.number ? `${student.number} · ` : ""}
-                        {student.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label style={sectionLabelStyle}>Data</label>
-                  <input
-                    type="date"
-                    style={dateInputStyle}
-                    value={studentEntryDate}
-                    onChange={(e) => setStudentEntryDate(e.target.value)}
-                  />
-                </div>
-              </div>
-              <TextField
-                value={studentEntryText}
-                onChange={setStudentEntryText}
-                multiline
-                rows={4}
-                placeholder="Registre participação, avanços, dificuldades, evidências de aprendizagem ou encaminhamentos específicos."
-              />
-              <Button
-                variant="primary"
-                size="small"
-                onClick={handleAddStudentDiaryEntry}
-                disabled={!selectedStudentId || !studentEntryText.trim()}
-              >
-                Gravar registro individual
-              </Button>
-            </div>
-
-            {selectedStudent ? (
-              selectedStudentEntries.length === 0 ? (
-                <div style={emptyDiaryStyle}>
-                  Nenhum registro individual para {selectedStudent.name} nesta fase.
-                </div>
-              ) : (
-                <div style={diaryEntriesStyle}>
-                  {selectedStudentEntries
-                    .slice()
-                    .reverse()
-                    .map((entry) => (
-                      <div key={entry.id} style={studentEntryStyle}>
-                        <div style={studentEntryHeaderStyle}>
-                          <span>{formatDate(entry.date)}</span>
-                          <button
-                            style={{
-                              background: "transparent",
-                              border: "none",
-                              color: "#E8358A",
-                              cursor: "pointer",
-                              fontFamily: "inherit"
-                            }}
-                            onClick={() =>
-                              handleDeleteStudentDiaryEntry(
-                                selectedStudent.id,
-                                entry.id
-                              )
-                            }
-                          >
-                            Excluir
-                          </button>
-                        </div>
-                        <p style={{ margin: 0, color: "rgba(255,255,255,0.84)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
-                          {entry.text}
-                        </p>
-                      </div>
-                    ))}
-                </div>
-              )
-            ) : (
-              <div style={emptyDiaryStyle}>
-                Selecione um aluno para visualizar o diário individual nesta fase.
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* SEÇÃO 5 — AVALIAÇÃO EM FASES */}
-      <div style={sectionStyle}>
-        <div style={sectionTitleStyle(phase.color)}>
-          <span style={sectionLabelStyle}>Componente 4</span>
-          Avaliação em fases
-        </div>
-
-        <EvaluationForm
-          phaseId={phaseId}
-          evaluation={phaseData.evaluation}
-          onSave={handleSaveEvaluation}
-        />
       </div>
 
       {/* NAVEGAÇÃO INFERIOR */}

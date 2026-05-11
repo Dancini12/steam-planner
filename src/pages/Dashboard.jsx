@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useProjects } from "../hooks/useProjects.js";
+import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 
 import Button from "../components/ui/Button.jsx";
 import Modal from "../components/ui/Modal.jsx";
 import AIGeneratorModal from "../components/project/AIGeneratorModal.jsx";
+import PedagogicalPlannerModal from "../components/project/PedagogicalPlannerModal.jsx";
 
 function formatSupabaseError(error) {
   return [
@@ -142,6 +144,16 @@ function Icon({ name, color = "currentColor" }) {
         <path d="M5 12h14" />
       </>
     ),
+    target: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <circle cx="12" cy="12" r="5" />
+        <path d="M12 3v3" />
+        <path d="M12 18v3" />
+        <path d="M3 12h3" />
+        <path d="M18 12h3" />
+      </>
+    ),
     search: (
       <>
         <circle cx="11" cy="11" r="7" />
@@ -181,13 +193,15 @@ export default function Dashboard({
   currentUser,
   onLogout,
   onOpenProject,
-  onOpenLibrary
+  onOpenLibrary,
+  onOpenSettings
 }) {
   const { projects, addBlankProject, addProjectFromTemplate, removeProject, isLoaded } =
     useProjects(currentUser?.id);
 
   const [projectToDelete, setProjectToDelete] = useState(null);
   const [showAIModal, setShowAIModal] = useState(false);
+  const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [creationError, setCreationError] = useState("");
   const [deleteError, setDeleteError] = useState("");
@@ -316,22 +330,6 @@ export default function Dashboard({
     confirmPendingSaveBefore(() => setShowAIModal(true));
   };
 
-  const handleCreateBlank = async () => {
-    setIsCreatingProject(true);
-    setCreationError("");
-    try {
-      const newProject = await addBlankProject({ waitForPersist: true });
-      onOpenProject(newProject.id);
-    } catch (error) {
-      console.error("Erro ao criar projeto em branco:", error);
-      setCreationError(
-        `Não foi possível salvar o projeto no Supabase. ${formatSupabaseError(error)}`
-      );
-    } finally {
-      setIsCreatingProject(false);
-    }
-  };
-
   const handleRequestDelete = (projectId) => {
     setProjectToDelete(projectId);
   };
@@ -377,6 +375,53 @@ export default function Dashboard({
       console.error("Erro ao criar projeto gerado por IA:", error);
       setCreationError(
         `Não foi possível salvar o projeto no Supabase. ${formatSupabaseError(error)}`
+      );
+    } finally {
+      setIsCreatingProject(false);
+    }
+  };
+
+  const handlePedagogicalActivityGenerated = async (result) => {
+    setIsCreatingProject(true);
+    setCreationError("");
+    try {
+      // result.activity é o objeto JSON estruturado retornado pelo Edge Function
+      const data = result.activity || {};
+
+      // Extrai as letras STEAM a partir das chaves do steamMatrix gerado
+      const steamLetters = Object.keys(data.steamMatrix || {}).filter((k) =>
+        ["S", "T", "E", "A", "M"].includes(k)
+      );
+
+      const newProject = await addProjectFromTemplate(
+        {
+          ...data,
+          steam: steamLetters,
+          grade: data.grade || result.formData.grade,
+          source: "pedagogical-planner"
+        },
+        { waitForPersist: true }
+      );
+
+      // Incrementa uso SOMENTE após o projeto ser salvo com sucesso
+      const userId = currentUser?.id;
+      if (userId) {
+        await PedagogicalPlannerService.incrementUsage(
+          userId,
+          result.formData.discipline,
+          result.competencies || []
+        );
+      }
+
+      setShowPedagogicalModal(false);
+      markPendingSaveConfirmation(
+        "Atividade pedagógica criada. Clique em Salvar alterações para confirmar."
+      );
+      onOpenProject(newProject.id);
+    } catch (error) {
+      console.error("Erro ao criar atividade pedagógica:", error);
+      setCreationError(
+        `Não foi possível salvar a atividade no Supabase. ${formatSupabaseError(error)}`
       );
     } finally {
       setIsCreatingProject(false);
@@ -503,50 +548,14 @@ export default function Dashboard({
           </div>
         )}
 
-        <section style={heroStyle} className="dash-hero">
-          <div style={heroContentStyle}>
-            <span style={heroBadgeStyle}>Projetos STEAM e Cultura Maker</span>
-            <h2 style={heroTitleStyle}>Transforme ideias em experiências STEAM</h2>
-            <p style={heroTextStyle}>
-              Planeje, crie e compartilhe projetos que conectam ciência,
-              tecnologia, engenharia, artes e matemática.
-            </p>
-          </div>
-
-          <div style={heroVisualStyle} aria-hidden="true">
-            <div className="floating-card robotics-card">
-              <span>Robótica</span>
-              <strong>sensores</strong>
-            </div>
-            <div className="floating-card code-card">
-              <span>Programação</span>
-              <strong>{"{ maker }"}</strong>
-            </div>
-            <div className="floating-card science-card">
-              <span>Ciência</span>
-              <strong>teste</strong>
-            </div>
-            <div className="hero-orbit">
-              <div className="hero-core">STEAM</div>
-            </div>
-          </div>
-        </section>
 
         <section style={quickActionsStyle} aria-label="Ações principais">
           <ActionButton
-            icon="plus"
-            title={isCreatingProject ? "Criando..." : "Criar projeto em branco"}
-            description="Comece com um canvas limpo"
-            color="#2563EB"
-            onClick={handleCreateBlank}
-            disabled={isCreatingProject}
-          />
-          <ActionButton
-            icon="spark"
-            title="Gerar com IA"
-            description="Receba uma proposta inicial"
-            color="#8B5CF6"
-            onClick={handleShowAIModal}
+            icon="target"
+            title="Gerar atividade"
+            description="Crie uma atividade de acordo com sua solicitação"
+            color="#F59E0B"
+            onClick={() => setShowPedagogicalModal(true)}
           />
           <ActionButton
             icon="library"
@@ -555,6 +564,43 @@ export default function Dashboard({
             color="#14B8A6"
             onClick={handleOpenLibraryClick}
           />
+        </section>
+
+        <section style={aiAssistantsStyle} aria-label="Assistentes Inteligentes">
+          <div style={aiHeaderStyle}>
+            <h2 style={aiTitleStyle}>Assistentes Inteligentes</h2>
+            <p style={aiSubtitleStyle}>Ferramentas especializadas para potencializar seus projetos STEAM</p>
+          </div>
+
+          <div style={aiGridStyle}>
+            <AIAssistantCard
+              icon="🎓"
+              title="Planejador Pedagógico"
+              description="Gera uma atividade alinhada à sua solicitação, com STEAM, BNCC e Maker"
+              color="#8B5CF6"
+              onClick={() => setShowPedagogicalModal(true)}
+            />
+            <AIAssistantCard
+              icon="✨"
+              title="Assistente Pedagógico"
+              description="Geração de conteúdo educacional avançado"
+              color="#5BC0DE"
+              onClick={onOpenSettings}
+            />
+            <AIAssistantCard
+              icon="📄"
+              title="Análise de Documentos"
+              description="Leitura e síntese de PDFs, imagens e textos"
+              color="#10B981"
+              onClick={onOpenSettings}
+            />
+          </div>
+
+          <div style={aiFooterStyle}>
+            <Button variant="secondary" onClick={onOpenSettings}>
+              ⚙️ Configurar IAs
+            </Button>
+          </div>
         </section>
 
         <section style={projectsSectionStyle}>
@@ -704,6 +750,11 @@ export default function Dashboard({
         onClose={() => setShowAIModal(false)}
         onProjectGenerated={handleAIProjectGenerated}
       />
+      <PedagogicalPlannerModal
+        isOpen={showPedagogicalModal}
+        onClose={() => setShowPedagogicalModal(false)}
+        onActivityGenerated={handlePedagogicalActivityGenerated}
+      />
     </div>
   );
 }
@@ -724,6 +775,27 @@ function ActionButton({ icon, title, description, color, onClick, disabled }) {
         <strong>{title}</strong>
         <small>{description}</small>
       </span>
+    </button>
+  );
+}
+
+function AIAssistantCard({ icon, title, description, color, onClick }) {
+  return (
+    <button
+      type="button"
+      style={{
+        ...aiAssistantCardStyle,
+        borderColor: color,
+        boxShadow: `0 18px 35px ${color}22`,
+        background: "rgba(255, 255, 255, 0.92)"
+      }}
+      onClick={onClick}
+    >
+      <span style={{ ...aiAssistantIconStyle, background: color }}>{icon}</span>
+      <div>
+        <strong style={aiAssistantTitleStyle}>{title}</strong>
+        <p style={aiAssistantDescriptionStyle}>{description}</p>
+      </div>
     </button>
   );
 }
@@ -1116,6 +1188,84 @@ const quickActionsStyle = {
   gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
   gap: "1rem",
   margin: "1.25rem 0"
+};
+
+const aiAssistantsStyle = {
+  padding: "1.35rem",
+  borderRadius: "30px",
+  background: "rgba(255, 255, 255, 0.76)",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  boxShadow: "0 20px 55px rgba(15, 23, 42, 0.06)",
+  marginBottom: "1.25rem"
+};
+
+const aiHeaderStyle = {
+  marginBottom: "1rem"
+};
+
+const aiTitleStyle = {
+  margin: 0,
+  color: "#0F172A",
+  fontSize: "1.35rem",
+  fontWeight: 900
+};
+
+const aiSubtitleStyle = {
+  margin: "0.35rem 0 0",
+  color: "#64748B",
+  fontSize: "0.95rem",
+  lineHeight: 1.6
+};
+
+const aiGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: "1rem"
+};
+
+const aiFooterStyle = {
+  marginTop: "1rem",
+  display: "flex",
+  justifyContent: "flex-end"
+};
+
+const aiAssistantCardStyle = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "1rem",
+  padding: "1.25rem",
+  borderRadius: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  background: "#FFFFFF",
+  color: "#0F172A",
+  cursor: "pointer",
+  textAlign: "left",
+  transition: "transform 0.18s ease, box-shadow 0.18s ease",
+  minHeight: "140px"
+};
+
+const aiAssistantIconStyle = {
+  width: "54px",
+  height: "54px",
+  borderRadius: "16px",
+  display: "grid",
+  placeItems: "center",
+  color: "#FFFFFF",
+  fontSize: "1.3rem",
+  flex: "0 0 auto"
+};
+
+const aiAssistantTitleStyle = {
+  margin: 0,
+  fontSize: "1rem",
+  fontWeight: 900
+};
+
+const aiAssistantDescriptionStyle = {
+  margin: "0.45rem 0 0",
+  color: "#475569",
+  lineHeight: 1.6,
+  fontSize: "0.95rem"
 };
 
 const projectsSectionStyle = {

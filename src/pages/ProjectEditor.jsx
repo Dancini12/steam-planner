@@ -20,7 +20,8 @@ import { PHASES } from "../data/phases.js";
 import { STEAM_AREAS, STEAM_KEYS } from "../data/steamAreas.js";
 import { RUBRIC_LEVELS, STEAM_RUBRIC_CRITERIA } from "../data/rubric.js";
 import { getPhaseStatus, PHASE_STATUS } from "../lib/progress.js";
-import { openReportWindow } from "../lib/exportReport.js";
+import { openReportWindow, openClassroomActivityWindow } from "../lib/exportReport.js";
+import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 import { getProjectTimeline } from "../lib/timeline.js";
 import { trackEvent } from "../lib/analytics.js";
 
@@ -197,6 +198,23 @@ export default function ProjectEditor({
       updatedAt: new Date().toISOString()
     });
     trackEvent(currentUser?.id, "report_exported", { projectId });
+  };
+
+  const [generatingActivity, setGeneratingActivity] = useState(false);
+
+  const handleGenerateClassroomActivity = async () => {
+    setGeneratingActivity(true);
+    try {
+      const updates = handleSave();
+      const fullProject = { ...project, ...updates };
+      const activity = await PedagogicalPlannerService.generateClassroomActivity(fullProject);
+      openClassroomActivityWindow(activity, fullProject.title);
+      trackEvent(currentUser?.id, "classroom_activity_generated", { projectId });
+    } catch (error) {
+      alert(`Erro ao gerar atividade: ${error.message}`);
+    } finally {
+      setGeneratingActivity(false);
+    }
   };
 
   // ----------------------------------------------------------
@@ -490,9 +508,18 @@ export default function ProjectEditor({
         <button style={backButtonStyle} onClick={onBack}>
           ← Voltar para projetos
         </button>
-        <Button variant="secondary" onClick={handleExportReport}>
-          Exportar relatório
-        </Button>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          <Button
+            variant="primary"
+            onClick={handleGenerateClassroomActivity}
+            disabled={generatingActivity}
+          >
+            {generatingActivity ? "Gerando roteiro..." : "Gerar atividade para sala"}
+          </Button>
+          <Button variant="secondary" onClick={handleExportReport}>
+            Exportar relatório
+          </Button>
+        </div>
       </div>
 
       {/* SEÇÃO 1 — IDENTIFICAÇÃO */}

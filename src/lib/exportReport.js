@@ -288,6 +288,96 @@ function escapeHtml(text) {
 // FUNÇÃO PRINCIPAL — ABRIR JANELA COM RELATÓRIO
 // ------------------------------------------------------------
 
+function buildClassroomActivityHTML(activity, projectTitle) {
+  const stepsHTML = (activity.steps || []).map((step, i) => {
+    const actorColor = step.actor === 'Professor' ? '#6B2FE0' : '#0891b2'
+    return `
+      <div style="display:flex;gap:1rem;margin-bottom:1.25rem;align-items:flex-start;">
+        <div style="min-width:90px;text-align:right;">
+          <div style="font-size:0.75rem;font-weight:700;color:#888;text-transform:uppercase;">${escapeHtml(step.time || '')}</div>
+          <div style="font-size:0.7rem;background:${actorColor};color:#fff;padding:0.15rem 0.4rem;border-radius:3px;margin-top:0.2rem;display:inline-block;">${escapeHtml(step.actor || '')}</div>
+        </div>
+        <div style="flex:1;border-left:3px solid ${actorColor};padding-left:1rem;">
+          <div style="font-weight:700;color:#222;margin-bottom:0.3rem;">${i + 1}. ${escapeHtml(step.title || '')}</div>
+          <div style="color:#444;line-height:1.6;">${escapeHtml(step.description || '')}</div>
+        </div>
+      </div>
+    `
+  }).join('')
+
+  const questionsHTML = (activity.discussionQuestions || [])
+    .map((q) => `<li style="margin-bottom:0.5rem;">${escapeHtml(q)}</li>`)
+    .join('')
+
+  const materialsHTML = (activity.materials || [])
+    .map((m) => `<li>${escapeHtml(m)}</li>`)
+    .join('')
+
+  const bnccHTML = (activity.bncc || []).map(escapeHtml).join(' · ')
+
+  return `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(activity.activityTitle || 'Roteiro de Aula')}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Georgia, serif; max-width: 800px; margin: 2rem auto; padding: 1rem 1.5rem; color: #222; line-height: 1.6; }
+    h1 { color: #6B2FE0; border-bottom: 3px solid #6B2FE0; padding-bottom: 0.5rem; margin-bottom: 0.25rem; }
+    h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; color: #555; margin: 2rem 0 0.75rem; border-bottom: 1px solid #ddd; padding-bottom: 0.3rem; }
+    .meta { color: #666; font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .objective-box { background: #f4f0ff; border-left: 4px solid #6B2FE0; padding: 1rem 1.25rem; margin: 1rem 0 1.5rem; font-size: 1rem; }
+    .tips-box { background: #f0fdf4; border-left: 4px solid #16a34a; padding: 1rem 1.25rem; margin: 1rem 0; font-size: 0.95rem; }
+    .assessment-box { background: #fff7ed; border-left: 4px solid #d97706; padding: 1rem 1.25rem; margin: 1rem 0; font-size: 0.95rem; }
+    ul { padding-left: 1.5rem; }
+    li { margin-bottom: 0.3rem; }
+    .project-ref { font-size: 0.82rem; color: #888; font-style: italic; margin-bottom: 0.5rem; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ddd; color: #888; font-size: 0.82rem; text-align: center; }
+    @media print { body { margin: 0; padding: 0.5cm 1cm; } }
+  </style>
+</head>
+<body>
+  <div class="project-ref">Projeto: ${escapeHtml(projectTitle || '')}</div>
+  <h1>${escapeHtml(activity.activityTitle || 'Roteiro de Aula')}</h1>
+  <div class="meta">
+    ${escapeHtml(activity.targetAudience || '')}
+    ${activity.duration ? ` · ${escapeHtml(activity.duration)}` : ''}
+    ${bnccHTML ? ` · <span style="font-family:monospace;">${bnccHTML}</span>` : ''}
+  </div>
+
+  <h2>Objetivo da aula</h2>
+  <div class="objective-box">${escapeHtml(activity.objective || '')}</div>
+
+  ${materialsHTML ? `<h2>Materiais necessários</h2><ul>${materialsHTML}</ul>` : ''}
+
+  <h2>Roteiro passo a passo</h2>
+  ${stepsHTML}
+
+  ${questionsHTML ? `<h2>Perguntas para discussão</h2><ul>${questionsHTML}</ul>` : ''}
+
+  <h2>Como avaliar</h2>
+  <div class="assessment-box">${escapeHtml(activity.assessment || '')}</div>
+
+  ${activity.tips ? `<h2>Dicas para o professor</h2><div class="tips-box">${escapeHtml(activity.tips)}</div>` : ''}
+
+  <footer>Roteiro gerado pelo STEAM Planner em ${new Date().toLocaleDateString('pt-BR')}</footer>
+</body>
+</html>
+  `
+}
+
+export function openClassroomActivityWindow(activity, projectTitle) {
+  const html = buildClassroomActivityHTML(activity, projectTitle)
+  const newWindow = window.open('', '_blank')
+  if (!newWindow) {
+    alert('Não foi possível abrir o roteiro. Verifique se o navegador está bloqueando pop-ups.')
+    return
+  }
+  newWindow.document.write(html)
+  newWindow.document.close()
+}
+
 export function openReportWindow(project) {
   const html = buildReportHTML(project);
   const newWindow = window.open("", "_blank");
