@@ -1,31 +1,11 @@
-import { useState } from "react";
 import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
-import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 import { supabase } from "../lib/supabaseClient.js";
 
 export default function Settings({ onBack }) {
-  const [resetting, setResetting] = useState(false);
-  const [resetMsg, setResetMsg] = useState("");
-
   const providerStatus = {
     gemini: import.meta.env.VITE_ENABLE_GEMINI === 'true',
     cerebras: import.meta.env.VITE_ENABLE_CEREBRAS === 'true'
-  };
-
-  const handleResetUsage = async () => {
-    setResetting(true);
-    setResetMsg("");
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado.");
-      await PedagogicalPlannerService.resetTodayUsage(user.id);
-      setResetMsg("Contador resetado com sucesso. Você pode gerar novas atividades hoje.");
-    } catch (error) {
-      setResetMsg(`Erro: ${error.message}`);
-    } finally {
-      setResetting(false);
-    }
   };
 
   const pageStyle = {
@@ -65,15 +45,6 @@ export default function Settings({ onBack }) {
     fontSize: "0.9rem"
   });
 
-  const resetMsgStyle = {
-    marginTop: "0.75rem",
-    padding: "0.75rem 1rem",
-    borderRadius: "8px",
-    background: resetMsg.startsWith("Erro") ? "rgba(220,38,38,0.12)" : "rgba(16,185,129,0.12)",
-    color: resetMsg.startsWith("Erro") ? "#F87171" : "#6EE7B7",
-    fontSize: "0.9rem"
-  };
-
   return (
     <div style={pageStyle}>
       <div style={headerStyle}>
@@ -105,24 +76,11 @@ export default function Settings({ onBack }) {
           <h2 style={sectionTitleStyle}>🔐 Segurança e uso</h2>
           <ul style={{ gap: '0.75rem', display: 'grid', color: 'rgba(255,255,255,0.75)', marginBottom: '1.5rem' }}>
             <li>Nenhuma chave de IA é salva no frontend.</li>
-            <li>O backend gerencia limite diário e histórico de geração.</li>
+            <li>O backend registra histórico de geração para monitoramento.</li>
             <li>Os provedores são alternados automaticamente em caso de falha.</li>
             <li>A lógica de escolha de IA é centralizada internamente.</li>
           </ul>
 
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.25rem' }}>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '0.75rem' }}>
-              Se o limite diário de atividades foi atingido incorretamente (por falhas técnicas), você pode resetar o contador de hoje.
-            </p>
-            <Button
-              variant="secondary"
-              onClick={handleResetUsage}
-              disabled={resetting}
-            >
-              {resetting ? "Resetando..." : "Resetar limite de hoje"}
-            </Button>
-            {resetMsg && <div style={resetMsgStyle}>{resetMsg}</div>}
-          </div>
         </Card>
       </div>
     </div>

@@ -58,26 +58,12 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
   const [previewData, setPreviewData] = useState(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState('')
-  const [usageStats, setUsageStats] = useState({})
 
   useEffect(() => {
     if (isOpen) {
-      loadUsageStats()
       resetForm()
     }
   }, [isOpen])
-
-  const loadUsageStats = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const stats = await PedagogicalPlannerService.getUsageStats(user.id)
-        setUsageStats(stats)
-      }
-    } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error)
-    }
-  }
 
   const resetForm = () => {
     setCurrentStep(0)
@@ -201,9 +187,6 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
         userId: user.id
       })
 
-      // Recarregar estatísticas
-      await loadUsageStats()
-
       // Chamar callback com resultado (não aguardado intencionalmente — salva em background)
       if (onActivityGenerated) {
         onActivityGenerated({
@@ -245,11 +228,6 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
                 </button>
               ))}
             </div>
-            {formData.discipline && usageStats[formData.discipline] && (
-              <div style={usageWarningStyle}>
-                ⚠️ Você já gerou {usageStats[formData.discipline]} de 5 projetos para {formData.discipline} hoje.
-              </div>
-            )}
           </div>
         )
 
@@ -599,17 +577,6 @@ const makerNoteStyle = {
   borderRadius: '8px',
   color: '#92400E',
   fontSize: '14px',
-  textAlign: 'center'
-}
-
-const usageWarningStyle = {
-  marginTop: '12px',
-  padding: '8px 12px',
-  backgroundColor: '#FEF3C7',
-  border: '1px solid #F59E0B',
-  borderRadius: '6px',
-  color: '#92400E',
-  fontSize: '13px',
   textAlign: 'center'
 }
 

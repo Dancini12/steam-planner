@@ -187,12 +187,6 @@ export class PedagogicalPlannerService {
   static async generatePedagogicalActivity(params) {
     const { discipline, grade, theme, steamCompetencies, userId } = params
 
-    // Verifica limite antes de chamar a IA
-    const limitReached = await this.checkUsageLimit(userId, discipline)
-    if (limitReached) {
-      throw new Error(`Você atingiu o limite diário de 5 atividades para ${discipline}. Tente novamente amanhã.`)
-    }
-
     const prompt = buildPrompt({ discipline, grade, theme, steamCompetencies })
 
     const response = await AIProviderManager.request({
@@ -275,51 +269,5 @@ export class PedagogicalPlannerService {
       console.error('Erro ao incrementar uso:', error)
     }
   }
-
-  static async resetTodayUsage(userId) {
-    try {
-      const today = new Date().toISOString().split('T')[0]
-      const { error } = await supabase
-        .from('pedagogical_usage')
-        .delete()
-        .eq('user_id', userId)
-        .eq('date', today)
-      if (error) throw error
-      return true
-    } catch (error) {
-      console.error('Erro ao resetar uso:', error)
-      throw new Error('Não foi possível resetar o contador de uso.')
-    }
-  }
-
-  static async getUsageStats(userId) {
-    try {
-      const today = new Date().toISOString().split('T')[0]
-      const { data, error } = await supabase
-        .from('pedagogical_usage')
-        .select('discipline, count')
-        .eq('user_id', userId)
-        .eq('date', today)
-
-      if (error) throw error
-
-      return data.reduce((acc, item) => {
-        acc[item.discipline] = item.count
-        return acc
-      }, {})
-    } catch (error) {
-      console.error('Erro ao buscar estatísticas de uso:', error)
-      return {}
-    }
-  }
-
-  static async checkUsageLimit(userId, discipline) {
-    try {
-      const stats = await this.getUsageStats(userId)
-      return (stats[discipline] || 0) >= 5
-    } catch (error) {
-      console.error('Erro ao verificar limite de uso:', error)
-      return false
-    }
-  }
 }
+
