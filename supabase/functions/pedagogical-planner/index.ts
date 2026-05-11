@@ -31,24 +31,6 @@ const COMPETENCY_TO_LETTER: Record<string, string> = {
   mathematics: 'M',
 }
 
-async function checkUsageLimit(userId: string, discipline: string): Promise<boolean> {
-  try {
-    const today = new Date().toISOString().split('T')[0]
-    const { data: usage, error } = await supabase
-      .from('pedagogical_usage')
-      .select('count')
-      .eq('user_id', userId)
-      .eq('discipline', discipline)
-      .eq('date', today)
-      .single()
-
-    if (error && error.code !== 'PGRST116') return false
-    return (usage?.count || 0) >= 10
-  } catch {
-    return false
-  }
-}
-
 async function incrementUsage(userId: string, discipline: string, steamCompetencies: string[]) {
   try {
     const today = new Date().toISOString().split('T')[0]
@@ -217,14 +199,6 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Parâmetros obrigatórios faltando', required: ['discipline', 'grade', 'theme', 'steamCompetencies', 'userId'] }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const limitReached = await checkUsageLimit(userId, discipline)
-    if (limitReached) {
-      return new Response(
-        JSON.stringify({ error: 'Limite diário atingido', message: `Você atingiu o limite diário de 10 projetos para ${discipline}. Tente novamente amanhã.`, limitReached: true }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
