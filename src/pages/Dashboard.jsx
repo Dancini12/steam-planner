@@ -77,7 +77,6 @@ const sidebarItems = [
   ["Meus Projetos", "grid"],
   ["Biblioteca de Modelos", "library"],
   ["Gerados com IA", "spark"],
-  ["Compartilhados comigo", "share"],
   ["Favoritos", "star"],
   ["Lixeira", "trash"]
 ];
