@@ -147,8 +147,9 @@ export default function App() {
   };
 
   // Abre o visualizador/editor da atividade gerada
-  const goToActivityViewer = (result) => {
+  const goToActivityViewer = (result, projectId) => {
     setActiveActivityResult(result);
+    setActiveProjectId(projectId || null);
     setCurrentScreen(SCREENS.ACTIVITY_VIEWER);
   };
 
@@ -248,6 +249,8 @@ export default function App() {
         <ActivityViewer
           activityData={activeActivityResult.activity || {}}
           formData={activeActivityResult.formData || {}}
+          projectId={activeProjectId}
+          currentUser={currentUser}
           onBack={goToDashboard}
         />
       )}

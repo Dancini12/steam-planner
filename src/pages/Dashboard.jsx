@@ -383,16 +383,39 @@ export default function Dashboard({
   };
 
   const handlePedagogicalActivityGenerated = async (result) => {
-    setShowPedagogicalModal(false);
-    onOpenActivityViewer(result);
+    setIsCreatingProject(true);
+    setCreationError("");
+    try {
+      const data = result.activity || {};
+      const steamLetters = Object.keys(data.steamMatrix || {}).filter((k) =>
+        ["S", "T", "E", "A", "M"].includes(k)
+      );
 
-    const userId = currentUser?.id;
-    if (userId) {
+      const newProject = await addProjectFromTemplate(
+        {
+          ...data,
+          steam: steamLetters,
+          grade: data.grade || result.formData?.grade,
+          source: "pedagogical-planner"
+        },
+        { waitForPersist: true }
+      );
+
       PedagogicalPlannerService.incrementUsage(
-        userId,
+        currentUser?.id,
         result.formData?.discipline,
         result.competencies || []
       ).catch(console.error);
+
+      setShowPedagogicalModal(false);
+      onOpenActivityViewer(result, newProject.id);
+    } catch (error) {
+      console.error("Erro ao salvar atividade pedagógica:", error);
+      setCreationError(
+        `Não foi possível salvar a atividade. ${formatSupabaseError(error)}`
+      );
+    } finally {
+      setIsCreatingProject(false);
     }
   };
 

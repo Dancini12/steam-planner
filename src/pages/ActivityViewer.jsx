@@ -2,9 +2,11 @@ import { useState } from "react";
 import { PHASES } from "../data/phases.js";
 import { STEAM_AREAS } from "../data/steamAreas.js";
 import { openActivityPrintWindow } from "../lib/exportReport.js";
+import { useProjects } from "../hooks/useProjects.js";
 import Button from "../components/ui/Button.jsx";
 
-export default function ActivityViewer({ activityData, formData, onBack }) {
+export default function ActivityViewer({ activityData, formData, projectId, currentUser, onBack }) {
+  const { editProject, getProjectById } = useProjects(currentUser?.id);
   const [title, setTitle] = useState(activityData.title || "");
   const [theme, setTheme] = useState(activityData.theme || "");
   const [duration, setDuration] = useState(activityData.duration || "");
@@ -17,6 +19,8 @@ export default function ActivityViewer({ activityData, formData, onBack }) {
   const [steamMatrix, setSteamMatrix] = useState({ ...(activityData.steamMatrix || {}) });
   const [bibliographyText, setBibliographyText] = useState((activityData.bibliography || []).join("\n"));
 
+  const [savedMsg, setSavedMsg] = useState("");
+
   const steamLetters = Object.keys(steamMatrix).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
 
   const updateMatrix = (letter, field, value) => {
@@ -25,6 +29,33 @@ export default function ActivityViewer({ activityData, formData, onBack }) {
 
   const updatePhase = (id, value) => {
     setPhaseDetails((p) => ({ ...p, [id]: value }));
+  };
+
+  const handleSave = () => {
+    if (!projectId) return;
+    const existingProject = getProjectById(projectId);
+    const phases = {};
+    PHASES.forEach((phase) => {
+      phases[phase.id] = {
+        ...(existingProject?.phases?.[phase.id] || { entries: [], studentEntries: {}, evaluation: {} }),
+        plan: phaseDetails[phase.id] || ""
+      };
+    });
+    editProject(projectId, {
+      title,
+      theme,
+      duration,
+      problem,
+      guidingQuestion,
+      objectives: objectivesText.split("\n").map((s) => s.trim()).filter(Boolean),
+      bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
+      materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
+      steamMatrix,
+      bibliography: bibliographyText.split("\n").map((s) => s.trim()).filter(Boolean),
+      phases
+    });
+    setSavedMsg("Alterações salvas.");
+    setTimeout(() => setSavedMsg(""), 3000);
   };
 
   const handlePrint = () => {
@@ -131,7 +162,15 @@ export default function ActivityViewer({ activityData, formData, onBack }) {
     <div style={containerStyle}>
       <div style={headerStyle}>
         <button style={backButtonStyle} onClick={onBack}>← Voltar</button>
-        <Button variant="primary" onClick={handlePrint}>Gerar PDF</Button>
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+          {savedMsg && (
+            <span style={{ fontSize: "0.85rem", color: "#6EE7B7" }}>{savedMsg}</span>
+          )}
+          {projectId && (
+            <Button variant="secondary" onClick={handleSave}>Salvar alterações</Button>
+          )}
+          <Button variant="primary" onClick={handlePrint}>Gerar PDF</Button>
+        </div>
       </div>
 
       {/* Identificação */}
@@ -245,8 +284,13 @@ export default function ActivityViewer({ activityData, formData, onBack }) {
       </div>
 
       <div style={footerStyle}>
-        <button style={backButtonStyle} onClick={onBack}>← Voltar sem salvar</button>
-        <Button variant="primary" onClick={handlePrint}>Gerar PDF</Button>
+        <button style={backButtonStyle} onClick={onBack}>← Voltar</button>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          {projectId && (
+            <Button variant="secondary" onClick={handleSave}>Salvar alterações</Button>
+          )}
+          <Button variant="primary" onClick={handlePrint}>Gerar PDF</Button>
+        </div>
       </div>
     </div>
   );
