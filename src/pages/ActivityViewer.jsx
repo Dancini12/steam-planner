@@ -1,0 +1,253 @@
+import { useState } from "react";
+import { PHASES } from "../data/phases.js";
+import { STEAM_AREAS } from "../data/steamAreas.js";
+import { openActivityPrintWindow } from "../lib/exportReport.js";
+import Button from "../components/ui/Button.jsx";
+
+export default function ActivityViewer({ activityData, formData, onBack }) {
+  const [title, setTitle] = useState(activityData.title || "");
+  const [theme, setTheme] = useState(activityData.theme || "");
+  const [duration, setDuration] = useState(activityData.duration || "");
+  const [problem, setProblem] = useState(activityData.problem || "");
+  const [guidingQuestion, setGuidingQuestion] = useState(activityData.guidingQuestion || "");
+  const [objectivesText, setObjectivesText] = useState((activityData.objectives || []).join("\n"));
+  const [bnccText, setBnccText] = useState((activityData.bncc || []).join(", "));
+  const [materialsText, setMaterialsText] = useState((activityData.materials || []).join("\n"));
+  const [phaseDetails, setPhaseDetails] = useState({ ...(activityData.phaseDetails || {}) });
+  const [steamMatrix, setSteamMatrix] = useState({ ...(activityData.steamMatrix || {}) });
+  const [bibliographyText, setBibliographyText] = useState((activityData.bibliography || []).join("\n"));
+
+  const steamLetters = Object.keys(steamMatrix).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
+
+  const updateMatrix = (letter, field, value) => {
+    setSteamMatrix((m) => ({ ...m, [letter]: { ...(m[letter] || {}), [field]: value } }));
+  };
+
+  const updatePhase = (id, value) => {
+    setPhaseDetails((p) => ({ ...p, [id]: value }));
+  };
+
+  const handlePrint = () => {
+    openActivityPrintWindow({
+      title,
+      theme,
+      duration,
+      problem,
+      guidingQuestion,
+      objectives: objectivesText.split("\n").map((s) => s.trim()).filter(Boolean),
+      bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
+      materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
+      phaseDetails,
+      steamMatrix,
+      bibliography: bibliographyText.split("\n").map((s) => s.trim()).filter(Boolean),
+      grade: formData?.grade || "",
+      discipline: formData?.discipline || ""
+    });
+  };
+
+  const containerStyle = { maxWidth: "860px", margin: "0 auto", padding: "2rem 1.5rem" };
+
+  const headerStyle = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "2rem",
+    gap: "1rem"
+  };
+
+  const backButtonStyle = {
+    background: "transparent",
+    border: "none",
+    color: "rgba(255, 255, 255, 0.6)",
+    cursor: "pointer",
+    fontSize: "0.9rem",
+    padding: "0.5rem 0",
+    fontFamily: "inherit"
+  };
+
+  const sectionStyle = { marginBottom: "2rem" };
+
+  const sectionTitleStyle = {
+    fontSize: "0.7rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.08em",
+    color: "rgba(255, 255, 255, 0.45)",
+    fontWeight: 600,
+    marginBottom: "1rem",
+    paddingBottom: "0.5rem",
+    borderBottom: "1px solid rgba(255, 255, 255, 0.06)"
+  };
+
+  const labelStyle = {
+    fontSize: "0.7rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "rgba(255, 255, 255, 0.4)",
+    fontWeight: 600,
+    marginBottom: "0.4rem",
+    display: "block"
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "0.75rem 1rem",
+    borderRadius: "8px",
+    background: "rgba(255, 255, 255, 0.04)",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    color: "#FFFFFF",
+    fontSize: "0.95rem",
+    fontFamily: "inherit",
+    outline: "none",
+    boxSizing: "border-box"
+  };
+
+  const textareaStyle = (height = "90px") => ({
+    ...inputStyle,
+    height,
+    resize: "vertical",
+    lineHeight: 1.6
+  });
+
+  const twoColStyle = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" };
+
+  const matrixCardStyle = (color) => ({
+    background: "rgba(255, 255, 255, 0.03)",
+    border: "1px solid rgba(255, 255, 255, 0.06)",
+    borderLeft: `3px solid ${color}`,
+    borderRadius: "8px",
+    padding: "1rem",
+    marginBottom: "0.75rem"
+  });
+
+  const footerStyle = {
+    display: "flex",
+    justifyContent: "space-between",
+    paddingTop: "1.5rem",
+    borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+    marginTop: "1rem"
+  };
+
+  return (
+    <div style={containerStyle}>
+      <div style={headerStyle}>
+        <button style={backButtonStyle} onClick={onBack}>← Voltar</button>
+        <Button variant="primary" onClick={handlePrint}>Gerar PDF</Button>
+      </div>
+
+      {/* Identificação */}
+      <div style={sectionStyle}>
+        <div style={sectionTitleStyle}>Identificação</div>
+        <div style={{ marginBottom: "0.75rem" }}>
+          <label style={labelStyle}>Título</label>
+          <input
+            style={{ ...inputStyle, fontSize: "1.1rem", fontWeight: 600 }}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </div>
+        <div style={twoColStyle}>
+          <div>
+            <label style={labelStyle}>Subtítulo / Tema</label>
+            <input style={inputStyle} value={theme} onChange={(e) => setTheme(e.target.value)} />
+          </div>
+          <div>
+            <label style={labelStyle}>Duração</label>
+            <input style={inputStyle} value={duration} onChange={(e) => setDuration(e.target.value)} />
+          </div>
+        </div>
+      </div>
+
+      {/* Problema e Questão Norteadora */}
+      <div style={sectionStyle}>
+        <div style={sectionTitleStyle}>Problema e Questão Norteadora</div>
+        <div style={{ marginBottom: "0.75rem" }}>
+          <label style={labelStyle}>Problema ou desafio central</label>
+          <textarea style={textareaStyle("80px")} value={problem} onChange={(e) => setProblem(e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>Questão norteadora</label>
+          <textarea style={textareaStyle("60px")} value={guidingQuestion} onChange={(e) => setGuidingQuestion(e.target.value)} />
+        </div>
+      </div>
+
+      {/* Matriz STEAM */}
+      {steamLetters.length > 0 && (
+        <div style={sectionStyle}>
+          <div style={sectionTitleStyle}>Matriz STEAM</div>
+          {steamLetters.map((letter) => {
+            const area = STEAM_AREAS[letter];
+            const m = steamMatrix[letter] || {};
+            return (
+              <div key={letter} style={matrixCardStyle(area?.color || "#888")}>
+                <div style={{ fontSize: "0.85rem", fontWeight: 700, color: area?.color, marginBottom: "0.75rem" }}>
+                  {letter} · {area?.name || letter}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                  {[["contribution", "Contribuição"], ["activity", "Atividade"], ["evidence", "Evidência"]].map(([field, lbl]) => (
+                    <div key={field}>
+                      <label style={labelStyle}>{lbl}</label>
+                      <textarea
+                        style={textareaStyle("70px")}
+                        value={m[field] || ""}
+                        onChange={(e) => updateMatrix(letter, field, e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Objetivos, BNCC, Materiais */}
+      <div style={sectionStyle}>
+        <div style={sectionTitleStyle}>Objetivos e Conteúdo</div>
+        <div style={{ marginBottom: "0.75rem" }}>
+          <label style={labelStyle}>Objetivos de aprendizagem (um por linha)</label>
+          <textarea style={textareaStyle("120px")} value={objectivesText} onChange={(e) => setObjectivesText(e.target.value)} />
+        </div>
+        <div style={twoColStyle}>
+          <div>
+            <label style={labelStyle}>Habilidades BNCC (separadas por vírgula)</label>
+            <input style={inputStyle} value={bnccText} onChange={(e) => setBnccText(e.target.value)} />
+          </div>
+          <div>
+            <label style={labelStyle}>Materiais (um por linha)</label>
+            <textarea style={textareaStyle("80px")} value={materialsText} onChange={(e) => setMaterialsText(e.target.value)} />
+          </div>
+        </div>
+      </div>
+
+      {/* Fases */}
+      <div style={sectionStyle}>
+        <div style={sectionTitleStyle}>Detalhamento das Fases</div>
+        {PHASES.map((phase) => (
+          <div key={phase.id} style={{ marginBottom: "1rem" }}>
+            <label style={{ ...labelStyle, color: phase.color }}>
+              Fase {phase.number}: {phase.name}
+            </label>
+            <textarea
+              style={textareaStyle("120px")}
+              value={phaseDetails[phase.id] || ""}
+              onChange={(e) => updatePhase(phase.id, e.target.value)}
+              placeholder={`Descrição da fase ${phase.name}...`}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Referências */}
+      <div style={sectionStyle}>
+        <div style={sectionTitleStyle}>Referências Bibliográficas</div>
+        <label style={labelStyle}>Referências ABNT (uma por linha)</label>
+        <textarea style={textareaStyle("120px")} value={bibliographyText} onChange={(e) => setBibliographyText(e.target.value)} />
+      </div>
+
+      <div style={footerStyle}>
+        <button style={backButtonStyle} onClick={onBack}>← Voltar sem salvar</button>
+        <Button variant="primary" onClick={handlePrint}>Gerar PDF</Button>
+      </div>
+    </div>
+  );
+}

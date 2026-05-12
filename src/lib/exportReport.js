@@ -14,6 +14,99 @@
 
 import { PHASES } from "../data/phases.js";
 import { STEAM_AREAS } from "../data/steamAreas.js";
+
+function buildActivityPrintHTML(activity) {
+  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, steamMatrix, phaseDetails, bibliography, grade, discipline } = activity;
+
+  const steamLetters = Object.keys(steamMatrix || {}).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
+
+  const matrixHTML = steamLetters.map((letter) => {
+    const area = STEAM_AREAS[letter];
+    const m = (steamMatrix || {})[letter] || {};
+    return `<tr>
+      <td style="font-weight:700;color:${area?.color || '#333'}">${letter} · ${escapeHtml(area?.name || letter)}</td>
+      <td>${escapeHtml(m.contribution || '—')}</td>
+      <td>${escapeHtml(m.activity || '—')}</td>
+      <td>${escapeHtml(m.evidence || '—')}</td>
+    </tr>`;
+  }).join("");
+
+  const objectivesHTML = (objectives || []).map((o) => `<li>${escapeHtml(o)}</li>`).join("");
+  const materialsHTML = (materials || []).map((m) => `<li>${escapeHtml(m)}</li>`).join("");
+  const bnccHTML = (bncc || []).map(escapeHtml).join(" · ");
+  const bibliographyHTML = (bibliography || []).map((b) => `<li style="margin-bottom:0.4rem;">${escapeHtml(b)}</li>`).join("");
+
+  const phasesHTML = PHASES.map((phase) => {
+    const detail = (phaseDetails || {})[phase.id];
+    if (!detail) return "";
+    return `<div style="margin-bottom:1.5rem;page-break-inside:avoid;">
+      <h3 style="color:${phase.color};border-bottom:1px solid ${phase.color};padding-bottom:0.3rem;margin-bottom:0.5rem;">
+        Fase ${phase.number}: ${phase.name}
+      </h3>
+      <p style="margin:0;line-height:1.7;">${escapeHtml(detail)}</p>
+    </div>`;
+  }).join("");
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(title || "Atividade Pedagógica")}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Georgia, serif; max-width: 800px; margin: 2rem auto; padding: 1rem 1.5rem; color: #222; line-height: 1.6; }
+    h1 { color: #6B2FE0; border-bottom: 3px solid #6B2FE0; padding-bottom: 0.5rem; margin-bottom: 0.25rem; font-size: 1.6rem; }
+    h2 { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; color: #555; margin: 2rem 0 0.75rem; border-bottom: 1px solid #ddd; padding-bottom: 0.3rem; }
+    h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+    .meta { color: #777; font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .question { background: #f4f0ff; border-left: 4px solid #6B2FE0; padding: 0.75rem 1rem; margin: 0.75rem 0; font-style: italic; }
+    .problem { background: #fff8f0; border-left: 4px solid #d97706; padding: 0.75rem 1rem; margin: 0.75rem 0; }
+    table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #ddd; padding: 0.5rem 0.75rem; vertical-align: top; }
+    th { background: #f4f0ff; text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    ul { padding-left: 1.5rem; margin: 0.5rem 0; }
+    li { margin-bottom: 0.3rem; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ddd; color: #888; font-size: 0.8rem; text-align: center; }
+    @media print { body { margin: 0; padding: 0.5cm 1cm; } h2 { page-break-after: avoid; } }
+  </style>
+</head>
+<body>
+  <h1>${escapeHtml(title || "Atividade Pedagógica")}</h1>
+  <div class="meta">
+    ${escapeHtml(theme || "")}${grade ? ` · ${escapeHtml(grade)}` : ""}${discipline ? ` · ${escapeHtml(discipline)}` : ""}${duration ? ` · ${escapeHtml(duration)}` : ""}
+  </div>
+
+  ${problem ? `<h2>Problema ou Desafio</h2><div class="problem">${escapeHtml(problem)}</div>` : ""}
+  ${guidingQuestion ? `<h2>Questão Norteadora</h2><div class="question">${escapeHtml(guidingQuestion)}</div>` : ""}
+
+  ${steamLetters.length > 0 ? `
+  <h2>Matriz STEAM</h2>
+  <table>
+    <thead><tr><th>Área</th><th>Contribuição</th><th>Atividade</th><th>Evidência</th></tr></thead>
+    <tbody>${matrixHTML}</tbody>
+  </table>` : ""}
+
+  ${objectivesHTML ? `<h2>Objetivos de Aprendizagem</h2><ul>${objectivesHTML}</ul>` : ""}
+  ${bnccHTML ? `<h2>Habilidades BNCC</h2><p style="font-family:monospace;font-size:0.9rem;">${bnccHTML}</p>` : ""}
+  ${materialsHTML ? `<h2>Materiais</h2><ul>${materialsHTML}</ul>` : ""}
+  ${phasesHTML ? `<h2>Detalhamento das Fases</h2>${phasesHTML}` : ""}
+  ${bibliographyHTML ? `<h2>Referências Bibliográficas</h2><ul>${bibliographyHTML}</ul>` : ""}
+
+  <footer>Atividade gerada pelo STEAM Planner em ${new Date().toLocaleDateString("pt-BR")}</footer>
+</body>
+</html>`;
+}
+
+export function openActivityPrintWindow(activity) {
+  const html = buildActivityPrintHTML(activity);
+  const newWindow = window.open("", "_blank");
+  if (!newWindow) {
+    alert("Não foi possível abrir o PDF. Verifique se o navegador está bloqueando pop-ups.");
+    return;
+  }
+  newWindow.document.write(html);
+  newWindow.document.close();
+}
 import { RUBRIC_LEVELS, STEAM_RUBRIC_CRITERIA } from "../data/rubric.js";
 import {
   EVALUATION_INSTRUMENTS,

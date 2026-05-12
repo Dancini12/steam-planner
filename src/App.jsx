@@ -19,6 +19,7 @@
 import { useState, useEffect } from "react";
 
 import Dashboard from "./pages/Dashboard.jsx";
+import ActivityViewer from "./pages/ActivityViewer.jsx";
 import Library from "./pages/Library.jsx";
 import ProjectEditor from "./pages/ProjectEditor.jsx";
 import PhaseEditor from "./pages/PhaseEditor.jsx";
@@ -36,6 +37,7 @@ import { getUserData, trackEvent } from "./lib/analytics.js";
 // ------------------------------------------------------------
 const SCREENS = {
   DASHBOARD: "dashboard",
+  ACTIVITY_VIEWER: "activity_viewer",
   LIBRARY: "library",
   PROJECT_EDITOR: "project_editor",
   PHASE_EDITOR: "phase_editor",
@@ -54,6 +56,7 @@ export default function App() {
   // saber qual projeto e qual fase estão sendo editados
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [activePhaseId, setActivePhaseId] = useState(null);
+  const [activeActivityResult, setActiveActivityResult] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
@@ -140,6 +143,13 @@ export default function App() {
     setCurrentScreen(SCREENS.DASHBOARD);
     setActiveProjectId(null);
     setActivePhaseId(null);
+    setActiveActivityResult(null);
+  };
+
+  // Abre o visualizador/editor da atividade gerada
+  const goToActivityViewer = (result) => {
+    setActiveActivityResult(result);
+    setCurrentScreen(SCREENS.ACTIVITY_VIEWER);
   };
 
   // Vai para a biblioteca de modelos
@@ -230,6 +240,15 @@ export default function App() {
           onOpenProject={goToProjectEditor}
           onOpenLibrary={goToLibrary}
           onOpenSettings={goToSettings}
+          onOpenActivityViewer={goToActivityViewer}
+        />
+      )}
+
+      {currentScreen === SCREENS.ACTIVITY_VIEWER && activeActivityResult && (
+        <ActivityViewer
+          activityData={activeActivityResult.activity || {}}
+          formData={activeActivityResult.formData || {}}
+          onBack={goToDashboard}
         />
       )}
 
