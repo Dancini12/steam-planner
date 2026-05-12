@@ -110,10 +110,10 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
   }
 
   const handleNext = () => {
-    if (currentStep === 3) {
+    if (currentStep === 4) {
       generatePreviewData()
     }
-    if (currentStep < 4) {
+    if (currentStep < 5) {
       setCurrentStep(currentStep + 1)
       setError('')
     }
