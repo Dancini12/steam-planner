@@ -194,7 +194,8 @@ export default function Dashboard({
   onLogout,
   onOpenProject,
   onOpenLibrary,
-  onOpenSettings
+  onOpenSettings,
+  onOpenActivityViewer
 }) {
   const { projects, addBlankProject, addProjectFromTemplate, removeProject, isLoaded } =
     useProjects(currentUser?.id);
@@ -382,49 +383,16 @@ export default function Dashboard({
   };
 
   const handlePedagogicalActivityGenerated = async (result) => {
-    setIsCreatingProject(true);
-    setCreationError("");
-    try {
-      // result.activity é o objeto JSON estruturado retornado pelo Edge Function
-      const data = result.activity || {};
+    setShowPedagogicalModal(false);
+    onOpenActivityViewer(result);
 
-      // Extrai as letras STEAM a partir das chaves do steamMatrix gerado
-      const steamLetters = Object.keys(data.steamMatrix || {}).filter((k) =>
-        ["S", "T", "E", "A", "M"].includes(k)
-      );
-
-      const newProject = await addProjectFromTemplate(
-        {
-          ...data,
-          steam: steamLetters,
-          grade: data.grade || result.formData.grade,
-          source: "pedagogical-planner"
-        },
-        { waitForPersist: true }
-      );
-
-      // Incrementa uso SOMENTE após o projeto ser salvo com sucesso
-      const userId = currentUser?.id;
-      if (userId) {
-        await PedagogicalPlannerService.incrementUsage(
-          userId,
-          result.formData.discipline,
-          result.competencies || []
-        );
-      }
-
-      setShowPedagogicalModal(false);
-      markPendingSaveConfirmation(
-        "Atividade pedagógica criada. Clique em Salvar alterações para confirmar."
-      );
-      onOpenProject(newProject.id);
-    } catch (error) {
-      console.error("Erro ao criar atividade pedagógica:", error);
-      setCreationError(
-        `Não foi possível salvar a atividade no Supabase. ${formatSupabaseError(error)}`
-      );
-    } finally {
-      setIsCreatingProject(false);
+    const userId = currentUser?.id;
+    if (userId) {
+      PedagogicalPlannerService.incrementUsage(
+        userId,
+        result.formData?.discipline,
+        result.competencies || []
+      ).catch(console.error);
     }
   };
 
