@@ -9,7 +9,7 @@ const COMPETENCY_TO_LETTER = {
   mathematics: 'M',
 }
 
-function buildPrompt({ discipline, grade, theme, steamCompetencies }) {
+function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses }) {
   const steamLetters = steamCompetencies
     .map((c) => COMPETENCY_TO_LETTER[String(c).toLowerCase()])
     .filter(Boolean)
@@ -21,6 +21,8 @@ function buildPrompt({ discipline, grade, theme, steamCompetencies }) {
     return acc
   }, {})
 
+  const classesInfo = numberOfClasses ? `- Duração total: ${numberOfClasses} aulas` : ''
+
   return `Você é especialista em educação STEAM, Cultura Maker e BNCC para o sistema educacional brasileiro.
 
 Crie uma atividade pedagógica completa para:
@@ -28,6 +30,7 @@ Crie uma atividade pedagógica completa para:
 - Série/Ano: ${grade}
 - Tema central: ${theme}
 - Áreas STEAM envolvidas: ${uniqueLetters.join(', ')}
+${classesInfo}
 - Cultura Maker: obrigatória em todas as fases
 
 Diretrizes obrigatórias:
@@ -185,9 +188,9 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
 
 export class PedagogicalPlannerService {
   static async generatePedagogicalActivity(params) {
-    const { discipline, grade, theme, steamCompetencies, userId } = params
+    const { discipline, grade, theme, steamCompetencies, numberOfClasses, userId } = params
 
-    const prompt = buildPrompt({ discipline, grade, theme, steamCompetencies })
+    const prompt = buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses })
 
     const response = await AIProviderManager.request({
       requestType: 'pedagogicalactivity',

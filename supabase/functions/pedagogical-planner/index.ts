@@ -10,6 +10,7 @@ interface PedagogicalRequest {
   grade: string
   theme: string
   steamCompetencies: string[]
+  numberOfClasses?: string | number
   userId: string
 }
 
@@ -69,6 +70,8 @@ function buildPrompt(request: PedagogicalRequest): string {
     return acc
   }, {})
 
+  const classesInfo = request.numberOfClasses ? `- Duração total: ${request.numberOfClasses} aulas` : ''
+
   return `Você é especialista em educação STEAM, Cultura Maker e BNCC para o sistema educacional brasileiro.
 
 Crie uma atividade pedagógica completa com os seguintes parâmetros:
@@ -76,6 +79,7 @@ Crie uma atividade pedagógica completa com os seguintes parâmetros:
 - Série/Ano: ${request.grade}
 - Tema central: ${request.theme}
 - Áreas STEAM envolvidas: ${steamLetters.join(', ')}
+${classesInfo}
 - Cultura Maker: obrigatória em todas as fases
 
 Diretrizes obrigatórias:
@@ -85,7 +89,8 @@ Diretrizes obrigatórias:
 4. Códigos BNCC reais e corretos (ex: EF07CI01, EF08MA03, EF06LP01)
 5. Cultura Maker em todas as fases: mão na massa, prototipagem, iteração, trabalho colaborativo
 6. Cada fase com descrição detalhada e operacional de atividades concretas
-7. Referências bibliográficas reais no formato ABNT
+7. Referências bibliográficas reais no formato ABNT${request.numberOfClasses ? `
+8. A atividade DEVE ser adequada para ser realizada em EXATAMENTE ${request.numberOfClasses} aula${request.numberOfClasses !== '1' ? 's' : ''}: ajuste a profundidade, número de fases e complexidade das atividades de forma proporcional ao tempo disponível. Seja realista sobre o que é possível fazer em ${request.numberOfClasses} aula${request.numberOfClasses !== '1' ? 's' : '}.` : ''}
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -193,7 +198,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { discipline, grade, theme, steamCompetencies, userId }: PedagogicalRequest = await req.json()
+    const { discipline, grade, theme, steamCompetencies, numberOfClasses, userId }: PedagogicalRequest = await req.json()
 
     if (!discipline || !grade || !theme || !steamCompetencies || !userId) {
       return new Response(
@@ -207,6 +212,7 @@ Deno.serve(async (req) => {
     const projectData = await generateActivity({
       discipline, grade, theme,
       steamCompetencies: competenciesWithMaker,
+      numberOfClasses,
       userId,
     })
 

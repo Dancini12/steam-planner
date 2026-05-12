@@ -53,7 +53,8 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
     discipline: '',
     grade: '',
     theme: '',
-    steamCompetencies: []
+    steamCompetencies: [],
+    numberOfClasses: ''
   })
   const [previewData, setPreviewData] = useState(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -71,7 +72,8 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
       discipline: '',
       grade: '',
       theme: '',
-      steamCompetencies: []
+      steamCompetencies: [],
+      numberOfClasses: ''
     })
     setPreviewData(null)
     setError('')
@@ -149,6 +151,11 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
     setError('')
   }
 
+  const handleNumberOfClassesChange = (value) => {
+    setFormData(prev => ({ ...prev, numberOfClasses: value }))
+    setError('')
+  }
+
   const validateCurrentStep = () => {
     switch (currentStep) {
       case 0:
@@ -160,6 +167,8 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
       case 3:
         return formData.steamCompetencies.length > 0
       case 4:
+        return formData.numberOfClasses !== '' && parseInt(formData.numberOfClasses) > 0
+      case 5:
         return !!previewData
       default:
         return false
@@ -313,6 +322,49 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
       case 4:
         return (
           <div style={stepContentStyle}>
+            <h3 style={stepTitleStyle}>⏱️ Quantas aulas?</h3>
+            <p style={stepDescriptionStyle}>
+              Defina a quantidade de aulas que você deseja trabalhar o conteúdo. A atividade será adequada à duração especificada.
+            </p>
+            <div style={classesInputContainerStyle}>
+              <div style={classesInputFieldStyle}>
+                <label style={classesLabelStyle}>Número de aulas</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={formData.numberOfClasses}
+                  onChange={(e) => handleNumberOfClassesChange(e.target.value)}
+                  placeholder="Ex: 5"
+                  style={classesNumberInputStyle}
+                />
+              </div>
+              <div style={classesSuggestionsStyle}>
+                <p style={stepDescriptionStyle}>Sugestões rápidas:</p>
+                <div style={classesQuickSelectStyle}>
+                  {[1, 2, 3, 5, 8, 10].map(num => (
+                    <button
+                      key={num}
+                      type="button"
+                      style={{
+                        ...classesQuickButtonStyle,
+                        backgroundColor: formData.numberOfClasses === String(num) ? '#3B82F6' : '#F3F4F6',
+                        color: formData.numberOfClasses === String(num) ? 'white' : '#374151'
+                      }}
+                      onClick={() => handleNumberOfClassesChange(String(num))}
+                    >
+                      {num} aula{num > 1 ? 's' : ''}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+
+      case 5:
+        return (
+          <div style={stepContentStyle}>
             <h3 style={stepTitleStyle}>👁️ Prévia da Atividade</h3>
             <p style={stepDescriptionStyle}>
               Confira o que será abordado nesta atividade:
@@ -370,6 +422,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
     { title: 'Série', icon: '🎓' },
     { title: 'Tema', icon: '🎯' },
     { title: 'STEAM', icon: '🔬' },
+    { title: 'Aulas', icon: '⏱️' },
     { title: 'Prévia', icon: '👁️' }
   ]
 
@@ -426,7 +479,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
 
           <div style={spacerStyle} />
 
-          {currentStep < 4 ? (
+          {currentStep < 5 ? (
             <Button
               onClick={handleNext}
               disabled={!validateCurrentStep()}
@@ -646,6 +699,62 @@ const previewHintStyle = {
   color: '#6B7280',
   marginTop: '8px',
   fontStyle: 'italic'
+}
+
+const classesInputContainerStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '24px',
+  marginTop: '16px'
+}
+
+const classesInputFieldStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px'
+}
+
+const classesLabelStyle = {
+  fontSize: '14px',
+  fontWeight: '600',
+  color: '#374151'
+}
+
+const classesNumberInputStyle = {
+  padding: '12px 16px',
+  border: '2px solid #E5E7EB',
+  borderRadius: '8px',
+  fontSize: '16px',
+  fontWeight: '500',
+  color: '#1F2937',
+  transition: 'border-color 0.2s ease',
+  outline: 'none'
+}
+
+const classesSuggestionsStyle = {
+  padding: '16px',
+  backgroundColor: '#F0F9FF',
+  border: '1px solid #BFDBFE',
+  borderRadius: '8px'
+}
+
+const classesQuickSelectStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+  gap: '8px',
+  marginTop: '12px'
+}
+
+const classesQuickButtonStyle = {
+  padding: '10px 12px',
+  border: '2px solid #E5E7EB',
+  borderRadius: '8px',
+  backgroundColor: '#F3F4F6',
+  color: '#374151',
+  fontSize: '14px',
+  fontWeight: '500',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease'
 }
 
 export default PedagogicalPlannerModal
