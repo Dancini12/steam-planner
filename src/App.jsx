@@ -260,6 +260,7 @@ export default function App() {
           currentUser={currentUser}
           onBack={goToDashboard}
           onOpenProject={goToProjectEditor}
+          onOpenActivityViewer={goToActivityViewer}
         />
       )}
 

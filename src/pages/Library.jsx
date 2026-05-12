@@ -190,10 +190,24 @@ function getProjectDisciplineCategory(project) {
 // - onBack        : função para voltar ao dashboard
 // - onOpenProject : função chamada após criar projeto da biblioteca
 // ------------------------------------------------------------
-export default function Library({ currentUser, onBack, onOpenProject }) {
+const STEAM_KEYS = ["S", "T", "E", "A", "M"];
+const STEAM_COLORS = { S: "#3FD64C", T: "#3B95F2", E: "#FF8C1A", A: "#E8358A", M: "#A050F0" };
+const STEAM_NAMES = { S: "Ciência", T: "Tecnologia", E: "Engenharia", A: "Arte", M: "Matemática" };
+
+const GRADE_GROUPS = [
+  { id: "ef1", label: "1º–5º ano", match: ["1º", "2º", "3º", "4º", "5º"] },
+  { id: "ef2", label: "6º–9º ano", match: ["6º", "7º", "8º", "9º"] },
+  { id: "em", label: "Ensino Médio", match: ["1ª", "2ª", "3ª", "médio", "Médio"] }
+];
+
+const LIBRARY_IDS = new Set(LIBRARY.map((t) => t.id));
+
+export default function Library({ currentUser, onBack, onOpenProject, onOpenActivityViewer }) {
   // Estado: qual projeto da biblioteca está selecionado para visualização
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [selectedDiscipline, setSelectedDiscipline] = useState(null);
+  const [selectedSteam, setSelectedSteam] = useState([]);
+  const [selectedGrade, setSelectedGrade] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [publicProjects, setPublicProjects] = useState([]);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
@@ -218,16 +232,25 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
     };
   }, [currentUser?.id]);
 
-  // Cria projeto a partir do template e abre direto na edição
+  // Cria projeto a partir do template e abre no ActivityViewer
   const handleUseTemplate = async (template) => {
     setIsCreatingProject(true);
     setCreationError("");
     try {
-      const newProject = await addProjectFromTemplate(template, {
-        waitForPersist: true
-      });
+      const newProject = await addProjectFromTemplate(template, { waitForPersist: true });
       setSelectedTemplate(null);
-      onOpenProject(newProject.id);
+      if (onOpenActivityViewer) {
+        const phaseDetails = template.phaseDetails ||
+          Object.fromEntries(
+            Object.entries(template.phases || {}).map(([id, p]) => [id, p.plan || ""])
+          );
+        onOpenActivityViewer(
+          { activity: { ...template, phaseDetails }, formData: {} },
+          newProject.id
+        );
+      } else {
+        onOpenProject(newProject.id);
+      }
     } catch (error) {
       console.error("Erro ao criar projeto da biblioteca:", error);
       setCreationError(
@@ -255,6 +278,12 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
           ).length
   })).filter((category) => category.id === "all" || category.count > 0);
 
+  const toggleSteam = (letter) => {
+    setSelectedSteam((prev) =>
+      prev.includes(letter) ? prev.filter((l) => l !== letter) : [...prev, letter]
+    );
+  };
+
   const baseFilteredTemplates =
     !selectedDiscipline || selectedDiscipline === "all"
       ? templates
@@ -264,23 +293,37 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
 
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
 
-  const filteredTemplates = normalizedSearchTerm
-    ? baseFilteredTemplates.filter((template) => {
-        const searchableText = [
-          template.title,
-          template.theme,
-          template.grade,
-          template.guidingQuestion,
-          ...(template.objectives || []),
-          ...(template.bncc || []),
-          ...(template.materials || [])
-        ]
-          .join(" ")
-          .toLowerCase();
+  const filteredTemplates = baseFilteredTemplates.filter((template) => {
+    if (normalizedSearchTerm) {
+      const searchableText = [
+        template.title,
+        template.theme,
+        template.grade,
+        template.guidingQuestion,
+        ...(template.objectives || []),
+        ...(template.bncc || []),
+        ...(template.materials || [])
+      ]
+        .join(" ")
+        .toLowerCase();
+      if (!searchableText.includes(normalizedSearchTerm)) return false;
+    }
 
-        return searchableText.includes(normalizedSearchTerm);
-      })
-    : baseFilteredTemplates;
+    if (selectedSteam.length > 0) {
+      const templateSteam = template.steam || [];
+      if (!selectedSteam.every((letter) => templateSteam.includes(letter))) return false;
+    }
+
+    if (selectedGrade) {
+      const gradeGroup = GRADE_GROUPS.find((g) => g.id === selectedGrade);
+      if (gradeGroup) {
+        const gradeStr = (template.grade || "").toLowerCase();
+        if (!gradeGroup.match.some((m) => gradeStr.includes(m.toLowerCase()))) return false;
+      }
+    }
+
+    return true;
+  });
 
   const selectedDisciplineLabel =
     selectedDiscipline === "all"
@@ -445,6 +488,62 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
     color: "rgba(255, 255, 255, 0.55)",
     lineHeight: 1.35,
     margin: 0
+  };
+
+  const filterRowStyle = {
+    display: "flex",
+    gap: "0.5rem",
+    flexWrap: "wrap",
+    alignItems: "center",
+    marginBottom: "1rem"
+  };
+
+  const filterLabelStyle = {
+    fontSize: "0.7rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "rgba(255,255,255,0.4)",
+    fontWeight: 600,
+    marginRight: "0.25rem"
+  };
+
+  const steamFilterBtnStyle = (letter, isActive) => ({
+    padding: "0.3rem 0.65rem",
+    borderRadius: "6px",
+    border: `1px solid ${isActive ? STEAM_COLORS[letter] : "rgba(255,255,255,0.12)"}`,
+    background: isActive ? `${STEAM_COLORS[letter]}22` : "rgba(255,255,255,0.03)",
+    color: isActive ? STEAM_COLORS[letter] : "rgba(255,255,255,0.55)",
+    fontWeight: 700,
+    fontSize: "0.8rem",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    transition: "all 0.15s"
+  });
+
+  const gradeFilterBtnStyle = (id, isActive) => ({
+    padding: "0.3rem 0.65rem",
+    borderRadius: "6px",
+    border: `1px solid ${isActive ? "rgba(107,47,224,0.7)" : "rgba(255,255,255,0.12)"}`,
+    background: isActive ? "rgba(107,47,224,0.18)" : "rgba(255,255,255,0.03)",
+    color: isActive ? "#C9A0FF" : "rgba(255,255,255,0.55)",
+    fontWeight: 600,
+    fontSize: "0.8rem",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    transition: "all 0.15s"
+  });
+
+  const communityBadgeStyle = {
+    fontSize: "0.65rem",
+    background: "rgba(59,149,242,0.18)",
+    color: "#7BB8F5",
+    border: "1px solid rgba(59,149,242,0.3)",
+    padding: "0.1rem 0.45rem",
+    borderRadius: "3px",
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    whiteSpace: "nowrap"
   };
 
   const libraryStatusStyle = {
@@ -663,6 +762,42 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
         )}
       </div>
 
+      {/* Filtros de STEAM e Série */}
+      <div style={filterRowStyle}>
+        <span style={filterLabelStyle}>STEAM</span>
+        {STEAM_KEYS.map((letter) => (
+          <button
+            key={letter}
+            type="button"
+            style={steamFilterBtnStyle(letter, selectedSteam.includes(letter))}
+            onClick={() => toggleSteam(letter)}
+            title={STEAM_NAMES[letter]}
+          >
+            {letter}
+          </button>
+        ))}
+        <span style={{ ...filterLabelStyle, marginLeft: "0.75rem" }}>Série</span>
+        {GRADE_GROUPS.map((group) => (
+          <button
+            key={group.id}
+            type="button"
+            style={gradeFilterBtnStyle(group.id, selectedGrade === group.id)}
+            onClick={() => setSelectedGrade(selectedGrade === group.id ? null : group.id)}
+          >
+            {group.label}
+          </button>
+        ))}
+        {(selectedSteam.length > 0 || selectedGrade) && (
+          <button
+            type="button"
+            style={{ ...gradeFilterBtnStyle("", false), color: "rgba(255,255,255,0.4)" }}
+            onClick={() => { setSelectedSteam([]); setSelectedGrade(null); }}
+          >
+            Limpar filtros
+          </button>
+        )}
+      </div>
+
       <div style={submenuStyle} aria-label="Filtrar projetos por disciplina">
         {disciplineFilters.map((filter) => {
           const isActive = selectedDiscipline === filter.id;
@@ -733,7 +868,12 @@ export default function Library({ currentUser, onBack, onOpenProject }) {
                   {/* Topo: título, tema e selos STEAM */}
                   <div style={cardHeaderStyle}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <h3 style={cardTitleStyle}>{template.title}</h3>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.2rem" }}>
+                        <h3 style={{ ...cardTitleStyle, margin: 0 }}>{template.title}</h3>
+                        {!LIBRARY_IDS.has(template.id) && (
+                          <span style={communityBadgeStyle}>Comunidade</span>
+                        )}
+                      </div>
                       <p style={cardThemeStyle}>{template.theme}</p>
                     </div>
                     <SteamBadges areas={template.steam} size="small" />
