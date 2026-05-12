@@ -195,10 +195,13 @@ const STEAM_COLORS = { S: "#3FD64C", T: "#3B95F2", E: "#FF8C1A", A: "#E8358A", M
 const STEAM_NAMES = { S: "Ciência", T: "Tecnologia", E: "Engenharia", A: "Arte", M: "Matemática" };
 
 const GRADE_GROUPS = [
-  { id: "ef1", label: "1º–5º ano", match: ["1º", "2º", "3º", "4º", "5º"] },
-  { id: "ef2", label: "6º–9º ano", match: ["6º", "7º", "8º", "9º"] },
-  { id: "em", label: "Ensino Médio", match: ["1ª", "2ª", "3ª", "médio", "Médio"] }
+  { id: "6", label: "6º ano", match: ["6º"] },
+  { id: "7", label: "7º ano", match: ["7º"] },
+  { id: "8", label: "8º ano", match: ["8º"] },
+  { id: "9", label: "9º ano", match: ["9º"] }
 ];
+
+const EF2_MATCH = ["6º", "7º", "8º", "9º"];
 
 const LIBRARY_IDS = new Set(LIBRARY.map((t) => t.id));
 
@@ -261,12 +264,17 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
     }
   };
 
-  const templates = [
+  const allTemplates = [
     ...LIBRARY,
     ...publicProjects.filter(
       (project) => !LIBRARY.some((template) => template.id === project.id)
     )
   ];
+
+  const templates = allTemplates.filter((t) => {
+    const grade = (t.grade || "").toLowerCase();
+    return EF2_MATCH.some((m) => grade.includes(m.toLowerCase()));
+  });
 
   const disciplineFilters = DISCIPLINE_CATEGORIES.map((category) => ({
     ...category,
@@ -317,8 +325,8 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
     if (selectedGrade) {
       const gradeGroup = GRADE_GROUPS.find((g) => g.id === selectedGrade);
       if (gradeGroup) {
-        const gradeStr = (template.grade || "").toLowerCase();
-        if (!gradeGroup.match.some((m) => gradeStr.includes(m.toLowerCase()))) return false;
+        const gradeStr = template.grade || "";
+        if (!gradeGroup.match.some((m) => gradeStr.includes(m))) return false;
       }
     }
 

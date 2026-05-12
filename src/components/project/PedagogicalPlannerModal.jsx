@@ -25,18 +25,10 @@ const DISCIPLINES = [
 ]
 
 const GRADES = [
-  '1º ano - Ensino Fundamental',
-  '2º ano - Ensino Fundamental',
-  '3º ano - Ensino Fundamental',
-  '4º ano - Ensino Fundamental',
-  '5º ano - Ensino Fundamental',
   '6º ano - Ensino Fundamental',
   '7º ano - Ensino Fundamental',
   '8º ano - Ensino Fundamental',
-  '9º ano - Ensino Fundamental',
-  '1ª série - Ensino Médio',
-  '2ª série - Ensino Médio',
-  '3ª série - Ensino Médio'
+  '9º ano - Ensino Fundamental'
 ]
 
 const STEAM_COMPETENCIES = [
