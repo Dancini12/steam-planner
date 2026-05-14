@@ -571,13 +571,6 @@ export default function Dashboard({
               onClick={() => setShowPedagogicalModal(true)}
             />
             <AIAssistantCard
-              icon="✨"
-              title="Assistente Pedagógico"
-              description="Geração de conteúdo educacional avançado"
-              color="#5BC0DE"
-              onClick={onOpenSettings}
-            />
-            <AIAssistantCard
               icon="📄"
               title="Análise de Documentos"
               description="Leitura e síntese de PDFs, imagens e textos"
