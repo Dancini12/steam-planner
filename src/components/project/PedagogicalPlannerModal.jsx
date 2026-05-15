@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { PedagogicalPlannerService } from '../../lib/ai/pedagogicalPlannerService.js'
+import { AIProviderManager } from '../../lib/ai/AIProviderManager.js'
 import { supabase } from '../../lib/supabaseClient.js'
 
 import Modal from '../ui/Modal.jsx'
@@ -71,6 +72,7 @@ const PERSONALIZATION_OPTIONS = {
     title: 'Avaliação',
     type: 'single',
     options: [
+
       { id: 'observacao', label: 'Observação do professor', instruction: 'Propor avaliação por observação, registro em diário de bordo e evidências do processo.' },
       { id: 'autoavaliacao', label: 'Autoavaliação dos alunos', instruction: 'Incluir autoavaliação curta para os estudantes refletirem sobre participação e aprendizagem.' }
     ]
@@ -108,6 +110,8 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
   })
   const [previewData, setPreviewData] = useState(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [activeProviders, setActiveProviders] = useState([])
+  const [usedProvider, setUsedProvider] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -278,6 +282,9 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
       return
     }
 
+    const providers = AIProviderManager.getProviderNames()
+    setActiveProviders(providers)
+    setUsedProvider(null)
     setIsGenerating(true)
     setError('')
 
@@ -287,19 +294,16 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
         throw new Error('Usuário não autenticado')
       }
 
-      // generatePedagogicalActivity já verifica o limite internamente
       const result = await PedagogicalPlannerService.generatePedagogicalActivity({
         ...formData,
         customInstructions: buildCustomInstructions(),
         userId: user.id
       })
 
-      // Chamar callback com resultado (não aguardado intencionalmente — salva em background)
+      setUsedProvider(result.provider || providers[0] || 'gemini')
+
       if (onActivityGenerated) {
-        onActivityGenerated({
-          ...result,
-          formData
-        })
+        onActivityGenerated({ ...result, formData })
       }
 
       onClose()
@@ -588,76 +592,133 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
     { title: 'Prévia', icon: '👁️' }
   ]
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="🎓 Planejador Pedagógico Inteligente" size="large">
-      <div style={containerStyle}>
-        {/* Progress Indicator */}
-        <div style={progressStyle}>
-          {steps.map((step, index) => (
-            <div key={index} style={progressStepStyle}>
-              <div style={{
-                ...progressCircleStyle,
-                backgroundColor: index <= currentStep ? '#3B82F6' : '#E5E7EB',
-                color: index <= currentStep ? 'white' : '#6B7280'
-              }}>
-                {index < currentStep ? '✓' : step.icon}
+  const PROVIDER_META = {
+    gemini: { label: 'Google Gemini', role: 'Geração principal', color: '#4F46E5', badge: 'G' },
+    cerebras: { label: 'Cerebras llama-3.3-70b', role: 'Fallback rápido', color: '#10B981', badge: 'C' }
+  }
+
+  const renderLoading = () => (
+    <div style={loadingContainerStyle}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+      `}</style>
+      <div style={loadingSpinnerWrapStyle}>
+        <div style={loadingRingStyle} />
+        <span style={loadingIconStyle}>✨</span>
+      </div>
+
+      <div style={loadingTitleStyle}>Gerando sua atividade</div>
+      <p style={loadingSubtitleStyle}>
+        Analisando o tema, selecionando competências BNCC e montando o planejamento completo…
+      </p>
+
+      <div style={loadingProviderBoxStyle}>
+        <div style={loadingProviderLabelStyle}>IAs utilizadas</div>
+        <div style={loadingProviderListStyle}>
+          {activeProviders.map((name, i) => {
+            const meta = PROVIDER_META[name] || { label: name, role: 'Provedor', color: '#6B7280', badge: name[0].toUpperCase() }
+            const isPrimary = i === 0
+            return (
+              <div key={name} style={{ ...loadingProviderItemStyle, borderColor: isPrimary ? meta.color : '#E5E7EB' }}>
+                <div style={{ ...loadingProviderBadgeStyle, background: meta.color }}>{meta.badge}</div>
+                <div style={loadingProviderInfoStyle}>
+                  <div style={loadingProviderNameStyle}>{meta.label}</div>
+                  <div style={loadingProviderRoleStyle}>{isPrimary ? 'Principal' : 'Fallback'} · {meta.role}</div>
+                </div>
+                <div style={{ ...loadingProviderDotStyle, background: isPrimary ? meta.color : '#D1D5DB' }} />
               </div>
-              <span style={{
-                ...progressLabelStyle,
-                color: index <= currentStep ? '#3B82F6' : '#6B7280'
-              }}>
-                {step.title}
-              </span>
-              {index < steps.length - 1 && (
-                <div style={{
-                  ...progressLineStyle,
-                  backgroundColor: index < currentStep ? '#3B82F6' : '#E5E7EB'
-                }} />
+            )
+          })}
+        </div>
+      </div>
+
+      <div style={loadingParamsStyle}>
+        <span style={loadingParamChipStyle}>{formData.discipline}</span>
+        <span style={loadingParamChipStyle}>{formData.grade}</span>
+        <span style={loadingParamChipStyle}>{formData.numberOfClasses} aula{formData.numberOfClasses !== '1' ? 's' : ''}</span>
+        {formData.steamCompetencies.map((c) => (
+          <span key={c} style={{ ...loadingParamChipStyle, background: '#EDE9FE', color: '#5B21B6', border: '1px solid #C4B5FD' }}>
+            {c.charAt(0).toUpperCase() + c.slice(1)}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+
+  return (
+    <Modal isOpen={isOpen} onClose={isGenerating ? undefined : onClose} title="🎓 Planejador Pedagógico Inteligente" size="large">
+      <div style={containerStyle}>
+        {isGenerating ? renderLoading() : (
+          <>
+            {/* Progress Indicator */}
+            <div style={progressStyle}>
+              {steps.map((step, index) => (
+                <div key={index} style={progressStepStyle}>
+                  <div style={{
+                    ...progressCircleStyle,
+                    backgroundColor: index <= currentStep ? '#3B82F6' : '#E5E7EB',
+                    color: index <= currentStep ? 'white' : '#6B7280'
+                  }}>
+                    {index < currentStep ? '✓' : step.icon}
+                  </div>
+                  <span style={{
+                    ...progressLabelStyle,
+                    color: index <= currentStep ? '#3B82F6' : '#6B7280'
+                  }}>
+                    {step.title}
+                  </span>
+                  {index < steps.length - 1 && (
+                    <div style={{
+                      ...progressLineStyle,
+                      backgroundColor: index < currentStep ? '#3B82F6' : '#E5E7EB'
+                    }} />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Step Content */}
+            <div style={contentStyle}>
+              {renderStepContent()}
+
+              {error && (
+                <div style={errorStyle}>
+                  ⚠️ {error}
+                </div>
               )}
             </div>
-          ))}
-        </div>
 
-        {/* Step Content */}
-        <div style={contentStyle}>
-          {renderStepContent()}
+            {/* Actions */}
+            <div style={actionsStyle}>
+              <Button
+                variant="secondary"
+                onClick={handleBack}
+                disabled={currentStep === 0}
+              >
+                ← Voltar
+              </Button>
 
-          {error && (
-            <div style={errorStyle}>
-              ⚠️ {error}
+              <div style={spacerStyle} />
+
+              {currentStep < 6 ? (
+                <Button
+                  onClick={handleNext}
+                  disabled={!validateCurrentStep()}
+                >
+                  Próximo →
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleGenerate}
+                  disabled={!validateCurrentStep()}
+                >
+                  ✨ Gerar Atividade Completa
+                </Button>
+              )}
             </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div style={actionsStyle}>
-          <Button
-            variant="secondary"
-            onClick={handleBack}
-            disabled={currentStep === 0}
-          >
-            ← Voltar
-          </Button>
-
-          <div style={spacerStyle} />
-
-          {currentStep < 6 ? (
-            <Button
-              onClick={handleNext}
-              disabled={!validateCurrentStep()}
-            >
-              Próximo →
-            </Button>
-          ) : (
-            <Button
-              onClick={handleGenerate}
-              disabled={!validateCurrentStep() || isGenerating}
-              loading={isGenerating}
-            >
-              {isGenerating ? 'Gerando Atividade...' : '✨ Gerar Atividade Completa'}
-            </Button>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </Modal>
   )
@@ -944,6 +1005,146 @@ const classesQuickButtonStyle = {
   fontWeight: '500',
   cursor: 'pointer',
   transition: 'all 0.2s ease'
+}
+
+const loadingContainerStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minHeight: '460px',
+  gap: '1.5rem',
+  padding: '2rem 1rem'
+}
+
+const loadingSpinnerWrapStyle = {
+  position: 'relative',
+  width: '72px',
+  height: '72px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
+}
+
+const loadingRingStyle = {
+  position: 'absolute',
+  inset: 0,
+  borderRadius: '50%',
+  border: '3px solid #E5E7EB',
+  borderTopColor: '#4F46E5',
+  animation: 'spin 1s linear infinite'
+}
+
+const loadingIconStyle = {
+  fontSize: '1.75rem',
+  zIndex: 1
+}
+
+const loadingTitleStyle = {
+  fontSize: '1.25rem',
+  fontWeight: '700',
+  color: '#1F2937',
+  textAlign: 'center'
+}
+
+const loadingSubtitleStyle = {
+  fontSize: '0.9rem',
+  color: '#6B7280',
+  textAlign: 'center',
+  maxWidth: '380px',
+  lineHeight: 1.6,
+  margin: 0
+}
+
+const loadingProviderBoxStyle = {
+  width: '100%',
+  maxWidth: '420px',
+  background: '#F9FAFB',
+  border: '1px solid #E5E7EB',
+  borderRadius: '10px',
+  padding: '1rem'
+}
+
+const loadingProviderLabelStyle = {
+  fontSize: '0.7rem',
+  fontWeight: '700',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  color: '#9CA3AF',
+  marginBottom: '0.75rem'
+}
+
+const loadingProviderListStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.5rem'
+}
+
+const loadingProviderItemStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.75rem',
+  padding: '0.65rem 0.85rem',
+  background: '#FFFFFF',
+  borderRadius: '8px',
+  border: '1.5px solid'
+}
+
+const loadingProviderBadgeStyle = {
+  width: '32px',
+  height: '32px',
+  borderRadius: '8px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: '#fff',
+  fontWeight: '800',
+  fontSize: '0.9rem',
+  flexShrink: 0
+}
+
+const loadingProviderInfoStyle = {
+  flex: 1,
+  minWidth: 0
+}
+
+const loadingProviderNameStyle = {
+  fontSize: '0.88rem',
+  fontWeight: '600',
+  color: '#1F2937'
+}
+
+const loadingProviderRoleStyle = {
+  fontSize: '0.75rem',
+  color: '#6B7280',
+  marginTop: '1px'
+}
+
+const loadingProviderDotStyle = {
+  width: '8px',
+  height: '8px',
+  borderRadius: '50%',
+  flexShrink: 0,
+  animation: 'pulse 1.5s ease-in-out infinite'
+}
+
+const loadingParamsStyle = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '0.4rem',
+  justifyContent: 'center',
+  maxWidth: '420px'
+}
+
+const loadingParamChipStyle = {
+  display: 'inline-block',
+  padding: '0.25rem 0.65rem',
+  background: '#EFF6FF',
+  color: '#1D4ED8',
+  border: '1px solid #BFDBFE',
+  borderRadius: '20px',
+  fontSize: '0.78rem',
+  fontWeight: '600'
 }
 
 export default PedagogicalPlannerModal

@@ -260,7 +260,8 @@ export class PedagogicalPlannerService {
     return {
       activity: parsed,
       generatedAt: new Date().toISOString(),
-      competencies: steamCompetencies
+      competencies: steamCompetencies,
+      provider: response.provider || null
     }
   }
 
