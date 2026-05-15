@@ -5,14 +5,16 @@
 
 import { STEAM_AREAS } from "../data/steamAreas.js";
 import { AIProviderManager } from "./ai/AIProviderManager.js";
+import {
+  formatBnccSuggestions,
+  getBnccCodes,
+  selectBnccHabilidades
+} from "./bnccSelector.js";
 
-function buildPrompt(theme, grade, steamAreas) {
+function buildPrompt(theme, grade, steamAreas, bnccSuggestions) {
   const areasNames = steamAreas
     .map((letter) => `${letter} (${STEAM_AREAS[letter].name})`)
     .join(", ");
-
-  const hasArt = steamAreas.includes("A");
-  const phaseDetailLevel = hasArt ? "descrição concisa mas operacional" : "descrição detalhada e operacional";
 
   return `Você é especialista em educação STEAM e BNCC para Ensino Fundamental II brasileiro.
 
@@ -21,17 +23,19 @@ Crie um projeto educacional STEAM seguindo estes parâmetros:
 - Tema: ${theme}
 - Ano: ${grade}
 - Áreas STEAM: ${areasNames}
+- Habilidades BNCC selecionadas do banco offline:
+${formatBnccSuggestions(bnccSuggestions)}
 
 Diretrizes:
 1. Projeto realista para escolas públicas brasileiras (materiais acessíveis)
 2. Questão norteadora aberta e investigativa
 3. Objetivos mensuráveis adequados ao ano
-4. BNCC reais (códigos como EFXXMA01, EFXXCI03)
+4. Use no campo "bncc" apenas códigos da lista BNCC offline fornecida acima; não invente códigos novos
 5. Cultura Maker obrigatória em todas as etapas, com mão na massa, prototipagem e iteração
 6. Matriz STEAM com contribuição, atividade e evidência para cada área selecionada
-7. 5 fases: Imersão, Ideação, Prototipagem, Teste, Compartilhamento
-8. Cada fase com ${phaseDetailLevel}, atividades concretas
-9. Formato pronto para impressão: cada atividade em nova página, seções claras e layout sequencial
+7. Não organize a resposta por fases, etapas de Design Thinking ou blocos como Imersão, Ideação, Prototipagem, Teste e Compartilhamento
+8. Manual da atividade em três partes, nesta ordem: "Resumo das competências" com um texto geral sobre as competências solicitadas; "Materiais utilizados" explicando para que serve cada material; "Como montar e conduzir" orientando o professor na montagem do projeto e no uso dos materiais
+9. Formato pronto para impressão, com seções claras e layout sequencial
 10. 5 a 8 referências bibliográficas em formato ABNT sobre o tema
 
 Responda APENAS com JSON válido:
@@ -50,15 +54,9 @@ Responda APENAS com JSON válido:
     }
   },
   "objectives": ["Objetivo 1", "Objetivo 2", "Objetivo 3", "Objetivo 4"],
-  "bncc": ["EF0XCI01", "EF0XMA02", "EF0XLP03"],
+  "bncc": ${JSON.stringify(getBnccCodes(bnccSuggestions))},
   "materials": ["Material 1", "Material 2", "Material 3", "Material 4", "Material 5"],
-  "phaseDetails": {
-    "imersao": "Descrição da fase Imersão",
-    "ideacao": "Descrição da fase Ideação",
-    "prototipagem": "Descrição da fase Prototipagem",
-    "teste": "Descrição da fase Teste",
-    "compartilhamento": "Descrição da fase Compartilhamento"
-  },
+  "activityManual": "Resumo das competências:\\nTexto geral e breve conectando as competências STEAM solicitadas à atividade.\\n\\nMateriais utilizados:\\n- Material 1: explique como será usado e por que é necessário.\\n- Material 2: explique como será usado e por que é necessário.\\n\\nComo montar e conduzir:\\nPassos práticos para o professor montar o projeto com a turma, distribuir e usar os materiais, orientar a produção, registrar evidências, cuidar da segurança e finalizar.",
   "bibliography": ["AUTOR, A. Título do livro. Editora, ano."]
 }`;
 }
@@ -174,15 +172,7 @@ function validateProjectStructure(data) {
     "objectives",
     "bncc",
     "materials",
-    "phaseDetails"
-  ];
-
-  const requiredPhases = [
-    "imersao",
-    "ideacao",
-    "prototipagem",
-    "teste",
-    "compartilhamento"
+    "activityManual"
   ];
 
   for (const field of requiredFields) {
@@ -207,16 +197,6 @@ function validateProjectStructure(data) {
     throw new Error("O campo materials deve ser um array não vazio.");
   }
 
-  if (typeof data.phaseDetails !== "object" || data.phaseDetails === null) {
-    throw new Error("O campo phaseDetails deve ser um objeto.");
-  }
-
-  for (const phase of requiredPhases) {
-    if (!data.phaseDetails[phase]) {
-      throw new Error(`Detalhamento ausente para a fase: ${phase}`);
-    }
-  }
-
   if (!data.bibliography) {
     data.bibliography = [];
   }
@@ -226,6 +206,20 @@ function validateProjectStructure(data) {
   }
 
   return true;
+}
+
+function applyOfflineBncc(data, bnccSuggestions) {
+  const offlineCodes = getBnccCodes(bnccSuggestions);
+  if (offlineCodes.length === 0) return data;
+
+  const selectedCodes = Array.isArray(data.bncc)
+    ? data.bncc.filter((code) => offlineCodes.includes(code))
+    : [];
+
+  return {
+    ...data,
+    bncc: selectedCodes.length > 0 ? selectedCodes : offlineCodes.slice(0, 3)
+  };
 }
 
 export async function generateBibliographyWithAI({ title, theme, grade, steamAreas }) {
@@ -288,7 +282,14 @@ export async function generateProjectWithAI({ theme, grade, steamAreas }) {
     throw new Error("Selecione ao menos uma área STEAM.");
   }
 
-  const prompt = buildPrompt(theme, grade, steamAreas);
+  const bnccSuggestions = selectBnccHabilidades({
+    grade,
+    theme,
+    steamAreas,
+    limit: 5
+  });
+
+  const prompt = buildPrompt(theme, grade, steamAreas, bnccSuggestions);
 
   const response = await AIProviderManager.request({
     requestType: 'project',
@@ -303,7 +304,7 @@ export async function generateProjectWithAI({ theme, grade, steamAreas }) {
 
   try {
     const cleaned = cleanJsonResponse(generatedText);
-    const projectData = JSON.parse(cleaned);
+    const projectData = applyOfflineBncc(JSON.parse(cleaned), bnccSuggestions);
 
     validateProjectStructure(projectData);
     projectData.grade = grade;

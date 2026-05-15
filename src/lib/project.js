@@ -79,6 +79,7 @@ export function createBlankProject() {
     objectives: [],
     bncc: [],
     materials: [],
+    activityManual: "",
     students: [],
     phases: createEmptyPhases(),
     createdAt: new Date().toISOString(),
@@ -114,6 +115,7 @@ export function createProjectFromTemplate(template) {
   project.objectives = template.objectives ? [...template.objectives] : [];
   project.bncc = template.bncc ? [...template.bncc] : [];
   project.materials = template.materials ? [...template.materials] : [];
+  project.activityManual = template.activityManual || "";
   project.students = template.students ? clone(template.students) : [];
   project.bibliography = template.bibliography ? [...template.bibliography] : [];
 

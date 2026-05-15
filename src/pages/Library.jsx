@@ -243,12 +243,8 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
       const newProject = await addProjectFromTemplate(template, { waitForPersist: true });
       setSelectedTemplate(null);
       if (onOpenActivityViewer) {
-        const phaseDetails = template.phaseDetails ||
-          Object.fromEntries(
-            Object.entries(template.phases || {}).map(([id, p]) => [id, p.plan || ""])
-          );
         onOpenActivityViewer(
-          { activity: { ...template, phaseDetails }, formData: {} },
+          { activity: template, formData: {} },
           newProject.id
         );
       } else {
@@ -713,32 +709,6 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
     marginBottom: "1.25rem"
   };
 
-  const phasePreviewStyle = {
-    display: "grid",
-    gap: "0.8rem"
-  };
-
-  const phasePreviewItemStyle = {
-    padding: "0.85rem",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-    borderRadius: "8px",
-    background: "rgba(255, 255, 255, 0.025)"
-  };
-
-  const phasePreviewTitleStyle = {
-    color: "#FFFFFF",
-    fontSize: "0.9rem",
-    fontWeight: 700,
-    margin: "0 0 0.35rem"
-  };
-
-  const phasePreviewTextStyle = {
-    color: "rgba(255, 255, 255, 0.76)",
-    fontSize: "0.88rem",
-    lineHeight: 1.55,
-    margin: 0
-  };
-
   // Estilos do modal de detalhes
   const modalSectionStyle = {
     marginBottom: "1.5rem"
@@ -1099,34 +1069,12 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
               </ul>
             </div>
 
-            {/* Planejamento por fases */}
-            {(selectedTemplate.phaseDetails || selectedTemplate.phases) && (
+            {selectedTemplate.activityManual && (
               <div style={modalSectionStyle}>
-                <div style={modalSectionTitleStyle}>
-                  Planejamento por fases
-                </div>
-                <div style={phasePreviewStyle}>
-                  {[
-                    ["imersao", "Imersão"],
-                    ["ideacao", "Ideação"],
-                    ["prototipagem", "Prototipagem"],
-                    ["teste", "Teste"],
-                    ["compartilhamento", "Compartilhamento"]
-                  ].map(([phaseId, phaseName]) => {
-                    const text =
-                      selectedTemplate.phaseDetails?.[phaseId] ||
-                      selectedTemplate.phases?.[phaseId]?.plan;
-
-                    if (!text) return null;
-
-                    return (
-                      <div key={phaseId} style={phasePreviewItemStyle}>
-                        <h4 style={phasePreviewTitleStyle}>{phaseName}</h4>
-                        <p style={phasePreviewTextStyle}>{text}</p>
-                      </div>
-                    );
-                  })}
-                </div>
+                <div style={modalSectionTitleStyle}>Resumo, materiais e montagem</div>
+                <p style={{ ...modalListStyle, paddingLeft: 0, whiteSpace: "pre-wrap" }}>
+                  {selectedTemplate.activityManual}
+                </p>
               </div>
             )}
 

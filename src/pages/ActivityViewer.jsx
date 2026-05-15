@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { PHASES } from "../data/phases.js";
 import { STEAM_AREAS } from "../data/steamAreas.js";
 import { openActivityPrintWindow } from "../lib/exportReport.js";
 import { useProjects } from "../hooks/useProjects.js";
 import Button from "../components/ui/Button.jsx";
 
 export default function ActivityViewer({ activityData, formData, projectId, currentUser, onBack }) {
-  const { editProject, getProjectById } = useProjects(currentUser?.id);
+  const { editProject } = useProjects(currentUser?.id);
   const [title, setTitle] = useState(activityData.title || "");
   const [theme, setTheme] = useState(activityData.theme || "");
   const [duration, setDuration] = useState(activityData.duration || "");
@@ -15,7 +14,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
   const [objectivesText, setObjectivesText] = useState((activityData.objectives || []).join("\n"));
   const [bnccText, setBnccText] = useState((activityData.bncc || []).join(", "));
   const [materialsText, setMaterialsText] = useState((activityData.materials || []).join("\n"));
-  const [phaseDetails, setPhaseDetails] = useState({ ...(activityData.phaseDetails || {}) });
+  const [activityManual, setActivityManual] = useState(activityData.activityManual || "");
   const [steamMatrix, setSteamMatrix] = useState({ ...(activityData.steamMatrix || {}) });
   const [accessibilityText, setAccessibilityText] = useState(
     Array.isArray(activityData.accessibility)
@@ -32,20 +31,8 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
     setSteamMatrix((m) => ({ ...m, [letter]: { ...(m[letter] || {}), [field]: value } }));
   };
 
-  const updatePhase = (id, value) => {
-    setPhaseDetails((p) => ({ ...p, [id]: value }));
-  };
-
   const handleSave = () => {
     if (!projectId) return;
-    const existingProject = getProjectById(projectId);
-    const phases = {};
-    PHASES.forEach((phase) => {
-      phases[phase.id] = {
-        ...(existingProject?.phases?.[phase.id] || { entries: [], studentEntries: {}, evaluation: {} }),
-        plan: phaseDetails[phase.id] || ""
-      };
-    });
     editProject(projectId, {
       title,
       theme,
@@ -55,10 +42,10 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       objectives: objectivesText.split("\n").map((s) => s.trim()).filter(Boolean),
       bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
       materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
+      activityManual,
       accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       steamMatrix,
-      bibliography: bibliographyText.split("\n").map((s) => s.trim()).filter(Boolean),
-      phases
+      bibliography: bibliographyText.split("\n").map((s) => s.trim()).filter(Boolean)
     });
     setSavedMsg("Alterações salvas.");
     setTimeout(() => setSavedMsg(""), 3000);
@@ -74,8 +61,8 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       objectives: objectivesText.split("\n").map((s) => s.trim()).filter(Boolean),
       bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
       materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
+      activityManual,
       accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
-      phaseDetails,
       steamMatrix,
       bibliography: bibliographyText.split("\n").map((s) => s.trim()).filter(Boolean),
       grade: formData?.grade || "",
@@ -265,22 +252,16 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
         </div>
       </div>
 
-      {/* Fases */}
+      {/* Manual */}
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Detalhamento das Fases</div>
-        {PHASES.map((phase) => (
-          <div key={phase.id} style={{ marginBottom: "1rem" }}>
-            <label style={{ ...labelStyle, color: phase.color }}>
-              Fase {phase.number}: {phase.name}
-            </label>
-            <textarea
-              style={textareaStyle("120px")}
-              value={phaseDetails[phase.id] || ""}
-              onChange={(e) => updatePhase(phase.id, e.target.value)}
-              placeholder={`Descrição da fase ${phase.name}...`}
-            />
-          </div>
-        ))}
+        <div style={sectionTitleStyle}>Resumo, Materiais e Montagem</div>
+        <label style={labelStyle}>Competências solicitadas, materiais utilizados e como montar o projeto</label>
+        <textarea
+          style={textareaStyle("180px")}
+          value={activityManual}
+          onChange={(e) => setActivityManual(e.target.value)}
+          placeholder="Resumo das competências: ...&#10;&#10;Materiais utilizados: ...&#10;&#10;Como montar e conduzir: ..."
+        />
       </div>
 
       {/* Acessibilidade */}

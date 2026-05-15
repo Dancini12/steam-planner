@@ -16,7 +16,7 @@ import { PHASES } from "../data/phases.js";
 import { STEAM_AREAS } from "../data/steamAreas.js";
 
 function buildActivityPrintHTML(activity) {
-  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, steamMatrix, phaseDetails, accessibility, bibliography, grade, discipline } = activity;
+  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, accessibility, bibliography, grade, discipline } = activity;
 
   const steamLetters = Object.keys(steamMatrix || {}).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
 
@@ -36,17 +36,6 @@ function buildActivityPrintHTML(activity) {
   const accessibilityHTML = (accessibility || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
   const bnccHTML = (bncc || []).map(escapeHtml).join(" · ");
   const bibliographyHTML = (bibliography || []).map((b) => `<li style="margin-bottom:0.4rem;">${escapeHtml(b)}</li>`).join("");
-
-  const phasesHTML = PHASES.map((phase) => {
-    const detail = (phaseDetails || {})[phase.id];
-    if (!detail) return "";
-    return `<div style="margin-bottom:1.5rem;page-break-inside:avoid;">
-      <h3 style="color:${phase.color};border-bottom:1px solid ${phase.color};padding-bottom:0.3rem;margin-bottom:0.5rem;">
-        Fase ${phase.number}: ${phase.name}
-      </h3>
-      <p style="margin:0;line-height:1.7;">${escapeHtml(detail)}</p>
-    </div>`;
-  }).join("");
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -90,8 +79,8 @@ function buildActivityPrintHTML(activity) {
   ${objectivesHTML ? `<h2>Objetivos de Aprendizagem</h2><ul>${objectivesHTML}</ul>` : ""}
   ${bnccHTML ? `<h2>Habilidades BNCC</h2><p style="font-family:monospace;font-size:0.9rem;">${bnccHTML}</p>` : ""}
   ${materialsHTML ? `<h2>Materiais</h2><ul>${materialsHTML}</ul>` : ""}
+  ${activityManual ? `<h2>Resumo, Materiais e Montagem</h2><div class="problem">${formatMultiline(activityManual)}</div>` : ""}
   ${accessibilityHTML ? `<h2>Acessibilidade e Inclusão</h2><ul>${accessibilityHTML}</ul>` : ""}
-  ${phasesHTML ? `<h2>Detalhamento das Fases</h2>${phasesHTML}` : ""}
   ${bibliographyHTML ? `<h2>Referências Bibliográficas</h2><ul>${bibliographyHTML}</ul>` : ""}
 
   <footer>Atividade gerada pelo STEAM Planner em ${new Date().toLocaleDateString("pt-BR")}</footer>
@@ -150,6 +139,9 @@ function buildReportHTML(project) {
   const materialsList = (project.materials || [])
     .map((m) => `<li>${escapeHtml(m)}</li>`)
     .join("");
+  const activityManualHTML = project.activityManual
+    ? `<div class="problem">${formatMultiline(project.activityManual)}</div>`
+    : "";
 
   const studentsList = (project.students || [])
     .map(
@@ -353,6 +345,8 @@ function buildReportHTML(project) {
   <h2>Materiais</h2>
   <ul>${materialsList || "<li>(não preenchido)</li>"}</ul>
 
+  ${activityManualHTML ? `<h2>Resumo, Materiais e Montagem</h2>${activityManualHTML}` : ""}
+
   <h2>Turma e alunos</h2>
   <ul>${studentsList || "<li>(nenhum aluno cadastrado)</li>"}</ul>
 
@@ -377,6 +371,10 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function formatMultiline(text) {
+  return escapeHtml(text).replace(/\n/g, "<br>");
 }
 
 // ------------------------------------------------------------

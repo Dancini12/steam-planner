@@ -1,5 +1,10 @@
 import { supabase } from '../supabaseClient.js'
 import { AIProviderManager } from './AIProviderManager.js'
+import {
+  formatBnccSuggestions,
+  getBnccCodes,
+  selectBnccHabilidades
+} from '../bnccSelector.js'
 
 const COMPETENCY_TO_LETTER = {
   science: 'S',
@@ -9,7 +14,7 @@ const COMPETENCY_TO_LETTER = {
   mathematics: 'M',
 }
 
-function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions }) {
+function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, bnccSuggestions }) {
   const steamLetters = steamCompetencies
     .map((c) => COMPETENCY_TO_LETTER[String(c).toLowerCase()])
     .filter(Boolean)
@@ -31,19 +36,25 @@ Crie uma atividade pedagógica completa para:
 - Tema central: ${theme}
 - Áreas STEAM envolvidas: ${uniqueLetters.join(', ')}
 ${classesInfo}
-- Cultura Maker: obrigatória em todas as fases
+- Cultura Maker: obrigatória na atividade
+- Habilidades BNCC selecionadas do banco offline:
+${formatBnccSuggestions(bnccSuggestions)}
 ${customInstructions?.trim() ? `\nSolicitações específicas do professor:\n${customInstructions.trim()}` : ''}
 
 Diretrizes obrigatórias:
 1. Materiais acessíveis para escolas públicas brasileiras (baixo custo)
 2. Questão norteadora aberta e investigativa
 3. Objetivos mensuráveis alinhados à série
-4. Códigos BNCC reais (ex: EF07CI05, EF08MA03, EF06LP01)
-5. Cultura Maker em todas as fases: mão na massa, prototipagem, iteração
-6. Cada fase com descrição operacional detalhada de atividades concretas, em passos numerados, para que o professor saiba exatamente como conduzir a execução
+4. Use no campo "bncc" apenas códigos da lista BNCC offline fornecida acima; não invente códigos novos
+5. Cultura Maker ao longo da atividade: mão na massa, prototipagem, iteração
+6. Não organize a resposta por fases, etapas de Design Thinking ou blocos como Imersão, Ideação, Prototipagem, Teste e Compartilhamento
 7. Lista de materiais com quantidade por grupo e, quando fizer sentido, quantidade para a turma. Ex.: "2 folhas de cartolina por grupo", "4 canetas coloridas por grupo", "1 tesoura sem ponta por grupo"
-8. Acessibilidade e desenho universal: se a atividade usar cores para classificar, marcar ou separar informações, inclua também padrões não dependentes de cor, como listras, bolinhas, formas, etiquetas, texturas, furos ou marcações táteis, pensando em estudantes daltônicos ou com baixa visão
-9. Referências bibliográficas reais no formato ABNT
+8. Manual da atividade em três partes, nesta ordem:
+   - "Resumo das competências": texto geral e breve relacionando as competências STEAM solicitadas à atividade
+   - "Materiais utilizados": lista explicando para que serve cada material solicitado
+   - "Como montar e conduzir": orientação prática para o professor montar o projeto, organizar a turma, usar os materiais, conduzir a produção, registrar evidências e finalizar
+9. Acessibilidade e desenho universal: se a atividade usar cores para classificar, marcar ou separar informações, inclua também padrões não dependentes de cor, como listras, bolinhas, formas, etiquetas, texturas, furos ou marcações táteis, pensando em estudantes daltônicos ou com baixa visão
+10. Referências bibliográficas reais no formato ABNT
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -60,7 +71,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Objetivo 3",
     "Objetivo 4"
   ],
-  "bncc": ["EF07CI05", "EF07MA03"],
+  "bncc": ${JSON.stringify(getBnccCodes(bnccSuggestions))},
   "materials": [
     "Material 1 — quantidade por grupo e/ou turma (acessível)",
     "Material 2 — quantidade por grupo e/ou turma",
@@ -68,13 +79,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Material 4 — quantidade por grupo e/ou turma",
     "Material 5 — quantidade por grupo e/ou turma"
   ],
-  "phaseDetails": {
-    "imersao": "Descrição operacional detalhada em passos numerados: preparação, perguntas disparadoras, organização dos grupos, atividade dos alunos, registro e produto esperado.",
-    "ideacao": "Descrição operacional detalhada em passos numerados: brainstorming, critérios de escolha, esboços, divisão de tarefas e decisão coletiva.",
-    "prototipagem": "Descrição operacional detalhada em passos numerados: o que construir, sequência de montagem, uso dos materiais com quantidades, cuidados de segurança e registro maker.",
-    "teste": "Descrição operacional detalhada em passos numerados: como testar, métricas, coleta de dados, comparação, ajustes e nova tentativa.",
-    "compartilhamento": "Descrição operacional detalhada em passos numerados: preparação da apresentação, audiência, evidências, reflexão e fechamento."
-  },
+  "activityManual": "Resumo das competências:\\nTexto geral e breve conectando as competências STEAM solicitadas à atividade.\\n\\nMateriais utilizados:\\n- Material 1: explique como será usado e por que é necessário.\\n- Material 2: explique como será usado e por que é necessário.\\n\\nComo montar e conduzir:\\nPassos práticos para o professor montar o projeto com a turma, distribuir e usar os materiais, orientar a produção, registrar evidências, cuidar da segurança e finalizar.",
   "accessibility": [
     "Orientação 1 de acessibilidade e inclusão",
     "Orientação 2, incluindo alternativa a códigos baseados apenas em cores com padrões, símbolos, texturas ou marcações táteis"
@@ -110,15 +115,25 @@ function extractJson(text) {
 }
 
 function validateActivity(data) {
-  const required = ['title', 'theme', 'duration', 'problem', 'guidingQuestion', 'steamMatrix', 'objectives', 'bncc', 'materials', 'phaseDetails', 'accessibility']
+  const required = ['title', 'theme', 'duration', 'problem', 'guidingQuestion', 'steamMatrix', 'objectives', 'bncc', 'materials', 'activityManual', 'accessibility']
   for (const field of required) {
     if (!data[field]) throw new Error(`Campo obrigatório ausente na resposta da IA: ${field}`)
   }
-  const phases = ['imersao', 'ideacao', 'prototipagem', 'teste', 'compartilhamento']
-  for (const phase of phases) {
-    if (!data.phaseDetails[phase]) throw new Error(`Fase ausente na resposta da IA: ${phase}`)
-  }
   return true
+}
+
+function applyOfflineBncc(data, bnccSuggestions) {
+  const offlineCodes = getBnccCodes(bnccSuggestions)
+  if (offlineCodes.length === 0) return data
+
+  const selectedCodes = Array.isArray(data.bncc)
+    ? data.bncc.filter((code) => offlineCodes.includes(code))
+    : []
+
+  return {
+    ...data,
+    bncc: selectedCodes.length > 0 ? selectedCodes : offlineCodes.slice(0, 3)
+  }
 }
 
 function buildClassroomPrompt(project) {
@@ -206,7 +221,15 @@ export class PedagogicalPlannerService {
   static async generatePedagogicalActivity(params) {
     const { discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, userId } = params
 
-    const prompt = buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions })
+    const bnccSuggestions = selectBnccHabilidades({
+      grade,
+      discipline,
+      theme,
+      steamCompetencies,
+      limit: 5
+    })
+
+    const prompt = buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, bnccSuggestions })
 
     const response = await AIProviderManager.request({
       requestType: 'pedagogicalactivity',
@@ -219,7 +242,7 @@ export class PedagogicalPlannerService {
     }
 
     const jsonStr = extractJson(rawText)
-    const parsed = JSON.parse(jsonStr)
+    const parsed = applyOfflineBncc(JSON.parse(jsonStr), bnccSuggestions)
 
     validateActivity(parsed)
 
