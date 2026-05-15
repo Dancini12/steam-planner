@@ -3,6 +3,7 @@ import { useProjects } from "../hooks/useProjects.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 import PedagogicalPlannerModal from "../components/project/PedagogicalPlannerModal.jsx";
 import ActivityAdaptationModal from "../components/project/ActivityAdaptationModal.jsx";
+import CreationTipsModal from "../components/project/CreationTipsModal.jsx";
 
 function formatSupabaseError(error) {
   return [
@@ -51,6 +52,7 @@ export default function Dashboard({
   const { projects, addProjectFromTemplate, isLoaded } = useProjects(currentUser?.id);
   const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
   const [showAdaptationModal, setShowAdaptationModal] = useState(false);
+  const [showTipsModal, setShowTipsModal] = useState(false);
   const [creationError, setCreationError] = useState("");
   const [visualAccessibility, setVisualAccessibility] = useState(
     () => localStorage.getItem("steam-visual-accessibility") === "true"
@@ -219,7 +221,7 @@ export default function Dashboard({
             text="Dicas e orientações para criar atividades incríveis"
             color="#FB923C"
             size="small"
-            onClick={() => window.alert("Dicas para criação de atividade estará disponível em breve.")}
+            onClick={() => setShowTipsModal(true)}
           />
           <DashboardCard
             title="CONECTE COM O MUNDO REAL"
@@ -258,6 +260,11 @@ export default function Dashboard({
       <ActivityAdaptationModal
         isOpen={showAdaptationModal}
         onClose={() => setShowAdaptationModal(false)}
+      />
+
+      <CreationTipsModal
+        isOpen={showTipsModal}
+        onClose={() => setShowTipsModal(false)}
       />
     </div>
   );
