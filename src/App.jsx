@@ -22,6 +22,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import ActivityViewer from "./pages/ActivityViewer.jsx";
 import BNCC from "./pages/BNCC.jsx";
 import Library from "./pages/Library.jsx";
+import RealWorldNews from "./pages/RealWorldNews.jsx";
 import ProjectEditor from "./pages/ProjectEditor.jsx";
 import PhaseEditor from "./pages/PhaseEditor.jsx";
 import BibliographyEditor from "./pages/BibliographyEditor.jsx";
@@ -41,6 +42,7 @@ const SCREENS = {
   ACTIVITY_VIEWER: "activity_viewer",
   BNCC: "bncc",
   LIBRARY: "library",
+  REAL_WORLD_NEWS: "real_world_news",
   PROJECT_EDITOR: "project_editor",
   PHASE_EDITOR: "phase_editor",
   BIBLIOGRAPHY_EDITOR: "bibliography_editor",
@@ -165,6 +167,11 @@ export default function App() {
     setCurrentScreen(SCREENS.BNCC);
   };
 
+  // Abre a central de noticias atuais para inspiracao pedagogica
+  const goToRealWorldNews = () => {
+    setCurrentScreen(SCREENS.REAL_WORLD_NEWS);
+  };
+
   // Abre um projeto específico para edição
   const goToProjectEditor = (projectId) => {
     setActiveProjectId(projectId);
@@ -249,11 +256,16 @@ export default function App() {
           onOpenLibrary={goToLibrary}
           onOpenBNCC={goToBNCC}
           onOpenActivityViewer={goToActivityViewer}
+          onOpenRealWorldNews={goToRealWorldNews}
         />
       )}
 
       {currentScreen === SCREENS.BNCC && (
         <BNCC onBack={goToDashboard} />
+      )}
+
+      {currentScreen === SCREENS.REAL_WORLD_NEWS && (
+        <RealWorldNews onBack={goToDashboard} />
       )}
 
       {currentScreen === SCREENS.ACTIVITY_VIEWER && activeActivityResult && (

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useProjects } from "../hooks/useProjects.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 import PedagogicalPlannerModal from "../components/project/PedagogicalPlannerModal.jsx";
@@ -41,150 +41,23 @@ function DashboardCard({ title, text, icon, color, size = "large", onClick }) {
   );
 }
 
-const REAL_WORLD_NEWS = [
-  {
-    id: "ia-escola",
-    category: "Inteligência Artificial",
-    source: "Porvir",
-    title: "IA na escola: como transformar tecnologia em investigação dos alunos",
-    summary: "Debates sobre uso responsável de inteligência artificial inspiram projetos de autoria, ética, dados e resolução de problemas reais.",
-    discipline: "Robótica",
-    grade: "8º ano - Ensino Fundamental",
-    steamCompetencies: ["technology", "engineering", "arts"],
-    imageTheme: "ai"
-  },
-  {
-    id: "clima-cidades",
-    category: "Meio Ambiente",
-    source: "ONU Brasil",
-    title: "Cidades buscam soluções para calor extremo e eventos climáticos",
-    summary: "Mudanças climáticas aproximam ciência, território e prototipagem de soluções simples para proteger a comunidade escolar.",
-    discipline: "Ciências",
-    grade: "7º ano - Ensino Fundamental",
-    steamCompetencies: ["science", "engineering", "mathematics"],
-    imageTheme: "climate"
-  },
-  {
-    id: "lixo-eletronico",
-    category: "Sustentabilidade",
-    source: "National Geographic Brasil",
-    title: "Lixo eletrônico cresce e desafia consumo, descarte e reciclagem",
-    summary: "O ciclo de vida dos aparelhos permite investigar materiais, impacto ambiental e criar campanhas ou protótipos de reaproveitamento.",
-    discipline: "Ciências",
-    grade: "6º ano - Ensino Fundamental",
-    steamCompetencies: ["science", "technology", "engineering"],
-    imageTheme: "recycle"
-  },
-  {
-    id: "educacao-maker",
-    category: "Educação",
-    source: "Nova Escola",
-    title: "Aprendizagem mão na massa ganha espaço em práticas interdisciplinares",
-    summary: "Experiências maker ajudam professores a conectar currículo, colaboração e produção de soluções concretas pelos estudantes.",
-    discipline: "Língua Portuguesa",
-    grade: "6º ano - Ensino Fundamental",
-    steamCompetencies: ["engineering", "arts", "technology"],
-    imageTheme: "education"
-  },
-  {
-    id: "economia-domestica",
-    category: "Economia",
-    source: "InfoMoney",
-    title: "Educação financeira aproxima orçamento, escolhas e consumo consciente",
-    summary: "Dados do cotidiano podem virar simulações, planilhas, protótipos de economia e debates sobre tomada de decisão.",
-    discipline: "Educação Financeira",
-    grade: "9º ano - Ensino Fundamental",
-    steamCompetencies: ["mathematics", "technology", "engineering"],
-    imageTheme: "economy"
-  },
-  {
-    id: "cultura-digital",
-    category: "Cultura Digital",
-    source: "Olhar Digital",
-    title: "Cultura digital muda comunicação, criação e segurança na internet",
-    summary: "Temas como privacidade, algoritmos e produção de mídia rendem projetos de análise crítica e criação de campanhas digitais.",
-    discipline: "Língua Portuguesa",
-    grade: "8º ano - Ensino Fundamental",
-    steamCompetencies: ["technology", "arts", "mathematics"],
-    imageTheme: "digital"
-  },
-  {
-    id: "ciencia-cotidiano",
-    category: "Ciência",
-    source: "BBC Brasil",
-    title: "Descobertas científicas do cotidiano ajudam a explicar fenômenos reais",
-    summary: "Perguntas próximas da vida dos estudantes favorecem investigação, experimentação e comunicação científica acessível.",
-    discipline: "Ciências",
-    grade: "6º ano - Ensino Fundamental",
-    steamCompetencies: ["science", "mathematics", "arts"],
-    imageTheme: "science"
-  },
-  {
-    id: "empreendedorismo-social",
-    category: "Empreendedorismo",
-    source: "Valor Econômico",
-    title: "Projetos de impacto social unem inovação, planejamento e comunidade",
-    summary: "Problemas locais podem ser transformados em mapas de necessidades, protótipos e propostas de intervenção dos alunos.",
-    discipline: "Geografia",
-    grade: "9º ano - Ensino Fundamental",
-    steamCompetencies: ["engineering", "technology", "mathematics"],
-    imageTheme: "society"
-  },
-  {
-    id: "tecnologia-acessivel",
-    category: "Tecnologia",
-    source: "Canaltech",
-    title: "Tecnologias acessíveis ampliam inclusão e autonomia no dia a dia",
-    summary: "Soluções simples com sensores, papelaria ou materiais reaproveitados estimulam empatia, design e testes com usuários.",
-    discipline: "Robótica",
-    grade: "7º ano - Ensino Fundamental",
-    steamCompetencies: ["technology", "engineering", "science"],
-    imageTheme: "tech"
-  },
-  {
-    id: "sociedade-dados",
-    category: "Sociedade",
-    source: "BBC Brasil",
-    title: "Dados públicos ajudam a compreender desigualdades e propor soluções",
-    summary: "Leitura de gráficos e indicadores pode virar investigação territorial, painéis visuais e propostas para a comunidade.",
-    discipline: "Geografia",
-    grade: "8º ano - Ensino Fundamental",
-    steamCompetencies: ["mathematics", "technology", "arts"],
-    imageTheme: "data"
-  }
-];
-
-const NEWS_CATEGORIES = [
-  "Ciência",
-  "Tecnologia",
-  "Sustentabilidade",
-  "Educação",
-  "Economia",
-  "Inteligência Artificial",
-  "Meio Ambiente",
-  "Sociedade",
-  "Cultura Digital",
-  "Empreendedorismo"
-];
-
 export default function Dashboard({
   currentUser,
   onLogout,
   onOpenProject,
   onOpenLibrary,
   onOpenBNCC,
-  onOpenActivityViewer
+  onOpenActivityViewer,
+  onOpenRealWorldNews
 }) {
   const { projects, addProjectFromTemplate, isLoaded } = useProjects(currentUser?.id);
   const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
   const [showAdaptationModal, setShowAdaptationModal] = useState(false);
   const [showTipsModal, setShowTipsModal] = useState(false);
   const [creationError, setCreationError] = useState("");
-  const [generatingNewsId, setGeneratingNewsId] = useState("");
   const [visualAccessibility, setVisualAccessibility] = useState(
     () => localStorage.getItem("steam-visual-accessibility") === "true"
   );
-  const realWorldRef = useRef(null);
 
   const professorName = currentUser?.name || currentUser?.email?.split("@")[0] || "Professor";
   const firstName = professorName.split(" ")[0] || "Professor";
@@ -234,49 +107,6 @@ export default function Dashboard({
       setCreationError(
         `Não foi possível salvar a atividade. ${formatSupabaseError(error)}`
       );
-    }
-  };
-
-  const handleGenerateFromNews = async (news) => {
-    setCreationError("");
-    setGeneratingNewsId(news.id);
-
-    try {
-      const customInstructions = [
-        `Use a notícia/conteúdo atual como contexto central da atividade.`,
-        `Título da notícia: ${news.title}`,
-        `Resumo da notícia: ${news.summary}`,
-        `Fonte confiável: ${news.source}`,
-        `Categoria: ${news.category}`,
-        "Conecte a atividade a um problema real observado pelos estudantes.",
-        "Inclua Cultura Maker com construção de protótipo, campanha, painel, modelo físico ou solução testável.",
-        "Oriente o professor a usar a notícia na abertura da aula, como provocação investigativa."
-      ].join("\n");
-
-      const formData = {
-        discipline: news.discipline,
-        grade: news.grade,
-        theme: news.title,
-        steamCompetencies: news.steamCompetencies,
-        numberOfClasses: "3",
-        personalization: {
-          detailLevel: "roteiro_completo",
-          materials: "baixo_custo",
-          accessibility: accessibilityPreset,
-          assessment: "observacao"
-        },
-        manualInstructions: customInstructions,
-        customInstructions,
-        userId: currentUser?.id
-      };
-
-      const result = await PedagogicalPlannerService.generatePedagogicalActivity(formData);
-      await handlePedagogicalActivityGenerated({ ...result, formData });
-    } catch (error) {
-      console.error("Erro ao gerar atividade a partir da notícia:", error);
-      setCreationError(error.message || "Não foi possível gerar a atividade a partir da notícia.");
-    } finally {
-      setGeneratingNewsId("");
     }
   };
 
@@ -400,7 +230,7 @@ export default function Dashboard({
             text="Transforme temas atuais em atividades significativas"
             color="#38BDF8"
             size="small"
-            onClick={() => realWorldRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            onClick={onOpenRealWorldNews}
           />
           <DashboardCard
             title="ADAPTAÇÃO DE ATIVIDADE"
@@ -410,78 +240,6 @@ export default function Dashboard({
             size="small"
             onClick={() => setShowAdaptationModal(true)}
           />
-        </section>
-
-        <section ref={realWorldRef} className="real-world-feed" aria-label="Conecte com o mundo real">
-          <div className="real-world-header">
-            <div>
-              <span className="real-world-kicker">CONECTE COM O MUNDO REAL</span>
-              <h2>Atualidades para inspirar atividades STEAM</h2>
-              <p>
-                Notícias e conteúdos de fontes confiáveis para transformar ciência, tecnologia,
-                sustentabilidade, economia e sociedade em experiências maker.
-              </p>
-            </div>
-            <div className="real-world-sources">
-              Canaltech · Olhar Digital · Nova Escola · Porvir · ONU Brasil · BBC Brasil
-            </div>
-          </div>
-
-          <div className="news-category-row" aria-label="Categorias de notícias">
-            {NEWS_CATEGORIES.map((category) => (
-              <span key={category}>{category}</span>
-            ))}
-          </div>
-
-          <div className="news-layout">
-            <article className="featured-news-card">
-              <div className={`news-image news-image-${REAL_WORLD_NEWS[0].imageTheme}`}>
-                <span>{REAL_WORLD_NEWS[0].category}</span>
-              </div>
-              <div className="featured-news-content">
-                <div className="news-meta">
-                  <span>{REAL_WORLD_NEWS[0].source}</span>
-                  <strong>{REAL_WORLD_NEWS[0].category}</strong>
-                </div>
-                <h3>{REAL_WORLD_NEWS[0].title}</h3>
-                <p>{REAL_WORLD_NEWS[0].summary}</p>
-                <button
-                  type="button"
-                  className="news-action-button"
-                  onClick={() => handleGenerateFromNews(REAL_WORLD_NEWS[0])}
-                  disabled={!!generatingNewsId}
-                >
-                  {generatingNewsId === REAL_WORLD_NEWS[0].id ? "Gerando..." : "Transformar em atividade"}
-                </button>
-              </div>
-            </article>
-
-            <div className="news-grid">
-              {REAL_WORLD_NEWS.slice(1).map((news) => (
-                <article key={news.id} className="news-card">
-                  <div className={`news-thumb news-image-${news.imageTheme}`}>
-                    <span>{news.category}</span>
-                  </div>
-                  <div className="news-card-body">
-                    <div className="news-meta">
-                      <span>{news.source}</span>
-                      <strong>{news.category}</strong>
-                    </div>
-                    <h3>{news.title}</h3>
-                    <p>{news.summary}</p>
-                    <button
-                      type="button"
-                      className="news-action-button news-action-button-small"
-                      onClick={() => handleGenerateFromNews(news)}
-                      disabled={!!generatingNewsId}
-                    >
-                      {generatingNewsId === news.id ? "Gerando..." : "Gerar atividade"}
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
         </section>
 
         <footer className="retro-footer">
@@ -983,282 +741,6 @@ const retroCss = `
     filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.28));
   }
 
-  .real-world-feed {
-    margin-top: 28px;
-    padding: 24px;
-    border-radius: 18px;
-    background: #F5F7FB;
-    color: #1F2937;
-    font-family: 'Inter', system-ui, sans-serif;
-    box-shadow:
-      0 0 0 3px rgba(2, 6, 23, 0.78),
-      0 18px 38px rgba(2, 6, 23, 0.28);
-  }
-
-  .real-world-header {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
-    gap: 20px;
-    align-items: end;
-    margin-bottom: 18px;
-  }
-
-  .real-world-kicker {
-    display: inline-flex;
-    align-items: center;
-    min-height: 26px;
-    padding: 0 10px;
-    border-radius: 999px;
-    background: rgba(79, 70, 229, 0.1);
-    color: #4F46E5;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-  }
-
-  .real-world-header h2 {
-    margin: 12px 0 8px;
-    color: #1F2937;
-    font-size: clamp(1.45rem, 3vw, 2.2rem);
-    line-height: 1.1;
-    letter-spacing: 0;
-  }
-
-  .real-world-header p {
-    max-width: 760px;
-    margin: 0;
-    color: #4B5563;
-    font-size: 1rem;
-    line-height: 1.55;
-  }
-
-  .real-world-sources {
-    padding: 14px;
-    border: 1px solid #E5E7EB;
-    border-radius: 12px;
-    background: #FFFFFF;
-    color: #6B7280;
-    font-size: 0.84rem;
-    font-weight: 600;
-    line-height: 1.55;
-  }
-
-  .news-category-row {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 2px 0 16px;
-    margin-bottom: 6px;
-  }
-
-  .news-category-row span {
-    flex: 0 0 auto;
-    padding: 8px 12px;
-    border: 1px solid #E5E7EB;
-    border-radius: 999px;
-    background: #FFFFFF;
-    color: #374151;
-    font-size: 0.82rem;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  .news-layout {
-    display: grid;
-    grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.4fr);
-    gap: 18px;
-  }
-
-  .featured-news-card,
-  .news-card {
-    background: #FFFFFF;
-    border: 1px solid #E5E7EB;
-    border-radius: 14px;
-    overflow: hidden;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.07);
-    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-  }
-
-  .featured-news-card:hover,
-  .news-card:hover {
-    transform: translateY(-3px);
-    border-color: rgba(79, 70, 229, 0.26);
-    box-shadow: 0 18px 32px rgba(15, 23, 42, 0.1);
-  }
-
-  .featured-news-card {
-    display: flex;
-    flex-direction: column;
-    min-height: 100%;
-  }
-
-  .news-image,
-  .news-thumb {
-    position: relative;
-    display: flex;
-    align-items: flex-end;
-    min-height: 238px;
-    padding: 16px;
-    overflow: hidden;
-  }
-
-  .news-thumb {
-    min-height: 132px;
-  }
-
-  .news-image::before,
-  .news-thumb::before {
-    content: "";
-    position: absolute;
-    inset: 18%;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.22);
-    filter: blur(22px);
-  }
-
-  .news-image span,
-  .news-thumb span {
-    position: relative;
-    z-index: 1;
-    padding: 7px 10px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.92);
-    color: #1F2937;
-    font-size: 0.74rem;
-    font-weight: 700;
-  }
-
-  .news-image-ai { background: linear-gradient(135deg, #4F46E5, #8B5CF6 55%, #10B981); }
-  .news-image-climate { background: linear-gradient(135deg, #0EA5E9, #10B981 58%, #FDE047); }
-  .news-image-recycle { background: linear-gradient(135deg, #064E3B, #10B981 60%, #A7F3D0); }
-  .news-image-education { background: linear-gradient(135deg, #8B5CF6, #EC4899 58%, #FDE68A); }
-  .news-image-economy { background: linear-gradient(135deg, #1F2937, #4F46E5 58%, #10B981); }
-  .news-image-digital { background: linear-gradient(135deg, #2563EB, #06B6D4 56%, #8B5CF6); }
-  .news-image-science { background: linear-gradient(135deg, #0891B2, #4F46E5 54%, #A7F3D0); }
-  .news-image-society { background: linear-gradient(135deg, #7C2D12, #F97316 54%, #10B981); }
-  .news-image-tech { background: linear-gradient(135deg, #111827, #4F46E5 56%, #38BDF8); }
-  .news-image-data { background: linear-gradient(135deg, #1E293B, #8B5CF6 56%, #10B981); }
-
-  .featured-news-content,
-  .news-card-body {
-    padding: 18px;
-  }
-
-  .featured-news-content {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-  }
-
-  .news-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
-    color: #6B7280;
-    font-size: 0.78rem;
-    font-weight: 700;
-  }
-
-  .news-meta strong {
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: rgba(16, 185, 129, 0.1);
-    color: #047857;
-    font-size: 0.72rem;
-  }
-
-  .featured-news-content h3,
-  .news-card h3 {
-    margin: 0;
-    color: #1F2937;
-    line-height: 1.22;
-    letter-spacing: 0;
-  }
-
-  .featured-news-content h3 {
-    font-size: clamp(1.35rem, 2.5vw, 2rem);
-  }
-
-  .news-card h3 {
-    font-size: 1rem;
-  }
-
-  .featured-news-content p,
-  .news-card p {
-    color: #4B5563;
-    line-height: 1.55;
-  }
-
-  .featured-news-content p {
-    flex: 1;
-    margin: 12px 0 18px;
-    font-size: 1rem;
-  }
-
-  .news-card p {
-    margin: 9px 0 14px;
-    font-size: 0.9rem;
-  }
-
-  .news-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
-  }
-
-  .news-card {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-  }
-
-  .news-card-body {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-  }
-
-  .news-card-body p {
-    flex: 1;
-  }
-
-  .news-action-button {
-    width: 100%;
-    min-height: 44px;
-    border: 0;
-    border-radius: 10px;
-    background: #4F46E5;
-    color: #FFFFFF;
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: 0.92rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: transform 0.16s ease, background 0.16s ease, opacity 0.16s ease;
-  }
-
-  .news-action-button:hover {
-    transform: translateY(-1px);
-    background: #4338CA;
-  }
-
-  .news-action-button:disabled {
-    cursor: wait;
-    opacity: 0.68;
-    transform: none;
-  }
-
-  .news-action-button-small {
-    min-height: 40px;
-    background: #8B5CF6;
-    font-size: 0.85rem;
-  }
-
-  .news-action-button-small:hover {
-    background: #7C3AED;
-  }
-
   .retro-footer {
     display: flex;
     align-items: center;
@@ -1416,16 +898,6 @@ const retroCss = `
     .secondary-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-
-    .real-world-header,
-    .news-layout {
-      grid-template-columns: 1fr;
-    }
-
-    .news-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .retro-hero {
       grid-template-columns: minmax(0, 1fr) 190px;
     }
@@ -1470,20 +942,6 @@ const retroCss = `
     .secondary-grid {
       grid-template-columns: 1fr;
     }
-
-    .real-world-feed {
-      padding: 18px;
-      border-radius: 14px;
-    }
-
-    .news-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .news-image {
-      min-height: 190px;
-    }
-
     .retro-card-large,
     .retro-card-small {
       min-height: 0;
