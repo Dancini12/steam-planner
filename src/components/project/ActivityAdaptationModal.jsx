@@ -3,6 +3,7 @@ import Modal from "../ui/Modal.jsx";
 import Button from "../ui/Button.jsx";
 import { ACCESSIBILITY_ADAPTATIONS } from "../../data/accessibilityAdaptations.js";
 import { PedagogicalPlannerService } from "../../lib/ai/pedagogicalPlannerService.js";
+import { openAdaptationReportWindow } from "../../lib/exportReport.js";
 
 const PATTERN_EXAMPLES = [
   { label: "Listras", color: "#E8358A" },
@@ -190,14 +191,27 @@ export default function ActivityAdaptationModal({ isOpen, onClose }) {
           <div style={styles.resultBox}>
             <div style={styles.resultHeader}>
               <span style={styles.resultTitle}>Sugestões de adaptação</span>
-              <button style={styles.newAdaptBtn} onClick={() => setResult(null)}>
-                Nova análise
-              </button>
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <button
+                  style={styles.downloadBtn}
+                  onClick={() => {
+                    const selected = ACCESSIBILITY_ADAPTATIONS.filter((a) =>
+                      selectedAdaptations.includes(a.id)
+                    );
+                    openAdaptationReportWindow(result, file?.name, selected);
+                  }}
+                >
+                  Baixar PDF
+                </button>
+                <button style={styles.newAdaptBtn} onClick={() => setResult(null)}>
+                  Nova análise
+                </button>
+              </div>
             </div>
             <div style={styles.resultContent}>
               {result.split("\n").map((line, i) => (
                 line.trim() ? (
-                  <p key={i} style={line.startsWith("#") || /^[A-Z]/.test(line) && line.length < 80 ? styles.resultHeading : styles.resultPara}>
+                  <p key={i} style={line.startsWith("#") || (/^[A-Z]/.test(line) && line.length < 80) ? styles.resultHeading : styles.resultPara}>
                     {line.replace(/^#+\s*/, "")}
                   </p>
                 ) : <br key={i} />
@@ -390,11 +404,22 @@ const styles = {
     fontWeight: 700,
     fontSize: "0.85rem"
   },
-  newAdaptBtn: {
-    background: "transparent",
-    border: "1px solid rgba(57, 255, 136, 0.3)",
+  downloadBtn: {
+    background: "rgba(57, 255, 136, 0.12)",
+    border: "1px solid rgba(57, 255, 136, 0.5)",
     borderRadius: "6px",
     color: "#39FF88",
+    fontSize: "0.75rem",
+    fontWeight: 700,
+    padding: "0.3rem 0.85rem",
+    cursor: "pointer",
+    fontFamily: "inherit"
+  },
+  newAdaptBtn: {
+    background: "transparent",
+    border: "1px solid rgba(255,255,255,0.15)",
+    borderRadius: "6px",
+    color: "rgba(255,255,255,0.5)",
     fontSize: "0.75rem",
     padding: "0.3rem 0.75rem",
     cursor: "pointer",

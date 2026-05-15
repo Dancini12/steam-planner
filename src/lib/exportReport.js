@@ -459,3 +459,81 @@ export function openReportWindow(project) {
   newWindow.document.write(html);
   newWindow.document.close();
 }
+
+function buildAdaptationReportHTML(result, filename, selectedAdaptations) {
+  const adaptationLabels = selectedAdaptations
+    .map((a) => `<span style="display:inline-block;background:#f0f0f0;border:1px solid #ccc;border-radius:4px;padding:0.15rem 0.55rem;font-size:0.82rem;font-weight:700;margin-right:0.4rem;margin-bottom:0.4rem;">${escapeHtml(a.label)}</span>`)
+    .join("");
+
+  const bodyHTML = result
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return "<br>";
+      if (/^#{1,3}\s/.test(trimmed)) {
+        const text = trimmed.replace(/^#+\s*/, "");
+        return `<h2>${escapeHtml(text)}</h2>`;
+      }
+      if (/^\*\*(.+)\*\*$/.test(trimmed)) {
+        return `<p><strong>${escapeHtml(trimmed.replace(/\*\*/g, ""))}</strong></p>`;
+      }
+      if (/^[-•]\s/.test(trimmed)) {
+        return `<li>${escapeHtml(trimmed.replace(/^[-•]\s/, ""))}</li>`;
+      }
+      return `<p>${escapeHtml(trimmed)}</p>`;
+    })
+    .join("\n")
+    .replace(/(<li>[\s\S]*?<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`);
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatório de Adaptação — ${escapeHtml(filename || "Atividade")}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Georgia, serif; max-width: 800px; margin: 2rem auto; padding: 1rem 1.5rem; color: #000; line-height: 1.6; }
+    h1 { color: #000; font-weight: bold; border-bottom: 3px solid #000; padding-bottom: 0.5rem; margin-bottom: 0.25rem; font-size: 1.5rem; }
+    h2 { color: #000; font-weight: bold; margin: 1.75rem 0 0.6rem; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #ccc; padding-bottom: 0.3rem; }
+    h3 { color: #000; font-weight: bold; margin: 1.2rem 0 0.4rem; font-size: 0.95rem; }
+    p { margin: 0.4rem 0; }
+    ul { padding-left: 1.5rem; margin: 0.5rem 0; }
+    li { margin-bottom: 0.35rem; }
+    .meta { color: #333; font-size: 0.88rem; margin: 0.5rem 0 1.25rem; }
+    .source-file { background: #f5f5f5; border: 1px solid #ccc; border-radius: 4px; padding: 0.5rem 0.85rem; font-size: 0.85rem; color: #333; display: inline-block; margin-bottom: 1.25rem; }
+    .profiles { margin-bottom: 1.5rem; }
+    .divider { border: none; border-top: 1px solid #ccc; margin: 1.5rem 0; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; color: #333; font-size: 0.8rem; text-align: center; }
+    @media print { body { margin: 0; padding: 0.5cm 1cm; } h2 { page-break-after: avoid; } }
+  </style>
+</head>
+<body>
+  <h1>Relatório de Adaptação de Atividade</h1>
+  <div class="meta">Gerado em ${new Date().toLocaleDateString("pt-BR")}</div>
+
+  ${filename ? `<div class="source-file">📄 ${escapeHtml(filename)}</div>` : ""}
+
+  <div class="profiles">
+    <strong>Perfis de acessibilidade aplicados:</strong><br>
+    <div style="margin-top:0.5rem;">${adaptationLabels}</div>
+  </div>
+
+  <hr class="divider">
+
+  ${bodyHTML}
+
+  <footer>Relatório gerado pelo STEAM Planner em ${new Date().toLocaleDateString("pt-BR")}</footer>
+</body>
+</html>`;
+}
+
+export function openAdaptationReportWindow(result, filename, selectedAdaptations) {
+  const html = buildAdaptationReportHTML(result, filename, selectedAdaptations);
+  const newWindow = window.open("", "_blank");
+  if (!newWindow) {
+    alert("Não foi possível abrir o relatório. Verifique se o navegador está bloqueando pop-ups.");
+    return;
+  }
+  newWindow.document.write(html);
+  newWindow.document.close();
+}
