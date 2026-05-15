@@ -20,6 +20,7 @@ import { useState, useEffect } from "react";
 
 import Dashboard from "./pages/Dashboard.jsx";
 import ActivityViewer from "./pages/ActivityViewer.jsx";
+import BNCC from "./pages/BNCC.jsx";
 import Library from "./pages/Library.jsx";
 import ProjectEditor from "./pages/ProjectEditor.jsx";
 import PhaseEditor from "./pages/PhaseEditor.jsx";
@@ -38,6 +39,7 @@ import { getUserData, trackEvent } from "./lib/analytics.js";
 const SCREENS = {
   DASHBOARD: "dashboard",
   ACTIVITY_VIEWER: "activity_viewer",
+  BNCC: "bncc",
   LIBRARY: "library",
   PROJECT_EDITOR: "project_editor",
   PHASE_EDITOR: "phase_editor",
@@ -158,6 +160,11 @@ export default function App() {
     setCurrentScreen(SCREENS.LIBRARY);
   };
 
+  // Abre a consulta offline da BNCC
+  const goToBNCC = () => {
+    setCurrentScreen(SCREENS.BNCC);
+  };
+
   // Abre um projeto específico para edição
   const goToProjectEditor = (projectId) => {
     setActiveProjectId(projectId);
@@ -240,9 +247,13 @@ export default function App() {
           onLogout={handleLogout}
           onOpenProject={goToProjectEditor}
           onOpenLibrary={goToLibrary}
-          onOpenSettings={goToSettings}
+          onOpenBNCC={goToBNCC}
           onOpenActivityViewer={goToActivityViewer}
         />
+      )}
+
+      {currentScreen === SCREENS.BNCC && (
+        <BNCC onBack={goToDashboard} />
       )}
 
       {currentScreen === SCREENS.ACTIVITY_VIEWER && activeActivityResult && (

@@ -17,6 +17,11 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
   const [materialsText, setMaterialsText] = useState((activityData.materials || []).join("\n"));
   const [phaseDetails, setPhaseDetails] = useState({ ...(activityData.phaseDetails || {}) });
   const [steamMatrix, setSteamMatrix] = useState({ ...(activityData.steamMatrix || {}) });
+  const [accessibilityText, setAccessibilityText] = useState(
+    Array.isArray(activityData.accessibility)
+      ? activityData.accessibility.join("\n")
+      : activityData.accessibility || ""
+  );
   const [bibliographyText, setBibliographyText] = useState((activityData.bibliography || []).join("\n"));
 
   const [savedMsg, setSavedMsg] = useState("");
@@ -50,6 +55,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       objectives: objectivesText.split("\n").map((s) => s.trim()).filter(Boolean),
       bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
       materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
+      accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       steamMatrix,
       bibliography: bibliographyText.split("\n").map((s) => s.trim()).filter(Boolean),
       phases
@@ -68,6 +74,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       objectives: objectivesText.split("\n").map((s) => s.trim()).filter(Boolean),
       bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
       materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
+      accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       phaseDetails,
       steamMatrix,
       bibliography: bibliographyText.split("\n").map((s) => s.trim()).filter(Boolean),
@@ -274,6 +281,17 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
             />
           </div>
         ))}
+      </div>
+
+      {/* Acessibilidade */}
+      <div style={sectionStyle}>
+        <div style={sectionTitleStyle}>Acessibilidade e Inclusão</div>
+        <label style={labelStyle}>Adaptações, padrões visuais/táteis e alternativas ao uso exclusivo de cores</label>
+        <textarea
+          style={textareaStyle("110px")}
+          value={accessibilityText}
+          onChange={(e) => setAccessibilityText(e.target.value)}
+        />
       </div>
 
       {/* Referências */}

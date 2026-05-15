@@ -16,7 +16,7 @@ import { PHASES } from "../data/phases.js";
 import { STEAM_AREAS } from "../data/steamAreas.js";
 
 function buildActivityPrintHTML(activity) {
-  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, steamMatrix, phaseDetails, bibliography, grade, discipline } = activity;
+  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, steamMatrix, phaseDetails, accessibility, bibliography, grade, discipline } = activity;
 
   const steamLetters = Object.keys(steamMatrix || {}).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
 
@@ -33,6 +33,7 @@ function buildActivityPrintHTML(activity) {
 
   const objectivesHTML = (objectives || []).map((o) => `<li>${escapeHtml(o)}</li>`).join("");
   const materialsHTML = (materials || []).map((m) => `<li>${escapeHtml(m)}</li>`).join("");
+  const accessibilityHTML = (accessibility || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
   const bnccHTML = (bncc || []).map(escapeHtml).join(" · ");
   const bibliographyHTML = (bibliography || []).map((b) => `<li style="margin-bottom:0.4rem;">${escapeHtml(b)}</li>`).join("");
 
@@ -89,6 +90,7 @@ function buildActivityPrintHTML(activity) {
   ${objectivesHTML ? `<h2>Objetivos de Aprendizagem</h2><ul>${objectivesHTML}</ul>` : ""}
   ${bnccHTML ? `<h2>Habilidades BNCC</h2><p style="font-family:monospace;font-size:0.9rem;">${bnccHTML}</p>` : ""}
   ${materialsHTML ? `<h2>Materiais</h2><ul>${materialsHTML}</ul>` : ""}
+  ${accessibilityHTML ? `<h2>Acessibilidade e Inclusão</h2><ul>${accessibilityHTML}</ul>` : ""}
   ${phasesHTML ? `<h2>Detalhamento das Fases</h2>${phasesHTML}` : ""}
   ${bibliographyHTML ? `<h2>Referências Bibliográficas</h2><ul>${bibliographyHTML}</ul>` : ""}
 
@@ -406,6 +408,10 @@ function buildClassroomActivityHTML(activity, projectTitle) {
     .map((m) => `<li>${escapeHtml(m)}</li>`)
     .join('')
 
+  const accessibilityHTML = activity.accessibility
+    ? `<div class="tips-box">${escapeHtml(activity.accessibility)}</div>`
+    : ''
+
   const bnccHTML = (activity.bncc || []).map(escapeHtml).join(' · ')
 
   return `
@@ -451,6 +457,8 @@ function buildClassroomActivityHTML(activity, projectTitle) {
 
   <h2>Como avaliar</h2>
   <div class="assessment-box">${escapeHtml(activity.assessment || '')}</div>
+
+  ${accessibilityHTML ? `<h2>Acessibilidade e inclusão</h2>${accessibilityHTML}` : ''}
 
   ${activity.tips ? `<h2>Dicas para o professor</h2><div class="tips-box">${escapeHtml(activity.tips)}</div>` : ''}
 

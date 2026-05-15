@@ -39,6 +39,52 @@ const STEAM_COMPETENCIES = [
   { id: 'mathematics', label: 'Matemática', icon: '🔢', color: '#8B5CF6' }
 ]
 
+const PERSONALIZATION_OPTIONS = {
+  detailLevel: {
+    title: 'Nível de detalhamento',
+    type: 'single',
+    options: [
+      { id: 'passo_a_passo', label: 'Passo a passo detalhado', instruction: 'Detalhar a execução em passos numerados, com ações claras para professor e alunos.' },
+      { id: 'resumo_pratico', label: 'Resumo prático', instruction: 'Manter a atividade objetiva, com instruções diretas e sem excesso de texto.' },
+      { id: 'roteiro_completo', label: 'Roteiro completo', instruction: 'Criar um roteiro completo, com preparação, condução, fechamento e possíveis intervenções.' }
+    ]
+  },
+  materials: {
+    title: 'Materiais',
+    type: 'single',
+    options: [
+      { id: 'quantidade_grupo', label: 'Quantidade por grupo', instruction: 'Listar materiais com quantidade por grupo e, se necessário, quantidade total para a turma.' },
+      { id: 'baixo_custo', label: 'Baixo custo/reutilizáveis', instruction: 'Priorizar materiais baratos, recicláveis, reutilizáveis e fáceis de encontrar em escolas públicas.' },
+      { id: 'sem_eletronica', label: 'Sem eletrônica', instruction: 'Evitar materiais eletrônicos e propor alternativas analógicas ou de papelaria.' }
+    ]
+  },
+  accessibility: {
+    title: 'Acessibilidade',
+    type: 'multi',
+    options: [
+      { id: 'daltonismo', label: 'Alternativas para daltonismo', instruction: 'Se houver uso de cores, incluir padrões, símbolos, etiquetas, texturas, furos ou marcações táteis.' },
+      { id: 'baixa_visao', label: 'Baixa visão', instruction: 'Sugerir contraste alto, letras grandes, materiais com boa legibilidade e organização visual simples.' },
+      { id: 'grupos_colaborativos', label: 'Grupos colaborativos', instruction: 'Organizar papéis nos grupos para incluir estudantes com diferentes ritmos e necessidades.' }
+    ]
+  },
+  assessment: {
+    title: 'Avaliação',
+    type: 'single',
+    options: [
+      { id: 'rubrica', label: 'Rubrica simples', instruction: 'Incluir uma rubrica simples com critérios observáveis para avaliar processo, colaboração e produto.' },
+      { id: 'observacao', label: 'Observação do professor', instruction: 'Propor avaliação por observação, registro em diário de bordo e evidências do processo.' },
+      { id: 'autoavaliacao', label: 'Autoavaliação dos alunos', instruction: 'Incluir autoavaliação curta para os estudantes refletirem sobre participação e aprendizagem.' }
+    ]
+  }
+}
+
+const defaultPersonalization = {
+  detailLevel: 'passo_a_passo',
+  materials: 'quantidade_grupo',
+  accessibility: ['daltonismo'],
+  assessment: 'rubrica'
+}
+
 function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState({
@@ -46,7 +92,9 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
     grade: '',
     theme: '',
     steamCompetencies: [],
-    numberOfClasses: ''
+    numberOfClasses: '',
+    personalization: defaultPersonalization,
+    manualInstructions: ''
   })
   const [previewData, setPreviewData] = useState(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -65,7 +113,9 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
       grade: '',
       theme: '',
       steamCompetencies: [],
-      numberOfClasses: ''
+      numberOfClasses: '',
+      personalization: defaultPersonalization,
+      manualInstructions: ''
     })
     setPreviewData(null)
     setError('')
@@ -101,11 +151,28 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
     })
   }
 
+  const buildCustomInstructions = () => {
+    const instructions = []
+    Object.entries(PERSONALIZATION_OPTIONS).forEach(([groupId, group]) => {
+      const selected = formData.personalization[groupId]
+      const selectedIds = Array.isArray(selected) ? selected : [selected]
+      group.options
+        .filter((option) => selectedIds.includes(option.id))
+        .forEach((option) => instructions.push(`- ${option.instruction}`))
+    })
+
+    if (formData.manualInstructions.trim()) {
+      instructions.push(`- Solicitação adicional do professor: ${formData.manualInstructions.trim()}`)
+    }
+
+    return instructions.join('\n')
+  }
+
   const handleNext = () => {
-    if (currentStep === 4) {
+    if (currentStep === 5) {
       generatePreviewData()
     }
-    if (currentStep < 5) {
+    if (currentStep < 6) {
       setCurrentStep(currentStep + 1)
       setError('')
     }
@@ -148,6 +215,31 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
     setError('')
   }
 
+  const handlePersonalizationChange = (groupId, optionId, type) => {
+    setFormData(prev => {
+      const current = prev.personalization[groupId]
+      const nextValue = type === 'multi'
+        ? current.includes(optionId)
+          ? current.filter((id) => id !== optionId)
+          : [...current, optionId]
+        : optionId
+
+      return {
+        ...prev,
+        personalization: {
+          ...prev.personalization,
+          [groupId]: nextValue
+        }
+      }
+    })
+    setError('')
+  }
+
+  const handleManualInstructionsChange = (manualInstructions) => {
+    setFormData(prev => ({ ...prev, manualInstructions }))
+    setError('')
+  }
+
   const validateCurrentStep = () => {
     switch (currentStep) {
       case 0:
@@ -161,6 +253,8 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
       case 4:
         return formData.numberOfClasses !== '' && parseInt(formData.numberOfClasses) > 0
       case 5:
+        return formData.personalization.accessibility.length > 0
+      case 6:
         return !!previewData
       default:
         return false
@@ -185,6 +279,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
       // generatePedagogicalActivity já verifica o limite internamente
       const result = await PedagogicalPlannerService.generatePedagogicalActivity({
         ...formData,
+        customInstructions: buildCustomInstructions(),
         userId: user.id
       })
 
@@ -357,6 +452,58 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
       case 5:
         return (
           <div style={stepContentStyle}>
+            <h3 style={stepTitleStyle}>⚙️ Como você quer personalizar?</h3>
+            <p style={stepDescriptionStyle}>
+              Escolha as opções que melhor combinam com sua turma. Se faltar algo, escreva uma orientação extra no final.
+            </p>
+
+            {Object.entries(PERSONALIZATION_OPTIONS).map(([groupId, group]) => (
+              <div key={groupId} style={personalizationGroupStyle}>
+                <h4 style={previewSubtitleStyle}>{group.title}</h4>
+                <div style={personalizationGridStyle}>
+                  {group.options.map((option) => {
+                    const selected = formData.personalization[groupId]
+                    const isSelected = Array.isArray(selected)
+                      ? selected.includes(option.id)
+                      : selected === option.id
+
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        style={{
+                          ...personalizationButtonStyle,
+                          backgroundColor: isSelected ? '#DBEAFE' : '#FFFFFF',
+                          borderColor: isSelected ? '#3B82F6' : '#E5E7EB',
+                          color: isSelected ? '#1E40AF' : '#374151'
+                        }}
+                        onClick={() => handlePersonalizationChange(groupId, option.id, group.type)}
+                      >
+                        {isSelected ? '✓ ' : ''}{option.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+
+            <div style={personalizationGroupStyle}>
+              <h4 style={previewSubtitleStyle}>Pedido manual opcional</h4>
+              <TextField
+                placeholder="Ex.: A turma tem poucos materiais, prefiro grupos de 4 alunos, evite uso de celular..."
+                value={formData.manualInstructions}
+                onChange={handleManualInstructionsChange}
+                multiline
+                rows={3}
+                fullWidth
+              />
+            </div>
+          </div>
+        )
+
+      case 6:
+        return (
+          <div style={stepContentStyle}>
             <h3 style={stepTitleStyle}>👁️ Prévia da Atividade</h3>
             <p style={stepDescriptionStyle}>
               Confira o que será abordado nesta atividade:
@@ -376,6 +523,17 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
                   <p style={previewHintStyle}>
                     Essas competências da BNCC serão trabalhadas e desenvolvidas durante a atividade.
                   </p>
+                </div>
+
+                <div style={previewSectionStyle}>
+                  <h4 style={previewSubtitleStyle}>⚙️ Personalização escolhida</h4>
+                  <div style={previewListStyle}>
+                    {buildCustomInstructions().split('\n').map((instruction, idx) => (
+                      <div key={idx} style={previewItemStyle}>
+                        {instruction.replace(/^- /, '✓ ')}
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div style={previewSectionStyle}>
@@ -415,6 +573,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
     { title: 'Tema', icon: '🎯' },
     { title: 'STEAM', icon: '🔬' },
     { title: 'Aulas', icon: '⏱️' },
+    { title: 'Ajustes', icon: '⚙️' },
     { title: 'Prévia', icon: '👁️' }
   ]
 
@@ -471,7 +630,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
 
           <div style={spacerStyle} />
 
-          {currentStep < 5 ? (
+          {currentStep < 6 ? (
             <Button
               onClick={handleNext}
               disabled={!validateCurrentStep()}
@@ -691,6 +850,33 @@ const previewHintStyle = {
   color: '#6B7280',
   marginTop: '8px',
   fontStyle: 'italic'
+}
+
+const personalizationGroupStyle = {
+  padding: '16px',
+  backgroundColor: '#F9FAFB',
+  borderRadius: '10px',
+  border: '1px solid #E5E7EB'
+}
+
+const personalizationGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+  gap: '10px'
+}
+
+const personalizationButtonStyle = {
+  padding: '12px',
+  border: '2px solid #E5E7EB',
+  borderRadius: '8px',
+  backgroundColor: '#FFFFFF',
+  color: '#374151',
+  fontSize: '13px',
+  fontWeight: '600',
+  cursor: 'pointer',
+  textAlign: 'left',
+  lineHeight: 1.35,
+  transition: 'all 0.2s ease'
 }
 
 const classesInputContainerStyle = {
