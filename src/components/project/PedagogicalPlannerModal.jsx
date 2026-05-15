@@ -96,6 +96,49 @@ function buildDefaultPersonalization(accessibilityPreset = []) {
   }
 }
 
+function TipCard({ icon, title, text, color }) {
+  return (
+    <div style={{ padding: '0.8rem 1rem', background: '#F9FAFB', border: '1px solid #E5E7EB', borderLeft: `3px solid ${color}`, borderRadius: '8px', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+      <span style={{ fontSize: '1.15rem', flexShrink: 0, lineHeight: 1.2 }}>{icon}</span>
+      <div>
+        <div style={{ fontSize: '0.68rem', fontWeight: '700', color, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.28rem' }}>{title}</div>
+        <div style={{ fontSize: '0.84rem', color: '#374151', lineHeight: 1.6 }}>{text}</div>
+      </div>
+    </div>
+  )
+}
+
+function generateActivityTips(formData) {
+  const steamNames = { science: 'Ciência', technology: 'Tecnologia', engineering: 'Engenharia', arts: 'Artes', mathematics: 'Matemática' }
+  const steamDescs = {
+    science: 'investigação e método científico',
+    technology: 'criação e uso de ferramentas digitais',
+    engineering: 'design, construção e testes de soluções',
+    arts: 'expressão criativa e pensamento estético',
+    mathematics: 'lógica, cálculo e modelagem de problemas'
+  }
+  const selected = formData.steamCompetencies
+  const steamText = selected.length > 0
+    ? `Integra ${selected.map(c => steamNames[c] || c).join(', ')} por meio de ${selected.map(c => steamDescs[c] || c).join('; ')}.`
+    : 'As áreas STEAM selecionadas criam uma experiência interdisciplinar que conecta teoria e prática.'
+
+  const accessMap = {
+    daltonismo: 'use padrões visuais (listras, bolinhas) além de cores para diferenciar elementos',
+    baixa_visao: 'instrua com fontes grandes e alto contraste nos materiais impressos',
+    grupos_colaborativos: 'defina papéis claros nos grupos (construtor, testador, registrador, apresentador)'
+  }
+  const inclText = formData.personalization.accessibility.map(id => accessMap[id]).filter(Boolean).join('; ')
+
+  return [
+    { icon: '⚡', title: 'Dica STEAM', color: '#4F46E5', text: steamText + ' A combinação dessas áreas cria conexões interdisciplinares que tornam o aprendizado mais significativo.' },
+    { icon: '🔨', title: 'Cultura Maker', color: '#10B981', text: 'A Cultura Maker aparece quando os alunos constroem, testam e melhoram seus protótipos. O erro faz parte do processo — cada tentativa ensina mais do que qualquer explicação.' },
+    { icon: '📋', title: 'Competências BNCC', color: '#8B5CF6', text: `Para o ${formData.grade || 'Ensino Fundamental'}, esta atividade desenvolve pensamento científico, criatividade, comunicação, colaboração e uso de tecnologias — competências gerais da BNCC presentes em todas as áreas do conhecimento.` },
+    { icon: '🔧', title: 'Como adaptar', color: '#F59E0B', text: 'Sem laboratório? Sem problema. Papelão, recicláveis, palitos e cola são suficientes para prototipagem. Para aulas mais curtas, reduza o ciclo para 1 construção + 1 teste + 1 melhoria.' },
+    { icon: '🎨', title: 'Dica Criativa', color: '#EC4899', text: 'Apresente o problema como uma missão: "vocês são engenheiros(as) responsáveis por resolver...". Isso aumenta o engajamento e dá propósito real à atividade.' },
+    { icon: '♿', title: 'Inclusão', color: '#06B6D4', text: inclText ? `Para esta turma: ${inclText}. Adaptar beneficia todos — não apenas quem tem necessidades específicas.` : 'Papéis complementares nos grupos garantem participação ativa de todos, independente do ritmo ou perfil de aprendizado.' }
+  ]
+}
+
 function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessibilityPreset = [] }) {
   const accessibilityPresetKey = accessibilityPreset.join('|')
   const [currentStep, setCurrentStep] = useState(0)
@@ -582,6 +625,53 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
     }
   }
 
+  const renderStepTip = (step) => {
+    if (step === 6) {
+      const tips = generateActivityTips(formData)
+      return (
+        <div style={{ marginTop: '1rem' }}>
+          <div style={{ fontSize: '0.68rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.09em', color: '#9CA3AF', marginBottom: '0.6rem' }}>
+            Orientações pedagógicas
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.55rem' }}>
+            {tips.map((tip, i) => <TipCard key={i} {...tip} />)}
+          </div>
+        </div>
+      )
+    }
+
+    const byStep = {
+      0: { icon: '💡', title: 'Dica STEAM', color: '#4F46E5', text: 'Toda disciplina conecta ao STEAM. Você não precisa abandonar o currículo — apenas transformar o conteúdo em uma experiência investigativa e prática que faz sentido para o aluno.' },
+      1: {
+        icon: '🎓',
+        title: formData.grade?.includes('6') || formData.grade?.includes('7') ? 'Série ideal para Maker' : 'Protagonismo estudantil',
+        color: '#10B981',
+        text: formData.grade?.includes('6') || formData.grade?.includes('7')
+          ? 'Alunos de 6º e 7º ano adoram explorar e construir. Desafios mão na massa e investigação criam memórias de aprendizado duradouras.'
+          : 'No 8º e 9º ano, projetos com impacto real e autonomia aumentam muito o engajamento. Desafios sociais e tecnológicos são ideais para esta faixa.'
+      },
+      2: { icon: '🔍', title: 'Transforme em desafio', color: '#EC4899', text: 'Um bom tema STEAM começa com uma pergunta real: "Como podemos resolver...?" Isso coloca os alunos como protagonistas da investigação, não receptores de conteúdo.' },
+      3: {
+        icon: '⚡',
+        title: 'Sinergia STEAM',
+        color: '#4F46E5',
+        text: formData.steamCompetencies.length > 1
+          ? `Combinar ${formData.steamCompetencies.length} áreas cria conexões interdisciplinares poderosas. Os alunos percebem que desafios reais exigem múltiplos olhares.`
+          : 'Selecione mais áreas STEAM para criar conexões interdisciplinares mais ricas. A Cultura Maker estará presente automaticamente em toda a atividade.'
+      },
+      4: {
+        icon: '🗓️',
+        title: 'Jornada Maker',
+        color: '#8B5CF6',
+        text: `Com ${formData.numberOfClasses || '?'} aula(s) sugerimos: exploração do problema → investigação → construção → testes e ajustes → apresentação. Cada fase aprofunda o aprendizado progressivamente.`
+      },
+      5: { icon: '🎨', title: 'Design Universal', color: '#06B6D4', text: 'Adaptar uma atividade para diferentes perfis beneficia toda a turma. Recursos de acessibilidade tornam o aprendizado mais inclusivo, rico e diverso para todos os alunos.' }
+    }
+
+    const tip = byStep[step]
+    return tip ? <TipCard {...tip} /> : null
+  }
+
   const steps = [
     { title: 'Disciplina', icon: '📚' },
     { title: 'Série', icon: '🎓' },
@@ -681,6 +771,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
             {/* Step Content */}
             <div style={contentStyle}>
               {renderStepContent()}
+              {renderStepTip(currentStep)}
 
               {error && (
                 <div style={errorStyle}>
