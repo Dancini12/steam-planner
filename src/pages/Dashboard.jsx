@@ -271,7 +271,7 @@ export default function Dashboard({
 }
 
 const retroCss = `
-  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@500;700;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;700&display=swap');
 
   * {
     box-sizing: border-box;
@@ -410,7 +410,7 @@ const retroCss = `
     color: #FFFFFF;
     font-family: 'Inter', system-ui, sans-serif;
     font-size: clamp(1rem, 2.2vw, 1.25rem);
-    font-weight: 900;
+    font-weight: 700;
   }
 
   .logout-chip {
@@ -459,7 +459,7 @@ const retroCss = `
     color: #E2E8F0;
     font-family: 'Inter', system-ui, sans-serif;
     font-size: 0.95rem;
-    font-weight: 900;
+    font-weight: 700;
     line-height: 1.45;
   }
 
@@ -618,7 +618,7 @@ const retroCss = `
     color: #CBD5E1;
     font-family: 'Inter', system-ui, sans-serif;
     font-size: 0.95rem;
-    font-weight: 800;
+    font-weight: 600;
     line-height: 1.45;
   }
 
@@ -825,7 +825,7 @@ const retroCss = `
     background: rgba(69, 10, 10, 0.78);
     color: #FFE4E6;
     font-family: 'Inter', system-ui, sans-serif;
-    font-weight: 900;
+    font-weight: 700;
   }
 
   .retro-loading {

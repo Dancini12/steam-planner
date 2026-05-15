@@ -100,7 +100,7 @@ function TipCard({ icon, title, text, color }) {
     <div style={{ padding: '0.8rem 1rem', background: '#F9FAFB', border: '1px solid #E5E7EB', borderLeft: `3px solid ${color}`, borderRadius: '8px', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
       <span style={{ fontSize: '1.15rem', flexShrink: 0, lineHeight: 1.2 }}>{icon}</span>
       <div>
-        <div style={{ fontSize: '0.68rem', fontWeight: '700', color, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.28rem' }}>{title}</div>
+        <div style={{ fontSize: '0.68rem', fontWeight: '600', color, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.28rem' }}>{title}</div>
         <div style={{ fontSize: '0.84rem', color: '#374151', lineHeight: 1.6 }}>{text}</div>
       </div>
     </div>
@@ -629,7 +629,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
       const tips = generateActivityTips(formData)
       return (
         <div style={{ marginTop: '1rem' }}>
-          <div style={{ fontSize: '0.68rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.09em', color: '#9CA3AF', marginBottom: '0.6rem' }}>
+          <div style={{ fontSize: '0.68rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.09em', color: '#9CA3AF', marginBottom: '0.6rem' }}>
             Orientações pedagógicas
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.55rem' }}>
@@ -842,7 +842,7 @@ const progressCircleStyle = {
   alignItems: 'center',
   justifyContent: 'center',
   fontSize: '16px',
-  fontWeight: 'bold'
+  fontWeight: '600'
 }
 
 const progressLabelStyle = {
@@ -872,7 +872,7 @@ const stepContentStyle = {
 
 const stepTitleStyle = {
   fontSize: '24px',
-  fontWeight: 'bold',
+  fontWeight: '600',
   color: '#1F2937',
   margin: 0
 }
@@ -1003,7 +1003,7 @@ const previewBadgeStyle = {
   backgroundColor: '#DBEAFE',
   color: '#1E40AF',
   borderRadius: '4px',
-  fontWeight: '600',
+  fontWeight: '500',
   fontSize: '12px'
 }
 
@@ -1034,7 +1034,7 @@ const personalizationButtonStyle = {
   backgroundColor: '#FFFFFF',
   color: '#374151',
   fontSize: '13px',
-  fontWeight: '600',
+  fontWeight: '500',
   cursor: 'pointer',
   textAlign: 'left',
   lineHeight: 1.35,
@@ -1056,7 +1056,7 @@ const classesInputFieldStyle = {
 
 const classesLabelStyle = {
   fontSize: '14px',
-  fontWeight: '600',
+  fontWeight: '500',
   color: '#374151'
 }
 
@@ -1132,7 +1132,7 @@ const loadingIconStyle = {
 
 const loadingTitleStyle = {
   fontSize: '1.25rem',
-  fontWeight: '700',
+  fontWeight: '600',
   color: '#1F2937',
   textAlign: 'center'
 }
@@ -1157,7 +1157,7 @@ const loadingProviderBoxStyle = {
 
 const loadingProviderLabelStyle = {
   fontSize: '0.7rem',
-  fontWeight: '700',
+  fontWeight: '600',
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
   color: '#9CA3AF',
@@ -1188,7 +1188,7 @@ const loadingProviderBadgeStyle = {
   alignItems: 'center',
   justifyContent: 'center',
   color: '#fff',
-  fontWeight: '800',
+  fontWeight: '500',
   fontSize: '0.9rem',
   flexShrink: 0
 }
@@ -1200,7 +1200,7 @@ const loadingProviderInfoStyle = {
 
 const loadingProviderNameStyle = {
   fontSize: '0.88rem',
-  fontWeight: '600',
+  fontWeight: '500',
   color: '#1F2937'
 }
 
@@ -1234,7 +1234,7 @@ const loadingParamChipStyle = {
   border: '1px solid #BFDBFE',
   borderRadius: '20px',
   fontSize: '0.78rem',
-  fontWeight: '600'
+  fontWeight: '500'
 }
 
 export default PedagogicalPlannerModal

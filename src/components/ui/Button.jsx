@@ -86,7 +86,7 @@ export default function Button({
     ...sizeStyle,
     borderRadius: "8px",
     cursor: disabled ? "not-allowed" : "pointer",
-    fontWeight: 600,
+    fontWeight: 500,
     fontFamily: "inherit",
     transition: "all 0.15s ease",
     opacity: disabled ? 0.5 : 1,

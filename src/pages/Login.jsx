@@ -284,7 +284,7 @@ export default function Login({ onLogin }) {
     borderRadius: "10px",
     color: "rgba(255, 255, 255, 0.78)",
     fontSize: "14px",
-    fontWeight: 600,
+    fontWeight: 500,
     cursor: "pointer",
     fontFamily: "'Plus Jakarta Sans', sans-serif"
   };
@@ -301,7 +301,7 @@ export default function Login({ onLogin }) {
     margin: "1.1rem 0 0.45rem",
     color: "#FFFFFF",
     fontSize: "0.82rem",
-    fontWeight: 700,
+    fontWeight: 600,
     textTransform: "uppercase",
     letterSpacing: "0.06em"
   };
@@ -346,7 +346,7 @@ export default function Login({ onLogin }) {
     borderRadius: "12px",
     color: "#FFFFFF",
     fontSize: "16px",
-    fontWeight: "600",
+    fontWeight: "500",
     cursor: "pointer",
     transition: "all 0.3s ease",
     marginBottom: "1rem",
@@ -361,7 +361,7 @@ export default function Login({ onLogin }) {
     borderRadius: "12px",
     color: "#FFFFFF",
     fontSize: "16px",
-    fontWeight: "600",
+    fontWeight: "500",
     cursor: "pointer",
     transition: "all 0.3s ease",
     fontFamily: "'Plus Jakarta Sans', sans-serif"
@@ -455,7 +455,7 @@ export default function Login({ onLogin }) {
               textAnchor="middle"
               fontFamily="'Plus Jakarta Sans', sans-serif"
               fontSize="30"
-              fontWeight="800"
+              fontWeight="700"
               fill="url(#makerTextGradient)"
               fillOpacity="0"
               stroke="url(#makerTextGradient)"
@@ -471,7 +471,7 @@ export default function Login({ onLogin }) {
               textAnchor="middle"
               fontFamily="'Plus Jakarta Sans', sans-serif"
               fontSize="38"
-              fontWeight="800"
+              fontWeight="700"
               letterSpacing="1"
               fill="url(#makerTextGradient)"
               fillOpacity="0"

@@ -84,7 +84,7 @@ export default function Modal({
 
   const titleStyle = {
     fontSize: "1.1rem",
-    fontWeight: 600,
+    fontWeight: 500,
     color: "#FFFFFF",
     margin: 0
   };
