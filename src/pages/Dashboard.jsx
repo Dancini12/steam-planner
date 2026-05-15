@@ -50,7 +50,6 @@ export default function Dashboard({
   const { projects, addProjectFromTemplate, isLoaded } = useProjects(currentUser?.id);
   const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
   const [creationError, setCreationError] = useState("");
-  const [reducedGlow, setReducedGlow] = useState(() => localStorage.getItem("steam-reduced-glow") === "true");
   const [visualAccessibility, setVisualAccessibility] = useState(
     () => localStorage.getItem("steam-visual-accessibility") === "true"
   );
@@ -58,10 +57,6 @@ export default function Dashboard({
   const professorName = currentUser?.name || currentUser?.email?.split("@")[0] || "Professor";
   const firstName = professorName.split(" ")[0] || "Professor";
   const accessibilityPreset = visualAccessibility ? ["baixa_visao", "grupos_colaborativos"] : [];
-
-  useEffect(() => {
-    localStorage.setItem("steam-reduced-glow", String(reducedGlow));
-  }, [reducedGlow]);
 
   useEffect(() => {
     localStorage.setItem("steam-visual-accessibility", String(visualAccessibility));
@@ -112,7 +107,7 @@ export default function Dashboard({
 
   if (!isLoaded) {
     return (
-      <div className={`retro-dashboard${reducedGlow ? " reduced-glow" : ""}${visualAccessibility ? " visual-accessibility" : ""}`}>
+      <div className={`retro-dashboard reduced-glow${visualAccessibility ? " visual-accessibility" : ""}`}>
         <style>{retroCss}</style>
         <div className="retro-loading">CARREGANDO...</div>
       </div>
@@ -120,7 +115,7 @@ export default function Dashboard({
   }
 
   return (
-    <div className={`retro-dashboard${reducedGlow ? " reduced-glow" : ""}${visualAccessibility ? " visual-accessibility" : ""}`}>
+    <div className={`retro-dashboard reduced-glow${visualAccessibility ? " visual-accessibility" : ""}`}>
       <style>{retroCss}</style>
 
       <div className="pixel-stars" aria-hidden="true">
@@ -170,14 +165,6 @@ export default function Dashboard({
             <span>Personalize a tela e a geração das atividades.</span>
           </div>
           <div className="accessibility-actions">
-            <button
-              type="button"
-              className={reducedGlow ? "accessibility-toggle active" : "accessibility-toggle"}
-              aria-pressed={reducedGlow}
-              onClick={() => setReducedGlow((value) => !value)}
-            >
-              Menos brilho
-            </button>
             <button
               type="button"
               className={visualAccessibility ? "accessibility-toggle active" : "accessibility-toggle"}
