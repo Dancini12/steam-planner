@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useProjects } from "../hooks/useProjects.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 import PedagogicalPlannerModal from "../components/project/PedagogicalPlannerModal.jsx";
+import ActivityAdaptationModal from "../components/project/ActivityAdaptationModal.jsx";
 
 function formatSupabaseError(error) {
   return [
@@ -49,6 +50,7 @@ export default function Dashboard({
 }) {
   const { projects, addProjectFromTemplate, isLoaded } = useProjects(currentUser?.id);
   const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
+  const [showAdaptationModal, setShowAdaptationModal] = useState(false);
   const [creationError, setCreationError] = useState("");
   const [visualAccessibility, setVisualAccessibility] = useState(
     () => localStorage.getItem("steam-visual-accessibility") === "true"
@@ -228,12 +230,12 @@ export default function Dashboard({
             onClick={() => window.alert("Conexão com o mundo real estará disponível em breve.")}
           />
           <DashboardCard
-            title="NOTÍCIAS E COTIDIANO"
-            icon="news"
-            text="Acontecimentos do dia a dia para inspirar suas aulas"
+            title="ADAPTAÇÃO DE ATIVIDADE"
+            icon="adapt"
+            text="Envie um PDF e receba sugestões de adaptação para acessibilidade"
             color="#A78BFA"
             size="small"
-            onClick={() => window.alert("Notícias e cotidiano estará disponível em breve.")}
+            onClick={() => setShowAdaptationModal(true)}
           />
         </section>
 
@@ -251,6 +253,11 @@ export default function Dashboard({
         onClose={() => setShowPedagogicalModal(false)}
         onActivityGenerated={handlePedagogicalActivityGenerated}
         accessibilityPreset={accessibilityPreset}
+      />
+
+      <ActivityAdaptationModal
+        isOpen={showAdaptationModal}
+        onClose={() => setShowAdaptationModal(false)}
       />
     </div>
   );
@@ -716,21 +723,14 @@ const retroCss = `
       linear-gradient(#FFFFFF 0 0) 58px 28px / 8px 8px no-repeat;
   }
 
-  .pixel-news {
+  .pixel-adapt {
     background:
-      linear-gradient(#FFFFFF 0 0) 10px 12px / 58px 48px no-repeat,
-      linear-gradient(#A78BFA 0 0) 16px 20px / 46px 10px no-repeat,
-      linear-gradient(#111827 0 0) 16px 38px / 24px 5px no-repeat,
-      linear-gradient(#111827 0 0) 16px 48px / 38px 5px no-repeat;
-  }
-
-  .pixel-news::after {
-    content: "NEWS";
-    position: absolute;
-    left: 19px;
-    top: 20px;
-    color: #FFFFFF;
-    font-size: 0.42rem;
+      linear-gradient(#A78BFA 0 0) 30px 4px / 18px 18px no-repeat,
+      linear-gradient(#A78BFA 0 0) 33px 22px / 12px 20px no-repeat,
+      linear-gradient(#A78BFA 0 0) 10px 28px / 58px 8px no-repeat,
+      linear-gradient(#A78BFA 0 0) 22px 44px / 10px 22px no-repeat,
+      linear-gradient(#A78BFA 0 0) 46px 44px / 10px 22px no-repeat;
+    filter: drop-shadow(0 0 12px rgba(167, 139, 250, 0.75));
   }
 
   .retro-footer {

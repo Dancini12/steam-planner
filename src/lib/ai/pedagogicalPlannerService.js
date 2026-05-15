@@ -6,6 +6,8 @@ import {
   selectBnccHabilidades
 } from '../bnccSelector.js'
 import { applyAccessibilityAdaptations } from '../accessibilityAdapter.js'
+import { getAccessibilityAdaptations } from '../../data/accessibilityAdaptations.js'
+import { GeminiService } from './geminiService.js'
 
 const COMPETENCY_TO_LETTER = {
   science: 'S',
@@ -283,6 +285,38 @@ export class PedagogicalPlannerService {
     }
 
     return parsed
+  }
+
+  static async adaptActivityFromPDF(base64Content, selectedAdaptationIds = []) {
+    const adaptations = getAccessibilityAdaptations(selectedAdaptationIds)
+
+    const adaptationDetails = adaptations
+      .map((a) => `- ${a.label}: ${a.guidance} ${a.materialGuidance}`)
+      .join('\n')
+
+    const colorblindIncluded = selectedAdaptationIds.includes('daltonismo')
+    const colorblindNote = colorblindIncluded
+      ? '\n\nAtenção especial para daltonismo: sempre que a atividade usar cores para classificar, separar grupos, identificar respostas, filtrar ou destacar informações, sugira o uso simultâneo de padrões não dependentes de cor — listras, bolinhas, zigue-zague, furos, marcação em relevo ou texto — para que a filtragem seja tátil e/ou visual para todos os estudantes. Dê exemplos práticos ligados à atividade analisada.'
+      : ''
+
+    const prompt = `Você é especialista em educação inclusiva e STEAM.
+
+Analise a atividade pedagógica contida no PDF enviado e gere um relatório de adaptação específico para os seguintes perfis de acessibilidade:
+
+${adaptationDetails}${colorblindNote}
+
+Para cada perfil:
+1. Identifique os elementos concretos da atividade que precisam ser modificados
+2. Forneça sugestões práticas e aplicáveis imediatamente pelo professor
+3. Indique materiais alternativos ou complementares necessários
+
+Organize a resposta em seções claras por tipo de adaptação, com linguagem direta e prática.`
+
+    return GeminiService.summarizeDocument(prompt, {
+      type: 'pdf',
+      content: base64Content,
+      mimeType: 'application/pdf'
+    })
   }
 
   // Incrementa contador só após o projeto ser salvo com sucesso
