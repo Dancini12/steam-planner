@@ -20,6 +20,20 @@ const CATEGORY_LABELS = {
   "Inteligencia Artificial": "Inteligência Artificial"
 };
 
+const CATEGORY_ICONS = {
+  Todos: "◎",
+  Ciencia: "⚛",
+  Tecnologia: "⌘",
+  Sustentabilidade: "♻",
+  Educacao: "▣",
+  Economia: "$",
+  "Inteligencia Artificial": "AI",
+  "Meio Ambiente": "◒",
+  Sociedade: "◉",
+  "Cultura Digital": "#",
+  Empreendedorismo: "◆"
+};
+
 const TRUSTED_SITES = [
   "site:canaltech.com.br",
   "site:olhardigital.com.br",
@@ -60,6 +74,10 @@ const SOURCE_HINTS = [
 
 function getCategoryLabel(category) {
   return CATEGORY_LABELS[category] || category;
+}
+
+function getCategoryIcon(category) {
+  return CATEGORY_ICONS[category] || "•";
 }
 
 function stripHtml(value = "") {
@@ -162,14 +180,20 @@ function NewsVisual({ item, featured = false }) {
     return (
       <div className={featured ? "news-visual featured" : "news-visual"}>
         <img src={item.image} alt="" loading="lazy" />
-        <span>{getCategoryLabel(item.category)}</span>
+        <span>
+          <i>{getCategoryIcon(item.category)}</i>
+          {getCategoryLabel(item.category)}
+        </span>
       </div>
     );
   }
 
   return (
     <div className={`news-visual news-gradient news-gradient-${item.visualTheme}${featured ? " featured" : ""}`}>
-      <span>{getCategoryLabel(item.category)}</span>
+      <span>
+        <i>{getCategoryIcon(item.category)}</i>
+        {getCategoryLabel(item.category)}
+      </span>
     </div>
   );
 }
@@ -181,7 +205,10 @@ function NewsCard({ item, featured = false }) {
       <div className="news-card-copy">
         <div className="news-meta">
           <span>{item.source}</span>
-          <strong>{getCategoryLabel(item.category)}</strong>
+          <strong>
+            <i>{getCategoryIcon(item.category)}</i>
+            {getCategoryLabel(item.category)}
+          </strong>
         </div>
         <h2>{item.title}</h2>
         <p>{item.summary}</p>
@@ -248,20 +275,27 @@ export default function RealWorldNews({ onBack }) {
       <style>{newsCss}</style>
 
       <header className="news-hero">
-        <button type="button" className="back-button" onClick={onBack}>
-          Voltar
-        </button>
-        <div>
+        <div className="hero-side hero-side-left">
+          <button type="button" className="back-button" onClick={onBack}>
+            Voltar
+          </button>
+        </div>
+
+        <div className="hero-title-block">
           <span className="news-kicker">CONECTE COM O MUNDO REAL</span>
-          <h1>Noticias atuais para inspirar atividades STEAM</h1>
+          <div className="hero-title-rule" aria-hidden="true" />
+          <h1>Notícias atuais para inspirar atividades STEAM</h1>
           <p>
-            Acompanhe temas recentes de fontes confiaveis, leia o contexto e use as ideias
-            depois no planejador pedagogico.
+            Acompanhe temas recentes de fontes confiáveis, leia o contexto e use as ideias
+            depois no planejador pedagógico.
           </p>
         </div>
-        <button type="button" className="refresh-button" onClick={loadNews} disabled={isLoading}>
-          {isLoading ? "Atualizando..." : "Atualizar noticias"}
-        </button>
+
+        <div className="hero-side hero-side-right">
+          <button type="button" className="refresh-button" onClick={loadNews} disabled={isLoading}>
+            {isLoading ? "Atualizando..." : "Atualizar notícias"}
+          </button>
+        </div>
       </header>
 
       <section className="source-strip" aria-label="Fontes confiaveis">
@@ -285,6 +319,7 @@ export default function RealWorldNews({ onBack }) {
             className={selectedCategory === category ? "active" : ""}
             onClick={() => setSelectedCategory(category)}
           >
+            <i>{getCategoryIcon(category)}</i>
             {getCategoryLabel(category)}
           </button>
         ))}
@@ -339,9 +374,9 @@ const newsCss = `
 
   .news-hero {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 18px;
-    align-items: start;
+    grid-template-columns: 170px minmax(0, 1fr) 170px;
+    gap: 20px;
+    align-items: stretch;
     max-width: 1240px;
     margin: 0 auto 20px;
     padding: 24px;
@@ -350,22 +385,52 @@ const newsCss = `
     box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
   }
 
+  .hero-side {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .hero-side-left {
+    justify-content: flex-start;
+  }
+
+  .hero-side-right {
+    justify-content: flex-end;
+  }
+
+  .hero-title-block {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .hero-title-rule {
+    width: min(420px, 80%);
+    height: 1px;
+    margin: 13px 0 14px;
+    background: linear-gradient(90deg, transparent, #CBD5E1, transparent);
+  }
+
   .news-kicker {
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 7px 11px;
     border-radius: 999px;
     background: rgba(79, 70, 229, 0.1);
     color: #4F46E5;
     font-size: 0.76rem;
     font-weight: 700;
+    letter-spacing: 0.08em;
   }
 
   .news-hero h1 {
     max-width: 820px;
-    margin: 12px 0 8px;
+    margin: 0 0 10px;
     color: #1F2937;
     font-size: clamp(1.7rem, 4vw, 3rem);
-    line-height: 1.05;
+    line-height: 1.08;
     letter-spacing: 0;
   }
 
@@ -451,6 +516,9 @@ const newsCss = `
   }
 
   .category-strip button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     flex: 0 0 auto;
     padding: 0 13px;
     border: 1px solid #E5E7EB;
@@ -458,9 +526,31 @@ const newsCss = `
     color: #374151;
   }
 
+  .category-strip button i,
+  .news-meta strong i,
+  .news-visual span i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: rgba(79, 70, 229, 0.1);
+    color: #4F46E5;
+    font-style: normal;
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
   .category-strip button.active {
     border-color: #4F46E5;
     background: #4F46E5;
+    color: #FFFFFF;
+  }
+
+  .category-strip button.active i {
+    background: rgba(255, 255, 255, 0.18);
     color: #FFFFFF;
   }
 
@@ -545,12 +635,19 @@ const newsCss = `
     left: 14px;
     bottom: 14px;
     z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     padding: 7px 10px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.92);
     color: #1F2937;
     font-size: 0.74rem;
     font-weight: 700;
+  }
+
+  .news-visual span i {
+    background: rgba(79, 70, 229, 0.12);
   }
 
   .news-gradient-ciencia { background: linear-gradient(135deg, #0891B2, #4F46E5 54%, #A7F3D0); }
@@ -587,11 +684,22 @@ const newsCss = `
   }
 
   .news-meta strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 4px 8px;
     border-radius: 999px;
     background: rgba(16, 185, 129, 0.1);
     color: #047857;
     font-size: 0.72rem;
+  }
+
+  .news-meta strong i {
+    width: 18px;
+    height: 18px;
+    background: rgba(16, 185, 129, 0.14);
+    color: #047857;
+    font-size: 0.62rem;
   }
 
   .news-card h2 {
@@ -650,6 +758,12 @@ const newsCss = `
     .news-hero,
     .news-layout {
       grid-template-columns: 1fr;
+    }
+
+    .hero-side,
+    .hero-side-left,
+    .hero-side-right {
+      justify-content: center;
     }
 
     .news-grid {
