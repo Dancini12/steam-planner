@@ -6,7 +6,7 @@ const corsHeaders = {
 }
 
 const CEREBRAS_API_KEY = Deno.env.get('CEREBRAS_API_KEY')
-const CEREBRAS_MODEL = Deno.env.get('CEREBRAS_MODEL') || 'cerebras-gpt'
+const CEREBRAS_MODEL = Deno.env.get('CEREBRAS_MODEL') || 'llama-3.3-70b'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
