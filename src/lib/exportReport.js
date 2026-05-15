@@ -24,7 +24,7 @@ function buildActivityPrintHTML(activity) {
     const area = STEAM_AREAS[letter];
     const m = (steamMatrix || {})[letter] || {};
     return `<tr>
-      <td style="font-weight:700;color:${area?.color || '#333'}">${letter} · ${escapeHtml(area?.name || letter)}</td>
+      <td style="font-weight:700;color:#000">${letter} · ${escapeHtml(area?.name || letter)}</td>
       <td>${escapeHtml(m.contribution || '—')}</td>
       <td>${escapeHtml(m.activity || '—')}</td>
       <td>${escapeHtml(m.evidence || '—')}</td>
@@ -44,19 +44,19 @@ function buildActivityPrintHTML(activity) {
   <title>${escapeHtml(title || "Atividade Pedagógica")}</title>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: Georgia, serif; max-width: 800px; margin: 2rem auto; padding: 1rem 1.5rem; color: #222; line-height: 1.6; }
-    h1 { color: #6B2FE0; border-bottom: 3px solid #6B2FE0; padding-bottom: 0.5rem; margin-bottom: 0.25rem; font-size: 1.6rem; }
-    h2 { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; color: #555; margin: 2rem 0 0.75rem; border-bottom: 1px solid #ddd; padding-bottom: 0.3rem; }
-    h3 { margin: 0 0 0.4rem; font-size: 1rem; }
-    .meta { color: #777; font-size: 0.9rem; margin-bottom: 1.5rem; }
-    .question { background: #f4f0ff; border-left: 4px solid #6B2FE0; padding: 0.75rem 1rem; margin: 0.75rem 0; font-style: italic; }
-    .problem { background: #fff8f0; border-left: 4px solid #d97706; padding: 0.75rem 1rem; margin: 0.75rem 0; }
+    body { font-family: Georgia, serif; max-width: 800px; margin: 2rem auto; padding: 1rem 1.5rem; color: #000; line-height: 1.6; }
+    h1 { color: #000; font-weight: bold; border-bottom: 3px solid #000; padding-bottom: 0.5rem; margin-bottom: 0.25rem; font-size: 1.6rem; }
+    h2 { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; color: #000; font-weight: bold; margin: 2rem 0 0.75rem; border-bottom: 1px solid #ccc; padding-bottom: 0.3rem; }
+    h3 { margin: 0 0 0.4rem; font-size: 1rem; color: #000; font-weight: bold; }
+    .meta { color: #333; font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .question { background: #f5f5f5; border-left: 4px solid #000; padding: 0.75rem 1rem; margin: 0.75rem 0; font-style: italic; }
+    .problem { background: #f5f5f5; border-left: 4px solid #555; padding: 0.75rem 1rem; margin: 0.75rem 0; }
     table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.9rem; }
-    th, td { border: 1px solid #ddd; padding: 0.5rem 0.75rem; vertical-align: top; }
-    th { background: #f4f0ff; text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem 0.75rem; vertical-align: top; }
+    th { background: #f0f0f0; text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: bold; color: #000; }
     ul { padding-left: 1.5rem; margin: 0.5rem 0; }
     li { margin-bottom: 0.3rem; }
-    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ddd; color: #888; font-size: 0.8rem; text-align: center; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; color: #333; font-size: 0.8rem; text-align: center; }
     @media print { body { margin: 0; padding: 0.5cm 1cm; } h2 { page-break-after: avoid; } }
   </style>
 </head>
@@ -126,7 +126,7 @@ function buildReportHTML(project) {
     .map((letter) => {
       const area = STEAM_AREAS[letter];
       return area
-        ? `<span style="background:${area.color};color:#0F0F2D;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.85rem;font-weight:600;margin-right:0.4rem;">${letter} · ${area.name}</span>`
+        ? `<span style="background:#f0f0f0;color:#000;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.85rem;font-weight:700;margin-right:0.4rem;border:1px solid #ccc;">${letter} · ${area.name}</span>`
         : "";
     })
     .join("");
@@ -187,9 +187,9 @@ function buildReportHTML(project) {
     const entriesHTML = (data.entries || [])
       .map(
         (e) =>
-          `<div style="border-left:2px solid #ddd;padding:0.5rem 1rem;margin:0.5rem 0;">
-            <div style="font-size:0.8rem;color:#888;">${formatDate(e.date)}</div>
-            <div>${escapeHtml(e.text)}</div>
+          `<div style="border-left:2px solid #ccc;padding:0.5rem 1rem;margin:0.5rem 0;">
+            <div style="font-size:0.8rem;color:#333;">${formatDate(e.date)}</div>
+            <div style="color:#000;">${escapeHtml(e.text)}</div>
           </div>`
       )
       .join("");
@@ -202,9 +202,9 @@ function buildReportHTML(project) {
         const entriesList = entries
           .map(
             (entry) =>
-              `<div style="border-left:2px solid #bbb;padding:0.4rem 0.8rem;margin:0.4rem 0;">
-                <div style="font-size:0.8rem;color:#888;">${formatDate(entry.date)}</div>
-                <div>${escapeHtml(entry.text)}</div>
+              `<div style="border-left:2px solid #ccc;padding:0.4rem 0.8rem;margin:0.4rem 0;">
+                <div style="font-size:0.8rem;color:#333;">${formatDate(entry.date)}</div>
+                <div style="color:#000;">${escapeHtml(entry.text)}</div>
               </div>`
           )
           .join("");
@@ -220,10 +220,10 @@ function buildReportHTML(project) {
 
     return `
       <section style="margin-bottom:2rem;page-break-inside:avoid;">
-        <h2 style="color:${phase.color};border-bottom:2px solid ${phase.color};padding-bottom:0.4rem;">
+        <h2 style="color:#000;font-weight:bold;border-bottom:2px solid #000;padding-bottom:0.4rem;">
           Fase ${phase.number}: ${phase.name}
         </h2>
-        <p style="font-style:italic;color:#666;">${phase.subtitle}</p>
+        <p style="font-style:italic;color:#333;">${phase.subtitle}</p>
 
         <h3>Plano pedagógico</h3>
         <p>${escapeHtml(data.plan || "(não preenchido)")}</p>
@@ -240,11 +240,7 @@ function buildReportHTML(project) {
         <p><strong>Evidências coletadas:</strong> ${escapeHtml(evaluation.evidence || "—")}</p>
         <p><strong>Devolutiva:</strong> ${escapeHtml(evaluation.feedback || "—")}</p>
         <p><strong>Nível de desenvolvimento:</strong>
-          ${
-            level
-              ? `<span style="background:${level.color};color:white;padding:0.15rem 0.5rem;border-radius:3px;">${level.label}</span>`
-              : "—"
-          }
+          ${level ? `<span style="background:#f0f0f0;color:#000;padding:0.15rem 0.5rem;border-radius:3px;border:1px solid #ccc;font-weight:bold;">${level.label}</span>` : "—"}
         </p>
       </section>
     `;
@@ -257,15 +253,15 @@ function buildReportHTML(project) {
   <meta charset="UTF-8">
   <title>${escapeHtml(project.title || "Projeto STEAM")}</title>
   <style>
-    body { font-family: Georgia, serif; max-width: 800px; margin: 2rem auto; padding: 1rem; color: #222; line-height: 1.6; }
-    h1 { color: #6B2FE0; border-bottom: 3px solid #6B2FE0; padding-bottom: 0.5rem; }
-    h2 { margin-top: 2rem; }
-    h3 { margin-top: 1.2rem; color: #444; }
-    .question { background: #f4f0ff; border-left: 4px solid #6B2FE0; padding: 1rem; font-size: 1.1rem; margin: 1rem 0; font-style: italic; }
-    .meta { color: #666; font-size: 0.9rem; margin-bottom: 1rem; }
+    body { font-family: Georgia, serif; max-width: 800px; margin: 2rem auto; padding: 1rem; color: #000; line-height: 1.6; }
+    h1 { color: #000; font-weight: bold; border-bottom: 3px solid #000; padding-bottom: 0.5rem; }
+    h2 { margin-top: 2rem; color: #000; font-weight: bold; }
+    h3 { margin-top: 1.2rem; color: #000; font-weight: bold; }
+    .question { background: #f5f5f5; border-left: 4px solid #000; padding: 1rem; font-size: 1.1rem; margin: 1rem 0; font-style: italic; }
+    .meta { color: #333; font-size: 0.9rem; margin-bottom: 1rem; }
     table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; }
-    th, td { border: 1px solid #ddd; padding: 0.55rem; vertical-align: top; }
-    th { background: #f4f0ff; text-align: left; }
+    th, td { border: 1px solid #ccc; padding: 0.55rem; vertical-align: top; }
+    th { background: #f0f0f0; text-align: left; font-weight: bold; color: #000; }
     @media print { body { margin: 0; padding: 0.5cm; } h2 { page-break-after: avoid; } }
   </style>
 </head>
@@ -329,7 +325,7 @@ function buildReportHTML(project) {
 
   ${phasesHTML}
 
-  <footer style="margin-top:3rem;padding-top:1rem;border-top:1px solid #ddd;color:#888;font-size:0.85rem;text-align:center;">
+  <footer style="margin-top:3rem;padding-top:1rem;border-top:1px solid #ccc;color:#333;font-size:0.85rem;text-align:center;">
     Relatório gerado pelo STEAM Planner em ${new Date().toLocaleDateString("pt-BR")}
   </footer>
 </body>
@@ -358,16 +354,15 @@ function formatMultiline(text) {
 
 function buildClassroomActivityHTML(activity, projectTitle) {
   const stepsHTML = (activity.steps || []).map((step, i) => {
-    const actorColor = step.actor === 'Professor' ? '#6B2FE0' : '#0891b2'
     return `
       <div style="display:flex;gap:1rem;margin-bottom:1.25rem;align-items:flex-start;">
         <div style="min-width:90px;text-align:right;">
-          <div style="font-size:0.75rem;font-weight:700;color:#888;text-transform:uppercase;">${escapeHtml(step.time || '')}</div>
-          <div style="font-size:0.7rem;background:${actorColor};color:#fff;padding:0.15rem 0.4rem;border-radius:3px;margin-top:0.2rem;display:inline-block;">${escapeHtml(step.actor || '')}</div>
+          <div style="font-size:0.75rem;font-weight:700;color:#333;text-transform:uppercase;">${escapeHtml(step.time || '')}</div>
+          <div style="font-size:0.7rem;background:#f0f0f0;color:#000;border:1px solid #ccc;padding:0.15rem 0.4rem;border-radius:3px;margin-top:0.2rem;display:inline-block;font-weight:bold;">${escapeHtml(step.actor || '')}</div>
         </div>
-        <div style="flex:1;border-left:3px solid ${actorColor};padding-left:1rem;">
-          <div style="font-weight:700;color:#222;margin-bottom:0.3rem;">${i + 1}. ${escapeHtml(step.title || '')}</div>
-          <div style="color:#444;line-height:1.6;">${escapeHtml(step.description || '')}</div>
+        <div style="flex:1;border-left:3px solid #000;padding-left:1rem;">
+          <div style="font-weight:700;color:#000;margin-bottom:0.3rem;">${i + 1}. ${escapeHtml(step.title || '')}</div>
+          <div style="color:#000;line-height:1.6;">${escapeHtml(step.description || '')}</div>
         </div>
       </div>
     `
@@ -395,17 +390,17 @@ function buildClassroomActivityHTML(activity, projectTitle) {
   <title>${escapeHtml(activity.activityTitle || 'Roteiro de Aula')}</title>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: Georgia, serif; max-width: 800px; margin: 2rem auto; padding: 1rem 1.5rem; color: #222; line-height: 1.6; }
-    h1 { color: #6B2FE0; border-bottom: 3px solid #6B2FE0; padding-bottom: 0.5rem; margin-bottom: 0.25rem; }
-    h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; color: #555; margin: 2rem 0 0.75rem; border-bottom: 1px solid #ddd; padding-bottom: 0.3rem; }
-    .meta { color: #666; font-size: 0.9rem; margin-bottom: 1.5rem; }
-    .objective-box { background: #f4f0ff; border-left: 4px solid #6B2FE0; padding: 1rem 1.25rem; margin: 1rem 0 1.5rem; font-size: 1rem; }
-    .tips-box { background: #f0fdf4; border-left: 4px solid #16a34a; padding: 1rem 1.25rem; margin: 1rem 0; font-size: 0.95rem; }
-    .assessment-box { background: #fff7ed; border-left: 4px solid #d97706; padding: 1rem 1.25rem; margin: 1rem 0; font-size: 0.95rem; }
+    body { font-family: Georgia, serif; max-width: 800px; margin: 2rem auto; padding: 1rem 1.5rem; color: #000; line-height: 1.6; }
+    h1 { color: #000; font-weight: bold; border-bottom: 3px solid #000; padding-bottom: 0.5rem; margin-bottom: 0.25rem; }
+    h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; color: #000; font-weight: bold; margin: 2rem 0 0.75rem; border-bottom: 1px solid #ccc; padding-bottom: 0.3rem; }
+    .meta { color: #333; font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .objective-box { background: #f5f5f5; border-left: 4px solid #000; padding: 1rem 1.25rem; margin: 1rem 0 1.5rem; font-size: 1rem; }
+    .tips-box { background: #f5f5f5; border-left: 4px solid #555; padding: 1rem 1.25rem; margin: 1rem 0; font-size: 0.95rem; }
+    .assessment-box { background: #f5f5f5; border-left: 4px solid #555; padding: 1rem 1.25rem; margin: 1rem 0; font-size: 0.95rem; }
     ul { padding-left: 1.5rem; }
     li { margin-bottom: 0.3rem; }
-    .project-ref { font-size: 0.82rem; color: #888; font-style: italic; margin-bottom: 0.5rem; }
-    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ddd; color: #888; font-size: 0.82rem; text-align: center; }
+    .project-ref { font-size: 0.82rem; color: #333; font-style: italic; margin-bottom: 0.5rem; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; color: #333; font-size: 0.82rem; text-align: center; }
     @media print { body { margin: 0; padding: 0.5cm 1cm; } }
   </style>
 </head>
