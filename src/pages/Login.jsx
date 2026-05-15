@@ -531,7 +531,7 @@ export default function Login({ onLogin }) {
                 <label>E-mail</label>
                 <input
                   type="email"
-                  placeholder="seu.email@escola.com"
+                  placeholder="Digite seu email"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   style={{ width: "100%", marginBottom: "1rem", padding: "8px" }}
@@ -580,7 +580,7 @@ export default function Login({ onLogin }) {
                 <label>E-mail institucional *</label>
                 <input
                   type="email"
-                  placeholder="joao@escola.edu.br"
+                  placeholder="Digite seu email"
                   value={signupEmail}
                   onChange={(e) => setSignupEmail(e.target.value)}
                   style={{ width: "100%", marginBottom: "1rem", padding: "8px" }}

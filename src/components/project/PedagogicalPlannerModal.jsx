@@ -72,7 +72,6 @@ const PERSONALIZATION_OPTIONS = {
     title: 'Avaliação',
     type: 'single',
     options: [
-
       { id: 'observacao', label: 'Observação do professor', instruction: 'Propor avaliação por observação, registro em diário de bordo e evidências do processo.' },
       { id: 'autoavaliacao', label: 'Autoavaliação dos alunos', instruction: 'Incluir autoavaliação curta para os estudantes refletirem sobre participação e aprendizagem.' }
     ]
