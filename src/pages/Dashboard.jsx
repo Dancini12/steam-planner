@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useProjects } from "../hooks/useProjects.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 import PedagogicalPlannerModal from "../components/project/PedagogicalPlannerModal.jsx";
@@ -55,17 +55,10 @@ export default function Dashboard({
   const [showAdaptationModal, setShowAdaptationModal] = useState(false);
   const [showTipsModal, setShowTipsModal] = useState(false);
   const [creationError, setCreationError] = useState("");
-  const [visualAccessibility, setVisualAccessibility] = useState(
-    () => localStorage.getItem("steam-visual-accessibility") === "true"
-  );
 
   const professorName = currentUser?.name || currentUser?.email?.split("@")[0] || "Professor";
   const firstName = professorName.split(" ")[0] || "Professor";
-  const accessibilityPreset = visualAccessibility ? ["baixa_visao", "grupos_colaborativos"] : [];
-
-  useEffect(() => {
-    localStorage.setItem("steam-visual-accessibility", String(visualAccessibility));
-  }, [visualAccessibility]);
+  const accessibilityPreset = ["baixa_visao", "grupos_colaborativos"];
 
   const handleOpenProjects = () => {
     if (projects.length > 0) {
@@ -112,7 +105,7 @@ export default function Dashboard({
 
   if (!isLoaded) {
     return (
-      <div className={`retro-dashboard reduced-glow${visualAccessibility ? " visual-accessibility" : ""}`}>
+      <div className="retro-dashboard reduced-glow visual-accessibility">
         <style>{retroCss}</style>
         <div className="retro-loading">CARREGANDO...</div>
       </div>
@@ -120,7 +113,7 @@ export default function Dashboard({
   }
 
   return (
-    <div className={`retro-dashboard reduced-glow${visualAccessibility ? " visual-accessibility" : ""}`}>
+    <div className="retro-dashboard reduced-glow visual-accessibility">
       <style>{retroCss}</style>
 
       <div className="pixel-stars" aria-hidden="true">
@@ -163,23 +156,6 @@ export default function Dashboard({
             SAIR
           </button>
         </header>
-
-        <section className="accessibility-panel" aria-label="Opções de acessibilidade">
-          <div>
-            <strong>ACESSIBILIDADE</strong>
-            <span>Personalize a tela e a geração das atividades.</span>
-          </div>
-          <div className="accessibility-actions">
-            <button
-              type="button"
-              className={visualAccessibility ? "accessibility-toggle active" : "accessibility-toggle"}
-              aria-pressed={visualAccessibility}
-              onClick={() => setVisualAccessibility((value) => !value)}
-            >
-              Apoio visual
-            </button>
-          </div>
-        </section>
 
         {creationError && <div className="retro-error">{creationError}</div>}
 
@@ -428,67 +404,6 @@ const retroCss = `
     font-size: 0.58rem;
     cursor: pointer;
     box-shadow: 0 0 8px rgba(255, 79, 216, 0.15);
-  }
-
-  .accessibility-panel {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-    margin-bottom: 24px;
-    padding: 16px 18px;
-    border: 3px solid rgba(57, 255, 136, 0.22);
-    border-radius: 16px;
-    background: rgba(2, 6, 23, 0.82);
-    box-shadow:
-      0 0 0 3px rgba(2, 6, 23, 0.75),
-      0 0 10px rgba(57, 255, 136, 0.08);
-  }
-
-  .accessibility-panel strong,
-  .accessibility-panel span {
-    display: block;
-  }
-
-  .accessibility-panel strong {
-    color: #39FF88;
-    font-size: 0.72rem;
-    line-height: 1.45;
-  }
-
-  .accessibility-panel span {
-    margin-top: 6px;
-    color: #E2E8F0;
-    font-size: 1.05rem;
-    font-weight: 700;
-    line-height: 1.45;
-  }
-
-  .accessibility-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: flex-end;
-  }
-
-  .accessibility-toggle {
-    min-height: 42px;
-    border: 2px solid #94A3B8;
-    border-radius: 10px;
-    background: #020617;
-    color: #E2E8F0;
-    padding: 0 14px;
-    font: inherit;
-    font-size: 0.58rem;
-    cursor: pointer;
-    box-shadow: 0 0 12px rgba(148, 163, 184, 0.2);
-  }
-
-  .accessibility-toggle.active {
-    border-color: #39FF88;
-    background: #39FF88;
-    color: #020617;
-    box-shadow: 0 0 10px rgba(57, 255, 136, 0.18);
   }
 
   .pixel-computer {
@@ -856,7 +771,6 @@ const retroCss = `
 
   .reduced-glow .retro-hero,
   .reduced-glow .retro-card,
-  .reduced-glow .accessibility-panel,
   .reduced-glow .retro-footer {
     box-shadow:
       0 0 0 3px rgba(2, 6, 23, 0.85),
@@ -871,23 +785,19 @@ const retroCss = `
   }
 
   .visual-accessibility .retro-card,
-  .visual-accessibility .speech-box,
-  .visual-accessibility .accessibility-panel {
+  .visual-accessibility .speech-box {
     background: rgba(2, 6, 23, 0.96);
   }
 
   .retro-card p,
   .speech-box span,
-  .accessibility-panel span,
   .visual-accessibility .retro-card p,
-  .visual-accessibility .speech-box span,
-  .visual-accessibility .accessibility-panel span {
+  .visual-accessibility .speech-box span {
     color: #FFFFFF;
     font-size: 1.05rem;
   }
 
-  .visual-accessibility .retro-button,
-  .visual-accessibility .accessibility-toggle {
+  .visual-accessibility .retro-button {
     min-height: 48px;
   }
 
@@ -904,14 +814,6 @@ const retroCss = `
       width: 160px;
     }
 
-    .accessibility-panel {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-
-    .accessibility-actions {
-      justify-content: flex-start;
-    }
   }
 
   @media (max-width: 720px) {
