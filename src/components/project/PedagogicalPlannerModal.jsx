@@ -85,7 +85,18 @@ const defaultPersonalization = {
   assessment: 'rubrica'
 }
 
-function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
+function buildDefaultPersonalization(accessibilityPreset = []) {
+  return {
+    ...defaultPersonalization,
+    accessibility: [...new Set([
+      ...defaultPersonalization.accessibility,
+      ...accessibilityPreset
+    ])]
+  }
+}
+
+function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessibilityPreset = [] }) {
+  const accessibilityPresetKey = accessibilityPreset.join('|')
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState({
     discipline: '',
@@ -93,7 +104,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
     theme: '',
     steamCompetencies: [],
     numberOfClasses: '',
-    personalization: defaultPersonalization,
+    personalization: buildDefaultPersonalization(accessibilityPreset),
     manualInstructions: ''
   })
   const [previewData, setPreviewData] = useState(null)
@@ -104,7 +115,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
     if (isOpen) {
       resetForm()
     }
-  }, [isOpen])
+  }, [isOpen, accessibilityPresetKey])
 
   const resetForm = () => {
     setCurrentStep(0)
@@ -114,7 +125,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
       theme: '',
       steamCompetencies: [],
       numberOfClasses: '',
-      personalization: defaultPersonalization,
+      personalization: buildDefaultPersonalization(accessibilityPreset),
       manualInstructions: ''
     })
     setPreviewData(null)
