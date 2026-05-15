@@ -272,7 +272,7 @@ export default function Dashboard({
 }
 
 const retroCss = `
-  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
   * {
     box-sizing: border-box;
@@ -287,7 +287,7 @@ const retroCss = `
       radial-gradient(circle at 18% 12%, rgba(34, 211, 238, 0.22), transparent 24rem),
       radial-gradient(circle at 82% 16%, rgba(255, 79, 216, 0.18), transparent 26rem),
       linear-gradient(180deg, #050816 0%, #071026 48%, #020617 100%);
-    font-family: 'Press Start 2P', 'Inter', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
   }
 
   .retro-dashboard::before {
@@ -354,6 +354,7 @@ const retroCss = `
     margin: 0;
     color: #FDE047;
     font-size: clamp(2.3rem, 7vw, 5.1rem);
+    font-weight: 700;
     line-height: 1;
     text-shadow:
       5px 0 #22D3EE,
@@ -367,6 +368,7 @@ const retroCss = `
     margin: 12px 0 0;
     color: #FFFFFF;
     font-size: clamp(0.86rem, 2.3vw, 1.4rem);
+    font-weight: 700;
     line-height: 1.35;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
   }
@@ -409,7 +411,6 @@ const retroCss = `
   .speech-box span {
     margin-top: 6px;
     color: #FFFFFF;
-    font-family: 'Inter', system-ui, sans-serif;
     font-size: clamp(1rem, 2.2vw, 1.25rem);
     font-weight: 700;
   }
@@ -458,8 +459,7 @@ const retroCss = `
   .accessibility-panel span {
     margin-top: 6px;
     color: #E2E8F0;
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-weight: 700;
     line-height: 1.45;
   }
@@ -617,8 +617,7 @@ const retroCss = `
   .retro-card p {
     margin: 12px 0 18px;
     color: #CBD5E1;
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-weight: 600;
     line-height: 1.45;
   }
@@ -825,7 +824,6 @@ const retroCss = `
     border-radius: 12px;
     background: rgba(69, 10, 10, 0.78);
     color: #FFE4E6;
-    font-family: 'Inter', system-ui, sans-serif;
     font-weight: 700;
   }
 
@@ -836,7 +834,8 @@ const retroCss = `
     border: 0;
     background: transparent;
     color: #39FF88;
-    font-family: 'Press Start 2P', system-ui;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 700;
   }
 
   .reduced-glow {
@@ -871,16 +870,15 @@ const retroCss = `
     text-shadow: none;
   }
 
-  .visual-accessibility {
-    font-family: 'Inter', system-ui, sans-serif;
-  }
-
   .visual-accessibility .retro-card,
   .visual-accessibility .speech-box,
   .visual-accessibility .accessibility-panel {
     background: rgba(2, 6, 23, 0.96);
   }
 
+  .retro-card p,
+  .speech-box span,
+  .accessibility-panel span,
   .visual-accessibility .retro-card p,
   .visual-accessibility .speech-box span,
   .visual-accessibility .accessibility-panel span {
