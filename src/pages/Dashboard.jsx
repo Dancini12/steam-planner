@@ -137,7 +137,7 @@ export default function Dashboard({
 
             <div className="speech-box">
               <strong>OLÁ, {firstName.toUpperCase()}!</strong>
-              <span>Pronto para criar atividades incríveis?</span>
+              <span>Pronto para planejar atividades pedagógicas com propósito.</span>
             </div>
           </section>
 
@@ -326,6 +326,13 @@ const retroCss = `
     min-width: 0;
   }
 
+  .retro-brand {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(14px, 2.5vw, 28px);
+    flex-wrap: wrap;
+  }
+
   .retro-brand h1 {
     margin: 0;
     color: #FDE047;
@@ -341,11 +348,11 @@ const retroCss = `
   }
 
   .retro-brand p {
-    margin: 12px 0 0;
+    margin: 0;
     color: #FFFFFF;
-    font-size: clamp(0.86rem, 2.3vw, 1.4rem);
+    font-size: clamp(1.3rem, 3.2vw, 2.2rem);
     font-weight: 700;
-    line-height: 1.35;
+    line-height: 1;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
   }
 
