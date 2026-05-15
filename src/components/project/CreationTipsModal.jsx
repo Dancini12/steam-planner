@@ -166,11 +166,11 @@ export default function CreationTipsModal({ isOpen, onClose }) {
 
 const s = {
   container: { display: "flex", flexDirection: "column", gap: "2rem", paddingBottom: "1rem" },
-  intro: { padding: "1rem 1.125rem", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "10px" },
-  introText: { fontSize: "0.92rem", color: "#1E40AF", lineHeight: 1.65, margin: 0 },
+  intro: { padding: "1rem 1.125rem", background: "rgba(79,70,229,0.12)", border: "1px solid rgba(79,70,229,0.3)", borderRadius: "10px" },
+  introText: { fontSize: "0.92rem", color: "rgba(255,255,255,0.85)", lineHeight: 1.65, margin: 0 },
   section: { display: "flex", flexDirection: "column", gap: "0.75rem" },
-  sectionLabel: { fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#6B7280" },
-  sectionDesc: { fontSize: "0.88rem", color: "#374151", lineHeight: 1.65, margin: 0 },
+  sectionLabel: { fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.45)" },
+  sectionDesc: { fontSize: "0.88rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.65, margin: 0 },
 
   steamGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.6rem" },
   steamCard: { background: "#FFFFFF", border: "1px solid #E5E7EB", borderRadius: "8px", padding: "0.85rem 0.9rem", display: "flex", flexDirection: "column", gap: "0.3rem" },
@@ -205,7 +205,7 @@ const s = {
   dtDesc: { fontSize: "0.77rem", color: "#6B7280", lineHeight: 1.5 },
 
   exampleList: { display: "flex", flexDirection: "column", gap: "0.5rem" },
-  exampleItem: { display: "flex", gap: "0.6rem", padding: "0.8rem 1rem", background: "#F5F7FB", border: "1px solid #E5E7EB", borderRadius: "8px", alignItems: "flex-start" },
-  exampleQuote: { fontSize: "1.4rem", color: "#4F46E5", fontWeight: 800, lineHeight: 1, flexShrink: 0, marginTop: "-2px" },
-  exampleText: { fontSize: "0.86rem", color: "#374151", lineHeight: 1.6, fontStyle: "italic" },
+  exampleItem: { display: "flex", gap: "0.6rem", padding: "0.8rem 1rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", alignItems: "flex-start" },
+  exampleQuote: { fontSize: "1.4rem", color: "#818CF8", fontWeight: 800, lineHeight: 1, flexShrink: 0, marginTop: "-2px" },
+  exampleText: { fontSize: "0.86rem", color: "rgba(255,255,255,0.8)", lineHeight: 1.6, fontStyle: "italic" },
 };
