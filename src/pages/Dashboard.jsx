@@ -350,7 +350,7 @@ const retroCss = `
   .retro-brand p {
     margin: 0;
     color: #FFFFFF;
-    font-size: clamp(1.3rem, 3.2vw, 2.2rem);
+    font-size: clamp(2.3rem, 7vw, 5.1rem);
     font-weight: 700;
     line-height: 1;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
