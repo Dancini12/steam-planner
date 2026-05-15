@@ -52,8 +52,7 @@ export default function BNCC({ onBack }) {
         </header>
 
         <section style={noticeStyle}>
-          A base completa deve ser importada depois a partir da planilha revisada com base no documento
-          oficial da BNCC/MEC. Esta consulta offline já usa a mesma estrutura preparada no Supabase.
+          Consulta offline.
         </section>
 
         <section style={filtersStyle} aria-label="Filtros da BNCC">
@@ -94,12 +93,16 @@ export default function BNCC({ onBack }) {
           </label>
 
           <label style={fieldStyle}>
-            <span>Tema da atividade</span>
-            <input
-              value={termo}
-              onChange={(event) => setTermo(event.target.value)}
-              placeholder="Ex.: energia, circuitos, sustentabilidade"
-            />
+            <span>Buscar</span>
+            <div className="bncc-search-field" style={searchFieldStyle}>
+              <span style={searchIconStyle} aria-hidden="true">🔎</span>
+              <input
+                value={termo}
+                onChange={(event) => setTermo(event.target.value)}
+                placeholder="Digite código, tema ou palavra-chave"
+                aria-label="Buscar habilidade BNCC"
+              />
+            </div>
           </label>
 
           <label style={toggleStyle}>
@@ -289,6 +292,21 @@ const fieldStyle = {
   fontSize: "0.82rem"
 };
 
+const searchFieldStyle = {
+  position: "relative",
+  display: "flex",
+  alignItems: "center"
+};
+
+const searchIconStyle = {
+  position: "absolute",
+  left: "0.75rem",
+  color: "#67E8F9",
+  fontSize: "1.25rem",
+  lineHeight: 1,
+  pointerEvents: "none"
+};
+
 const toggleStyle = {
   display: "flex",
   alignItems: "center",
@@ -406,6 +424,10 @@ const bnccCss = `
     padding: 0 0.75rem;
     font: inherit;
     outline: none;
+  }
+
+  .bncc-search-field input {
+    padding-left: 2.35rem;
   }
 
   input[type="checkbox"] {
