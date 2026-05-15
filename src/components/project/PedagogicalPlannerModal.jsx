@@ -107,6 +107,74 @@ function TipCard({ icon, title, text, color }) {
   )
 }
 
+function SelectField({ label, placeholder, value, options, onChange }) {
+  return (
+    <label style={selectFieldStyle}>
+      <span style={selectLabelStyle}>{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        style={selectInputStyle}
+      >
+        <option value="">{placeholder}</option>
+        {options.map((option) => {
+          const optionValue = typeof option === 'string' ? option : option.value
+          const optionLabel = typeof option === 'string' ? option : option.label
+          return (
+            <option key={optionValue} value={optionValue}>
+              {optionLabel}
+            </option>
+          )
+        })}
+      </select>
+    </label>
+  )
+}
+
+function MultiSelectDropdown({ label, placeholder, options, selectedValues, onToggle }) {
+  const selectedLabels = options
+    .filter((option) => selectedValues.includes(option.id))
+    .map((option) => option.label)
+
+  return (
+    <details style={multiSelectStyle}>
+      <summary style={multiSelectSummaryStyle}>
+        <span>
+          <span style={selectLabelStyle}>{label}</span>
+          <span style={multiSelectValueStyle}>
+            {selectedLabels.length > 0 ? selectedLabels.join(', ') : placeholder}
+          </span>
+        </span>
+        <span style={multiSelectArrowStyle}>⌄</span>
+      </summary>
+      <div style={multiSelectOptionsStyle}>
+        {options.map((option) => {
+          const checked = selectedValues.includes(option.id)
+          return (
+            <label
+              key={option.id}
+              style={{
+                ...multiSelectOptionStyle,
+                borderColor: checked ? '#3B82F6' : '#E5E7EB',
+                backgroundColor: checked ? '#DBEAFE' : '#FFFFFF',
+                color: checked ? '#1E40AF' : '#374151'
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => onToggle(option.id)}
+                style={multiSelectCheckboxStyle}
+              />
+              <span>{option.icon ? `${option.icon} ` : ''}{option.label}</span>
+            </label>
+          )
+        })}
+      </div>
+    </details>
+  )
+}
+
 function generateActivityTips(formData) {
   const steamNames = { science: 'Ciência', technology: 'Tecnologia', engineering: 'Engenharia', arts: 'Artes', mathematics: 'Matemática' }
   const steamDescs = {
@@ -365,22 +433,13 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
             <p style={stepDescriptionStyle}>
               Escolha a disciplina principal da atividade pedagógica.
             </p>
-            <div style={gridStyle}>
-              {DISCIPLINES.map(discipline => (
-                <button
-                  key={discipline}
-                  type="button"
-                  style={{
-                    ...optionButtonStyle,
-                    backgroundColor: formData.discipline === discipline ? '#3B82F6' : '#F3F4F6',
-                    color: formData.discipline === discipline ? 'white' : '#374151'
-                  }}
-                  onClick={() => handleDisciplineSelect(discipline)}
-                >
-                  {discipline}
-                </button>
-              ))}
-            </div>
+            <SelectField
+              label="Disciplina"
+              placeholder="Clique para selecionar uma disciplina"
+              value={formData.discipline}
+              options={DISCIPLINES}
+              onChange={handleDisciplineSelect}
+            />
           </div>
         )
 
@@ -391,22 +450,13 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
             <p style={stepDescriptionStyle}>
               Selecione a série ou ano escolar apropriado.
             </p>
-            <div style={gridStyle}>
-              {GRADES.map(grade => (
-                <button
-                  key={grade}
-                  type="button"
-                  style={{
-                    ...optionButtonStyle,
-                    backgroundColor: formData.grade === grade ? '#3B82F6' : '#F3F4F6',
-                    color: formData.grade === grade ? 'white' : '#374151'
-                  }}
-                  onClick={() => handleGradeSelect(grade)}
-                >
-                  {grade}
-                </button>
-              ))}
-            </div>
+            <SelectField
+              label="Série/ano"
+              placeholder="Clique para selecionar a série"
+              value={formData.grade}
+              options={GRADES}
+              onChange={handleGradeSelect}
+            />
           </div>
         )
 
@@ -435,28 +485,13 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
             <p style={stepDescriptionStyle}>
               Selecione as competências STEAM que deseja utilizar. A Cultura Maker será incluída automaticamente.
             </p>
-            <div style={steamGridStyle}>
-              {STEAM_COMPETENCIES.map(competency => (
-                <button
-                  key={competency.id}
-                  type="button"
-                  style={{
-                    ...steamButtonStyle,
-                    backgroundColor: formData.steamCompetencies.includes(competency.id)
-                      ? competency.color
-                      : '#F3F4F6',
-                    color: formData.steamCompetencies.includes(competency.id)
-                      ? 'white'
-                      : '#374151',
-                    border: `2px solid ${competency.color}`
-                  }}
-                  onClick={() => handleSteamCompetencyToggle(competency.id)}
-                >
-                  <span style={steamIconStyle}>{competency.icon}</span>
-                  <span style={steamLabelStyle}>{competency.label}</span>
-                </button>
-              ))}
-            </div>
+            <MultiSelectDropdown
+              label="Competências STEAM"
+              placeholder="Clique para selecionar uma ou mais competências"
+              options={STEAM_COMPETENCIES}
+              selectedValues={formData.steamCompetencies}
+              onToggle={handleSteamCompetencyToggle}
+            />
             <div style={makerNoteStyle}>
               🔧 <strong>Cultura Maker</strong> será incluída automaticamente em todas as atividades
             </div>
@@ -484,23 +519,16 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
                 />
               </div>
               <div style={classesSuggestionsStyle}>
-                <p style={stepDescriptionStyle}>Sugestões rápidas:</p>
-                <div style={classesQuickSelectStyle}>
-                  {[1, 2, 3, 5, 8, 10].map(num => (
-                    <button
-                      key={num}
-                      type="button"
-                      style={{
-                        ...classesQuickButtonStyle,
-                        backgroundColor: formData.numberOfClasses === String(num) ? '#3B82F6' : '#F3F4F6',
-                        color: formData.numberOfClasses === String(num) ? 'white' : '#374151'
-                      }}
-                      onClick={() => handleNumberOfClassesChange(String(num))}
-                    >
-                      {num} aula{num > 1 ? 's' : ''}
-                    </button>
-                  ))}
-                </div>
+                <SelectField
+                  label="Sugestões rápidas"
+                  placeholder="Clique para escolher uma duração"
+                  value={['1', '2', '3', '5', '8', '10'].includes(formData.numberOfClasses) ? formData.numberOfClasses : ''}
+                  options={[1, 2, 3, 5, 8, 10].map((num) => ({
+                    value: String(num),
+                    label: `${num} aula${num > 1 ? 's' : ''}`
+                  }))}
+                  onChange={handleNumberOfClassesChange}
+                />
               </div>
             </div>
           </div>
@@ -516,31 +544,26 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
 
             {Object.entries(PERSONALIZATION_OPTIONS).map(([groupId, group]) => (
               <div key={groupId} style={personalizationGroupStyle}>
-                <h4 style={previewSubtitleStyle}>{group.title}</h4>
-                <div style={personalizationGridStyle}>
-                  {group.options.map((option) => {
-                    const selected = formData.personalization[groupId]
-                    const isSelected = Array.isArray(selected)
-                      ? selected.includes(option.id)
-                      : selected === option.id
-
-                    return (
-                      <button
-                        key={option.id}
-                        type="button"
-                        style={{
-                          ...personalizationButtonStyle,
-                          backgroundColor: isSelected ? '#DBEAFE' : '#FFFFFF',
-                          borderColor: isSelected ? '#3B82F6' : '#E5E7EB',
-                          color: isSelected ? '#1E40AF' : '#374151'
-                        }}
-                        onClick={() => handlePersonalizationChange(groupId, option.id, group.type)}
-                      >
-                        {isSelected ? '✓ ' : ''}{option.label}
-                      </button>
-                    )
-                  })}
-                </div>
+                {group.type === 'multi' ? (
+                  <MultiSelectDropdown
+                    label={group.title}
+                    placeholder="Clique para selecionar uma ou mais opções"
+                    options={group.options}
+                    selectedValues={formData.personalization[groupId]}
+                    onToggle={(optionId) => handlePersonalizationChange(groupId, optionId, group.type)}
+                  />
+                ) : (
+                  <SelectField
+                    label={group.title}
+                    placeholder="Clique para selecionar uma opção"
+                    value={formData.personalization[groupId]}
+                    options={group.options.map((option) => ({
+                      value: option.id,
+                      label: option.label
+                    }))}
+                    onChange={(optionId) => handlePersonalizationChange(groupId, optionId, group.type)}
+                  />
+                )}
               </div>
             ))}
 
@@ -882,6 +905,95 @@ const stepDescriptionStyle = {
   color: '#6B7280',
   margin: 0,
   lineHeight: '1.5'
+}
+
+const selectFieldStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+  marginTop: '12px'
+}
+
+const selectLabelStyle = {
+  display: 'block',
+  fontSize: '14px',
+  fontWeight: '500',
+  color: '#374151',
+  marginBottom: '6px'
+}
+
+const selectInputStyle = {
+  width: '100%',
+  minHeight: '48px',
+  padding: '0 44px 0 14px',
+  border: '2px solid #D1D5DB',
+  borderRadius: '8px',
+  backgroundColor: '#FFFFFF',
+  color: '#1F2937',
+  fontSize: '15px',
+  fontWeight: '500',
+  outline: 'none',
+  cursor: 'pointer'
+}
+
+const multiSelectStyle = {
+  marginTop: '12px',
+  border: '2px solid #D1D5DB',
+  borderRadius: '8px',
+  backgroundColor: '#FFFFFF',
+  overflow: 'hidden'
+}
+
+const multiSelectSummaryStyle = {
+  minHeight: '48px',
+  padding: '10px 14px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '12px',
+  cursor: 'pointer',
+  listStyle: 'none'
+}
+
+const multiSelectValueStyle = {
+  display: 'block',
+  color: '#1F2937',
+  fontSize: '15px',
+  fontWeight: '500',
+  lineHeight: 1.35
+}
+
+const multiSelectArrowStyle = {
+  color: '#6B7280',
+  fontSize: '18px',
+  flexShrink: 0
+}
+
+const multiSelectOptionsStyle = {
+  display: 'grid',
+  gap: '8px',
+  padding: '12px',
+  backgroundColor: '#F9FAFB',
+  borderTop: '1px solid #E5E7EB'
+}
+
+const multiSelectOptionStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  minHeight: '42px',
+  padding: '10px 12px',
+  border: '1px solid #E5E7EB',
+  borderRadius: '8px',
+  fontSize: '14px',
+  fontWeight: '500',
+  cursor: 'pointer'
+}
+
+const multiSelectCheckboxStyle = {
+  width: '16px',
+  height: '16px',
+  flexShrink: 0
 }
 
 const gridStyle = {
