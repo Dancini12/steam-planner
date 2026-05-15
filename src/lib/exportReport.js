@@ -462,67 +462,91 @@ export function openReportWindow(project) {
 
 function buildAdaptationReportHTML(result, filename, selectedAdaptations) {
   const adaptationLabels = selectedAdaptations
-    .map((a) => `<span style="display:inline-block;background:#f0f0f0;border:1px solid #ccc;border-radius:4px;padding:0.15rem 0.55rem;font-size:0.82rem;font-weight:700;margin-right:0.4rem;margin-bottom:0.4rem;">${escapeHtml(a.label)}</span>`)
+    .map((a) => `<span style="display:inline-block;background:#f0f0f0;border:1px solid #ccc;border-radius:4px;padding:0.15rem 0.6rem;font-size:0.8rem;font-weight:700;margin-right:0.4rem;margin-bottom:0.35rem;">${escapeHtml(a.label)}</span>`)
     .join("");
 
-  const bodyHTML = result
-    .split("\n")
-    .map((line) => {
-      const trimmed = line.trim();
-      if (!trimmed) return "<br>";
-      if (/^#{1,3}\s/.test(trimmed)) {
-        const text = trimmed.replace(/^#+\s*/, "");
-        return `<h2>${escapeHtml(text)}</h2>`;
+  const lines = result.split("\n");
+  let activityTitle = "";
+  const bodyLines = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) { bodyLines.push("<br>"); continue; }
+
+    if (/^##\s/.test(trimmed)) {
+      const text = trimmed.replace(/^##\s*/, "");
+      if (!activityTitle && /título/i.test(text)) {
+        bodyLines.push(`<h2>${escapeHtml(text)}</h2>`);
+      } else {
+        bodyLines.push(`<h2>${escapeHtml(text)}</h2>`);
       }
-      if (/^\*\*(.+)\*\*$/.test(trimmed)) {
-        return `<p><strong>${escapeHtml(trimmed.replace(/\*\*/g, ""))}</strong></p>`;
-      }
-      if (/^[-•]\s/.test(trimmed)) {
-        return `<li>${escapeHtml(trimmed.replace(/^[-•]\s/, ""))}</li>`;
-      }
-      return `<p>${escapeHtml(trimmed)}</p>`;
-    })
+      continue;
+    }
+    if (/^###\s/.test(trimmed)) {
+      bodyLines.push(`<h3>${escapeHtml(trimmed.replace(/^###\s*/, ""))}</h3>`);
+      continue;
+    }
+    if (/^#\s/.test(trimmed)) {
+      const text = trimmed.replace(/^#\s*/, "");
+      if (!activityTitle) activityTitle = text;
+      bodyLines.push(`<h1 class="activity-title">${escapeHtml(text)}</h1>`);
+      continue;
+    }
+    if (/^\*\*(.+)\*\*/.test(trimmed)) {
+      bodyLines.push(`<p>${escapeHtml(trimmed).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`);
+      continue;
+    }
+    if (/^[-•*]\s/.test(trimmed)) {
+      bodyLines.push(`<li>${escapeHtml(trimmed.replace(/^[-•*]\s/, ""))}</li>`);
+      continue;
+    }
+    if (/^\d+\.\s/.test(trimmed)) {
+      bodyLines.push(`<li>${escapeHtml(trimmed.replace(/^\d+\.\s/, ""))}</li>`);
+      continue;
+    }
+    bodyLines.push(`<p>${escapeHtml(trimmed)}</p>`);
+  }
+
+  const bodyHTML = bodyLines
     .join("\n")
     .replace(/(<li>[\s\S]*?<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`);
+
+  const titleForHeader = activityTitle || (filename ? filename.replace(/\.pdf$/i, "") : "Atividade Adaptada");
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Relatório de Adaptação — ${escapeHtml(filename || "Atividade")}</title>
+  <title>${escapeHtml(titleForHeader)}</title>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: Georgia, serif; max-width: 800px; margin: 2rem auto; padding: 1rem 1.5rem; color: #000; line-height: 1.6; }
-    h1 { color: #000; font-weight: bold; border-bottom: 3px solid #000; padding-bottom: 0.5rem; margin-bottom: 0.25rem; font-size: 1.5rem; }
-    h2 { color: #000; font-weight: bold; margin: 1.75rem 0 0.6rem; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #ccc; padding-bottom: 0.3rem; }
-    h3 { color: #000; font-weight: bold; margin: 1.2rem 0 0.4rem; font-size: 0.95rem; }
-    p { margin: 0.4rem 0; }
+    body { font-family: Georgia, serif; max-width: 800px; margin: 2rem auto; padding: 1rem 1.5rem; color: #000; line-height: 1.7; }
+    .doc-header { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 3px solid #000; }
+    .doc-header h1 { font-size: 1.5rem; font-weight: bold; margin: 0 0 0.35rem; color: #000; }
+    .doc-meta { font-size: 0.85rem; color: #333; margin: 0.25rem 0; }
+    .doc-profiles { margin-top: 0.6rem; }
+    .activity-title { font-size: 1.35rem; font-weight: bold; color: #000; margin: 1rem 0 0.25rem; border-bottom: 2px solid #000; padding-bottom: 0.4rem; }
+    h2 { color: #000; font-weight: bold; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; margin: 1.75rem 0 0.6rem; border-bottom: 1px solid #ccc; padding-bottom: 0.3rem; }
+    h3 { color: #000; font-weight: bold; font-size: 0.95rem; margin: 1.1rem 0 0.35rem; }
+    p { margin: 0.45rem 0; }
     ul { padding-left: 1.5rem; margin: 0.5rem 0; }
     li { margin-bottom: 0.35rem; }
-    .meta { color: #333; font-size: 0.88rem; margin: 0.5rem 0 1.25rem; }
-    .source-file { background: #f5f5f5; border: 1px solid #ccc; border-radius: 4px; padding: 0.5rem 0.85rem; font-size: 0.85rem; color: #333; display: inline-block; margin-bottom: 1.25rem; }
-    .profiles { margin-bottom: 1.5rem; }
-    .divider { border: none; border-top: 1px solid #ccc; margin: 1.5rem 0; }
-    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; color: #333; font-size: 0.8rem; text-align: center; }
-    @media print { body { margin: 0; padding: 0.5cm 1cm; } h2 { page-break-after: avoid; } }
+    .notes-box { margin-top: 2rem; padding: 1rem 1.25rem; background: #f5f5f5; border-left: 4px solid #555; border-radius: 0 6px 6px 0; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; color: #444; font-size: 0.8rem; text-align: center; }
+    @media print { body { margin: 0; padding: 0.5cm 1cm; } h2 { page-break-after: avoid; } .doc-header { page-break-after: avoid; } }
   </style>
 </head>
 <body>
-  <h1>Relatório de Adaptação de Atividade</h1>
-  <div class="meta">Gerado em ${new Date().toLocaleDateString("pt-BR")}</div>
-
-  ${filename ? `<div class="source-file">📄 ${escapeHtml(filename)}</div>` : ""}
-
-  <div class="profiles">
-    <strong>Perfis de acessibilidade aplicados:</strong><br>
-    <div style="margin-top:0.5rem;">${adaptationLabels}</div>
+  <div class="doc-header">
+    <h1>Atividade Adaptada</h1>
+    ${filename ? `<div class="doc-meta">Origem: ${escapeHtml(filename)}</div>` : ""}
+    <div class="doc-meta">Gerado em ${new Date().toLocaleDateString("pt-BR")}</div>
+    <div class="doc-profiles" style="margin-top:0.6rem;">${adaptationLabels}</div>
   </div>
-
-  <hr class="divider">
 
   ${bodyHTML}
 
-  <footer>Relatório gerado pelo STEAM Planner em ${new Date().toLocaleDateString("pt-BR")}</footer>
+  <footer>Gerado pelo STEAM Planner em ${new Date().toLocaleDateString("pt-BR")}</footer>
 </body>
 </html>`;
 }

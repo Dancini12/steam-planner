@@ -294,23 +294,30 @@ export class PedagogicalPlannerService {
       .map((a) => `- ${a.label}: ${a.guidance} ${a.materialGuidance}`)
       .join('\n')
 
-    const colorblindIncluded = selectedAdaptationIds.includes('daltonismo')
-    const colorblindNote = colorblindIncluded
-      ? '\n\nAtenção especial para daltonismo: sempre que a atividade usar cores para classificar, separar grupos, identificar respostas, filtrar ou destacar informações, sugira o uso simultâneo de padrões não dependentes de cor — listras, bolinhas, zigue-zague, furos, marcação em relevo ou texto — para que a filtragem seja tátil e/ou visual para todos os estudantes. Dê exemplos práticos ligados à atividade analisada.'
+    const colorblindRule = selectedAdaptationIds.includes('daltonismo')
+      ? 'Para daltonismo: onde a atividade usar cor para classificar, separar grupos, identificar ou filtrar, reescreva obrigatoriamente usando padrão alternativo (listras, bolinhas, zigue-zague, furos, relevo). Descreva nos materiais e nas instruções como produzir e usar cada padrão.'
       : ''
 
     const prompt = `Você é especialista em educação inclusiva e STEAM.
 
-Analise a atividade pedagógica contida no PDF enviado e gere um relatório de adaptação específico para os seguintes perfis de acessibilidade:
+Analise a atividade pedagógica no PDF enviado e GERE UMA VERSÃO COMPLETA E ADAPTADA dela, incorporando todas as modificações necessárias para os seguintes perfis de acessibilidade:
 
-${adaptationDetails}${colorblindNote}
+${adaptationDetails}
 
-Para cada perfil:
-1. Identifique os elementos concretos da atividade que precisam ser modificados
-2. Forneça sugestões práticas e aplicáveis imediatamente pelo professor
-3. Indique materiais alternativos ou complementares necessários
+REGRAS OBRIGATÓRIAS:
+1. Preserve o objetivo pedagógico original da atividade.
+2. Reescreva as instruções, adaptando todos os elementos que apresentem barreiras de acessibilidade.
+${colorblindRule ? `3. ${colorblindRule}` : ''}
+4. A atividade deve estar completa e pronta para impressão e uso em sala de aula.
+5. Ao final, inclua uma seção "Notas para o professor" explicando brevemente cada adaptação realizada.
 
-Organize a resposta em seções claras por tipo de adaptação, com linguagem direta e prática.`
+ESTRUTURA OBRIGATÓRIA DA RESPOSTA (use exatamente estes títulos):
+## Título da atividade
+## Público-alvo e duração
+## Objetivo
+## Materiais necessários
+## Desenvolvimento
+## Notas para o professor`
 
     return GeminiService.summarizeDocument(prompt, {
       type: 'pdf',
