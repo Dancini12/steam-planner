@@ -462,7 +462,7 @@ export function openReportWindow(project) {
 
 function buildAdaptationReportHTML(result, filename, selectedAdaptations) {
   const adaptationLabels = selectedAdaptations
-    .map((a) => `<span style="display:inline-block;background:#f0f0f0;border:1px solid #ccc;border-radius:4px;padding:0.15rem 0.6rem;font-size:0.8rem;font-weight:700;margin-right:0.4rem;margin-bottom:0.35rem;">${escapeHtml(a.label)}</span>`)
+    .map((a) => `<span class="badge">${escapeHtml(a.label)}</span>`)
     .join("");
 
   const lines = result.split("\n");
@@ -473,17 +473,17 @@ function buildAdaptationReportHTML(result, filename, selectedAdaptations) {
     const trimmed = line.trim();
     if (!trimmed) { bodyLines.push("<br>"); continue; }
 
-    if (/^##\s/.test(trimmed)) {
-      const text = trimmed.replace(/^##\s*/, "");
-      if (!activityTitle && /título/i.test(text)) {
-        bodyLines.push(`<h2>${escapeHtml(text)}</h2>`);
-      } else {
-        bodyLines.push(`<h2>${escapeHtml(text)}</h2>`);
-      }
-      continue;
-    }
     if (/^###\s/.test(trimmed)) {
       bodyLines.push(`<h3>${escapeHtml(trimmed.replace(/^###\s*/, ""))}</h3>`);
+      continue;
+    }
+    if (/^##\s/.test(trimmed)) {
+      const text = trimmed.replace(/^##\s*/, "");
+      const isNotes = /notas\s+para\s+o\s+professor/i.test(text);
+      bodyLines.push(isNotes
+        ? `<h2 class="notes-heading">${escapeHtml(text)}</h2>`
+        : `<h2>${escapeHtml(text)}</h2>`
+      );
       continue;
     }
     if (/^#\s/.test(trimmed)) {
@@ -520,33 +520,124 @@ function buildAdaptationReportHTML(result, filename, selectedAdaptations) {
   <title>${escapeHtml(titleForHeader)}</title>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: Georgia, serif; max-width: 800px; margin: 2rem auto; padding: 1rem 1.5rem; color: #000; line-height: 1.7; }
-    .doc-header { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 3px solid #000; }
-    .doc-header h1 { font-size: 1.5rem; font-weight: bold; margin: 0 0 0.35rem; color: #000; }
-    .doc-meta { font-size: 0.85rem; color: #333; margin: 0.25rem 0; }
-    .doc-profiles { margin-top: 0.6rem; }
-    .activity-title { font-size: 1.35rem; font-weight: bold; color: #000; margin: 1rem 0 0.25rem; border-bottom: 2px solid #000; padding-bottom: 0.4rem; }
-    h2 { color: #000; font-weight: bold; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; margin: 1.75rem 0 0.6rem; border-bottom: 1px solid #ccc; padding-bottom: 0.3rem; }
-    h3 { color: #000; font-weight: bold; font-size: 0.95rem; margin: 1.1rem 0 0.35rem; }
-    p { margin: 0.45rem 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #F5F7FB;
+      color: #1F2937;
+      line-height: 1.75;
+      margin: 0;
+      padding: 2rem 1rem;
+    }
+    .page {
+      background: #FFFFFF;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem 2.5rem;
+      border-radius: 8px;
+      border: 1px solid #E5E7EB;
+    }
+    .doc-header {
+      padding-bottom: 1.25rem;
+      margin-bottom: 1.75rem;
+      border-bottom: 2px solid #E5E7EB;
+    }
+    .doc-header-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #8B5CF6;
+      margin-bottom: 0.4rem;
+    }
+    .doc-header h1 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #1F2937;
+      margin: 0 0 0.5rem;
+    }
+    .doc-meta { font-size: 0.83rem; color: #6B7280; margin: 0.2rem 0; }
+    .doc-profiles { margin-top: 0.75rem; }
+    .badge {
+      display: inline-block;
+      background: #EDE9FE;
+      color: #5B21B6;
+      border: 1px solid #C4B5FD;
+      border-radius: 20px;
+      padding: 0.2rem 0.7rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin-right: 0.4rem;
+      margin-bottom: 0.35rem;
+    }
+    .activity-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #1F2937;
+      margin: 1.5rem 0 0.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #4F46E5;
+    }
+    h2 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: #4F46E5;
+      margin: 2rem 0 0.6rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid #E5E7EB;
+    }
+    h2.notes-heading {
+      color: #10B981;
+      border-bottom-color: #D1FAE5;
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1F2937;
+      margin: 1.25rem 0 0.4rem;
+    }
+    p { margin: 0.5rem 0; color: #1F2937; }
     ul { padding-left: 1.5rem; margin: 0.5rem 0; }
-    li { margin-bottom: 0.35rem; }
-    .notes-box { margin-top: 2rem; padding: 1rem 1.25rem; background: #f5f5f5; border-left: 4px solid #555; border-radius: 0 6px 6px 0; }
-    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; color: #444; font-size: 0.8rem; text-align: center; }
-    @media print { body { margin: 0; padding: 0.5cm 1cm; } h2 { page-break-after: avoid; } .doc-header { page-break-after: avoid; } }
+    li { margin-bottom: 0.4rem; color: #1F2937; }
+    strong { color: #1F2937; }
+    .notes-section {
+      margin-top: 2rem;
+      padding: 1rem 1.25rem;
+      background: #F0FDF4;
+      border-left: 4px solid #10B981;
+      border-radius: 0 6px 6px 0;
+    }
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #E5E7EB;
+      color: #6B7280;
+      font-size: 0.78rem;
+      text-align: center;
+    }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .page { border: none; border-radius: 0; padding: 0.5cm 1cm; }
+      h2 { page-break-after: avoid; }
+      .doc-header { page-break-after: avoid; }
+    }
   </style>
 </head>
 <body>
-  <div class="doc-header">
-    <h1>Atividade Adaptada</h1>
-    ${filename ? `<div class="doc-meta">Origem: ${escapeHtml(filename)}</div>` : ""}
-    <div class="doc-meta">Gerado em ${new Date().toLocaleDateString("pt-BR")}</div>
-    <div class="doc-profiles" style="margin-top:0.6rem;">${adaptationLabels}</div>
+  <div class="page">
+    <div class="doc-header">
+      <div class="doc-header-label">STEAM Planner · Acessibilidade</div>
+      <h1>Atividade Adaptada</h1>
+      ${filename ? `<div class="doc-meta">Origem: ${escapeHtml(filename)}</div>` : ""}
+      <div class="doc-meta">Gerado em ${new Date().toLocaleDateString("pt-BR")}</div>
+      <div class="doc-profiles">${adaptationLabels}</div>
+    </div>
+
+    ${bodyHTML}
+
+    <footer>Gerado pelo STEAM Planner em ${new Date().toLocaleDateString("pt-BR")}</footer>
   </div>
-
-  ${bodyHTML}
-
-  <footer>Gerado pelo STEAM Planner em ${new Date().toLocaleDateString("pt-BR")}</footer>
 </body>
 </html>`;
 }
