@@ -291,13 +291,13 @@ const retroCss = `
     background:
       repeating-linear-gradient(
         to bottom,
-        rgba(255, 255, 255, 0.055) 0,
-        rgba(255, 255, 255, 0.055) 1px,
+        rgba(255, 255, 255, 0.022) 0,
+        rgba(255, 255, 255, 0.022) 1px,
         transparent 1px,
         transparent 4px
       );
     mix-blend-mode: screen;
-    opacity: 0.42;
+    opacity: 0.20;
   }
 
   .retro-dashboard::after {
@@ -327,15 +327,15 @@ const retroCss = `
     min-height: 236px;
     margin-bottom: 28px;
     padding: 28px;
-    border: 4px solid rgba(34, 211, 238, 0.72);
+    border: 4px solid rgba(34, 211, 238, 0.35);
     border-radius: 18px;
     background:
       linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.5)),
-      repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 16px);
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 2px, transparent 2px 16px);
     box-shadow:
       0 0 0 4px rgba(2, 6, 23, 0.78),
-      0 0 34px rgba(34, 211, 238, 0.42),
-      inset 0 0 32px rgba(255, 79, 216, 0.08);
+      0 0 18px rgba(34, 211, 238, 0.16),
+      inset 0 0 18px rgba(255, 79, 216, 0.04);
   }
 
   .retro-title-block {
@@ -360,7 +360,7 @@ const retroCss = `
     color: #FFFFFF;
     font-size: clamp(0.86rem, 2.3vw, 1.4rem);
     line-height: 1.35;
-    text-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
   }
 
   .speech-box {
@@ -371,7 +371,7 @@ const retroCss = `
     border: 3px solid #FFFFFF;
     border-radius: 12px;
     background: rgba(2, 6, 23, 0.84);
-    box-shadow: 0 0 24px rgba(255, 255, 255, 0.18);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.07);
   }
 
   .speech-box::after {
@@ -418,7 +418,7 @@ const retroCss = `
     font: inherit;
     font-size: 0.58rem;
     cursor: pointer;
-    box-shadow: 0 0 14px rgba(255, 79, 216, 0.42);
+    box-shadow: 0 0 8px rgba(255, 79, 216, 0.15);
   }
 
   .accessibility-panel {
@@ -428,12 +428,12 @@ const retroCss = `
     gap: 18px;
     margin-bottom: 24px;
     padding: 16px 18px;
-    border: 3px solid rgba(57, 255, 136, 0.58);
+    border: 3px solid rgba(57, 255, 136, 0.22);
     border-radius: 16px;
     background: rgba(2, 6, 23, 0.82);
     box-shadow:
       0 0 0 3px rgba(2, 6, 23, 0.75),
-      0 0 22px rgba(57, 255, 136, 0.22);
+      0 0 10px rgba(57, 255, 136, 0.08);
   }
 
   .accessibility-panel strong,
@@ -480,14 +480,14 @@ const retroCss = `
     border-color: #39FF88;
     background: #39FF88;
     color: #020617;
-    box-shadow: 0 0 18px rgba(57, 255, 136, 0.42);
+    box-shadow: 0 0 10px rgba(57, 255, 136, 0.18);
   }
 
   .pixel-computer {
     justify-self: center;
     width: 180px;
     image-rendering: pixelated;
-    filter: drop-shadow(0 0 22px rgba(34, 211, 238, 0.45));
+    filter: drop-shadow(0 0 14px rgba(34, 211, 238, 0.18));
   }
 
   .computer-top {
@@ -514,7 +514,7 @@ const retroCss = `
     width: 14px;
     height: 18px;
     background: #39FF88;
-    box-shadow: 0 0 12px rgba(57, 255, 136, 0.85);
+    box-shadow: 0 0 8px rgba(57, 255, 136, 0.38);
   }
 
   .computer-eye.left {
@@ -575,8 +575,8 @@ const retroCss = `
       repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 2px, transparent 2px 12px);
     box-shadow:
       0 0 0 3px rgba(2, 6, 23, 0.85),
-      0 0 24px color-mix(in srgb, var(--card-color) 48%, transparent),
-      inset 0 0 22px rgba(255, 255, 255, 0.035);
+      0 0 14px color-mix(in srgb, var(--card-color) 22%, transparent),
+      inset 0 0 12px rgba(255, 255, 255, 0.018);
     overflow: hidden;
   }
 
@@ -595,7 +595,7 @@ const retroCss = `
     inset: auto -30% -35% -30%;
     z-index: -1;
     height: 120px;
-    background: radial-gradient(circle, color-mix(in srgb, var(--card-color) 30%, transparent), transparent 68%);
+    background: radial-gradient(circle, color-mix(in srgb, var(--card-color) 12%, transparent), transparent 68%);
   }
 
   .retro-card h2 {
@@ -629,7 +629,7 @@ const retroCss = `
     font: inherit;
     font-size: 0.63rem;
     cursor: pointer;
-    box-shadow: 0 0 14px color-mix(in srgb, var(--card-color) 35%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--card-color) 14%, transparent);
     transition: transform 0.16s ease, background 0.16s ease, color 0.16s ease;
   }
 
@@ -711,7 +711,7 @@ const retroCss = `
       linear-gradient(#FDE047 0 0) 30px 4px / 18px 10px no-repeat,
       linear-gradient(#FFFFFF 0 0) 32px 40px / 14px 17px no-repeat,
       linear-gradient(#FB923C 0 0) 28px 57px / 22px 8px no-repeat;
-    filter: drop-shadow(0 0 12px rgba(251, 146, 60, 0.75));
+    filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.28));
   }
 
   .pixel-globe {
@@ -730,7 +730,7 @@ const retroCss = `
       linear-gradient(#A78BFA 0 0) 10px 28px / 58px 8px no-repeat,
       linear-gradient(#A78BFA 0 0) 22px 44px / 10px 22px no-repeat,
       linear-gradient(#A78BFA 0 0) 46px 44px / 10px 22px no-repeat;
-    filter: drop-shadow(0 0 12px rgba(167, 139, 250, 0.75));
+    filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.28));
   }
 
   .retro-footer {
@@ -744,7 +744,7 @@ const retroCss = `
     text-align: center;
     font-size: clamp(0.62rem, 1.5vw, 0.86rem);
     line-height: 1.55;
-    text-shadow: 0 0 12px rgba(57, 255, 136, 0.45);
+    text-shadow: 0 0 10px rgba(57, 255, 136, 0.18);
   }
 
   .footer-pixel {
@@ -766,16 +766,17 @@ const retroCss = `
       linear-gradient(#FDE047 0 0) 12px 0 / 6px 28px no-repeat,
       linear-gradient(#FDE047 0 0) 0 12px / 28px 6px no-repeat,
       linear-gradient(#FDE047 0 0) 6px 6px / 16px 16px no-repeat;
-    filter: drop-shadow(0 0 10px rgba(253, 224, 71, 0.72));
+    filter: drop-shadow(0 0 7px rgba(253, 224, 71, 0.28));
   }
 
   .pixel-stars i {
     position: fixed;
     z-index: 2;
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
     background: #FFFFFF;
-    box-shadow: 0 0 10px currentColor;
+    opacity: 0.6;
+    box-shadow: 0 0 5px currentColor;
   }
 
   .pixel-stars i:nth-child(1) { left: 8%; top: 18%; color: #22D3EE; }
@@ -798,11 +799,11 @@ const retroCss = `
     transform: perspective(420px) rotateX(58deg);
     transform-origin: bottom center;
     background-image:
-      linear-gradient(rgba(34, 211, 238, 0.7) 2px, transparent 2px),
-      linear-gradient(90deg, rgba(255, 79, 216, 0.62) 2px, transparent 2px);
+      linear-gradient(rgba(34, 211, 238, 0.28) 2px, transparent 2px),
+      linear-gradient(90deg, rgba(255, 79, 216, 0.22) 2px, transparent 2px);
     background-size: 46px 28px;
-    box-shadow: 0 -18px 60px rgba(34, 211, 238, 0.28);
-    opacity: 0.78;
+    box-shadow: 0 -18px 40px rgba(34, 211, 238, 0.08);
+    opacity: 0.38;
   }
 
   .retro-error,
@@ -832,18 +833,18 @@ const retroCss = `
 
   .reduced-glow {
     background:
-      radial-gradient(circle at 18% 12%, rgba(34, 211, 238, 0.12), transparent 24rem),
-      radial-gradient(circle at 82% 16%, rgba(255, 79, 216, 0.1), transparent 26rem),
+      radial-gradient(circle at 18% 12%, rgba(34, 211, 238, 0.05), transparent 24rem),
+      radial-gradient(circle at 82% 16%, rgba(255, 79, 216, 0.04), transparent 26rem),
       linear-gradient(180deg, #050816 0%, #071026 48%, #020617 100%);
   }
 
   .reduced-glow::before {
-    opacity: 0.24;
+    opacity: 0.07;
   }
 
   .reduced-glow .pixel-stars,
   .reduced-glow .retro-card-glow {
-    opacity: 0.45;
+    opacity: 0.20;
   }
 
   .reduced-glow .retro-hero,
@@ -852,8 +853,8 @@ const retroCss = `
   .reduced-glow .retro-footer {
     box-shadow:
       0 0 0 3px rgba(2, 6, 23, 0.85),
-      0 0 12px rgba(34, 211, 238, 0.16),
-      inset 0 0 14px rgba(255, 255, 255, 0.025);
+      0 0 6px rgba(34, 211, 238, 0.07),
+      inset 0 0 8px rgba(255, 255, 255, 0.012);
   }
 
   .reduced-glow .retro-brand h1,
