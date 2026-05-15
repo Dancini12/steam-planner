@@ -55,7 +55,6 @@ export async function getAdminMetrics() {
       usersWithProjects: 0,
       averageProjectsPerUser: 0,
       projectsWithFinalProduct: 0,
-      projectsWithRubric: 0,
       generalDiaryEntries: 0,
       individualDiaryEntries: 0,
       registeredStudents: 0,
@@ -111,21 +110,12 @@ export async function getAdminMetrics() {
     }, {});
 
   let projectsWithFinalProduct = 0;
-  let projectsWithRubric = 0;
   let generalDiaryEntries = 0;
 
   projects.forEach((project) => {
     const data = project.project_data || {};
     if ((data.finalProduct || "").trim().length > 0) {
       projectsWithFinalProduct += 1;
-    }
-
-    if (
-      Object.values(data.steamRubric || {}).some(
-        (item) => item?.level || item?.notes
-      )
-    ) {
-      projectsWithRubric += 1;
     }
 
     Object.values(data.phases || {}).forEach((phase) => {
@@ -156,7 +146,6 @@ export async function getAdminMetrics() {
     averageProjectsPerUser:
       profiles.length > 0 ? Number((projects.length / profiles.length).toFixed(2)) : 0,
     projectsWithFinalProduct,
-    projectsWithRubric,
     generalDiaryEntries,
     individualDiaryEntries,
     registeredStudents,
@@ -181,7 +170,6 @@ export async function saveAdminMetricSnapshot(metrics, title = "Leitura dos indi
       generalDiaryEntries: metrics.generalDiaryEntries,
       individualDiaryEntries: metrics.individualDiaryEntries,
       projectsWithFinalProduct: metrics.projectsWithFinalProduct,
-      projectsWithRubric: metrics.projectsWithRubric,
       creationSources: metrics.creationSources
     }
   });

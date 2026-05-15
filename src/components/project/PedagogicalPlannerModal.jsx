@@ -71,7 +71,6 @@ const PERSONALIZATION_OPTIONS = {
     title: 'Avaliação',
     type: 'single',
     options: [
-      { id: 'rubrica', label: 'Rubrica simples', instruction: 'Incluir uma rubrica simples com critérios observáveis para avaliar processo, colaboração e produto.' },
       { id: 'observacao', label: 'Observação do professor', instruction: 'Propor avaliação por observação, registro em diário de bordo e evidências do processo.' },
       { id: 'autoavaliacao', label: 'Autoavaliação dos alunos', instruction: 'Incluir autoavaliação curta para os estudantes refletirem sobre participação e aprendizagem.' }
     ]
@@ -82,7 +81,7 @@ const defaultPersonalization = {
   detailLevel: 'passo_a_passo',
   materials: 'quantidade_grupo',
   accessibility: ['daltonismo'],
-  assessment: 'rubrica'
+  assessment: 'observacao'
 }
 
 function buildDefaultPersonalization(accessibilityPreset = []) {
@@ -165,6 +164,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
   const buildCustomInstructions = () => {
     const instructions = []
     Object.entries(PERSONALIZATION_OPTIONS).forEach(([groupId, group]) => {
+      if (groupId === 'accessibility') return
       const selected = formData.personalization[groupId]
       const selectedIds = Array.isArray(selected) ? selected : [selected]
       group.options

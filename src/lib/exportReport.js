@@ -98,7 +98,6 @@ export function openActivityPrintWindow(activity) {
   newWindow.document.write(html);
   newWindow.document.close();
 }
-import { RUBRIC_LEVELS, STEAM_RUBRIC_CRITERIA } from "../data/rubric.js";
 import {
   EVALUATION_INSTRUMENTS,
   EVALUATION_LEVELS
@@ -155,18 +154,6 @@ function buildReportHTML(project) {
     .join("");
 
   const bnccList = (project.bncc || []).map(escapeHtml).join(" · ");
-
-  const rubricHTML = STEAM_RUBRIC_CRITERIA.map((criterion) => {
-    const rubric = project.steamRubric?.[criterion.id] || {};
-    const level = RUBRIC_LEVELS.find((item) => item.id === rubric.level);
-    return `
-      <tr>
-        <td><strong>${escapeHtml(criterion.label)}</strong><br><span style="color:#666;">${escapeHtml(criterion.description)}</span></td>
-        <td>${escapeHtml(level?.label || "—")}</td>
-        <td>${escapeHtml(rubric.notes || "—")}</td>
-      </tr>
-    `;
-  }).join("");
 
   const steamMatrixHTML = (project.steam || [])
     .map((letter) => {
@@ -326,18 +313,6 @@ function buildReportHTML(project) {
 
   <h2>Objetivos pedagógicos</h2>
   <ul>${objectivesList || "<li>(não preenchido)</li>"}</ul>
-
-  <h2>Rubrica STEAM</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Critério</th>
-        <th>Nível</th>
-        <th>Observações/evidências</th>
-      </tr>
-    </thead>
-    <tbody>${rubricHTML}</tbody>
-  </table>
 
   <h2>Habilidades BNCC</h2>
   <p style="font-family:monospace;">${bnccList || "(não preenchido)"}</p>

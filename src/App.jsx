@@ -280,7 +280,6 @@ export default function App() {
           projectId={activeProjectId}
           currentUser={currentUser}
           onBack={goToDashboard}
-          onOpenPhase={goToPhaseEditor}
           onOpenBibliography={goToBibliographyEditor}
         />
       )}

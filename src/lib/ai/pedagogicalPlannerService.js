@@ -5,6 +5,7 @@ import {
   getBnccCodes,
   selectBnccHabilidades
 } from '../bnccSelector.js'
+import { applyAccessibilityAdaptations } from '../accessibilityAdapter.js'
 
 const COMPETENCY_TO_LETTER = {
   science: 'S',
@@ -53,8 +54,7 @@ Diretrizes obrigatórias:
    - "Resumo das competências": texto geral e breve relacionando as competências STEAM solicitadas à atividade
    - "Materiais utilizados": lista explicando para que serve cada material solicitado
    - "Como montar e conduzir": orientação prática para o professor montar o projeto, organizar a turma, usar os materiais, conduzir a produção, registrar evidências e finalizar
-9. Acessibilidade e desenho universal: se a atividade usar cores para classificar, marcar ou separar informações, inclua também padrões não dependentes de cor, como listras, bolinhas, formas, etiquetas, texturas, furos ou marcações táteis, pensando em estudantes daltônicos ou com baixa visão
-10. Referências bibliográficas reais no formato ABNT
+9. Referências bibliográficas reais no formato ABNT
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -80,10 +80,6 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Material 5 — quantidade por grupo e/ou turma"
   ],
   "activityManual": "Resumo das competências:\\nTexto geral e breve conectando as competências STEAM solicitadas à atividade.\\n\\nMateriais utilizados:\\n- Material 1: explique como será usado e por que é necessário.\\n- Material 2: explique como será usado e por que é necessário.\\n\\nComo montar e conduzir:\\nPassos práticos para o professor montar o projeto com a turma, distribuir e usar os materiais, orientar a produção, registrar evidências, cuidar da segurança e finalizar.",
-  "accessibility": [
-    "Orientação 1 de acessibilidade e inclusão",
-    "Orientação 2, incluindo alternativa a códigos baseados apenas em cores com padrões, símbolos, texturas ou marcações táteis"
-  ],
   "bibliography": [
     "AUTOR, A. B. Título do livro. Cidade: Editora, ano.",
     "AUTOR, C. D. Título do artigo. Revista, v. X, n. Y, p. ZZ-ZZ, ano."
@@ -115,7 +111,7 @@ function extractJson(text) {
 }
 
 function validateActivity(data) {
-  const required = ['title', 'theme', 'duration', 'problem', 'guidingQuestion', 'steamMatrix', 'objectives', 'bncc', 'materials', 'activityManual', 'accessibility']
+  const required = ['title', 'theme', 'duration', 'problem', 'guidingQuestion', 'steamMatrix', 'objectives', 'bncc', 'materials', 'activityManual']
   for (const field of required) {
     if (!data[field]) throw new Error(`Campo obrigatório ausente na resposta da IA: ${field}`)
   }
@@ -179,7 +175,7 @@ Gere um roteiro de aula completo, prático e pronto para o professor usar em sal
 Regras obrigatórias para o roteiro:
 1. Detalhe cada momento com instruções executáveis, evitando descrições genéricas.
 2. Liste materiais com quantidades por grupo e/ou por turma.
-3. Inclua adaptação de acessibilidade: quando houver uso de cores, sugerir padrões, símbolos, texturas, furos, etiquetas ou outra marcação tátil/visual para estudantes daltônicos.
+3. Não crie adaptações de acessibilidade; elas serão aplicadas pelo sistema a partir do banco local.
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -211,15 +207,25 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Pergunta para reflexão 2?"
   ],
   "assessment": "Como o professor avalia a participação e aprendizagem nesta aula (observação, produto, apresentação, etc.).",
-  "accessibility": "Adaptações para inclusão, incluindo alternativa a classificações por cor com padrões/símbolos/texturas quando necessário.",
   "tips": "2–3 dicas práticas para o professor: como lidar com imprevistos, diferenciar para alunos com dificuldade, etc.",
   "bncc": ["EF07CI05", "EF07MA03"]
 }`
 }
 
+function applyProjectAccessibility(data, project) {
+  const accessibility = Array.isArray(project.accessibility)
+    ? project.accessibility.join(" ")
+    : project.accessibility || ""
+
+  return {
+    ...data,
+    accessibility
+  }
+}
+
 export class PedagogicalPlannerService {
   static async generatePedagogicalActivity(params) {
-    const { discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, userId } = params
+    const { discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, personalization, userId } = params
 
     const bnccSuggestions = selectBnccHabilidades({
       grade,
@@ -242,7 +248,10 @@ export class PedagogicalPlannerService {
     }
 
     const jsonStr = extractJson(rawText)
-    const parsed = applyOfflineBncc(JSON.parse(jsonStr), bnccSuggestions)
+    const parsed = applyAccessibilityAdaptations(
+      applyOfflineBncc(JSON.parse(jsonStr), bnccSuggestions),
+      personalization?.accessibility || []
+    )
 
     validateActivity(parsed)
 
@@ -267,7 +276,7 @@ export class PedagogicalPlannerService {
     }
 
     const jsonStr = extractJson(rawText)
-    const parsed = JSON.parse(jsonStr)
+    const parsed = applyProjectAccessibility(JSON.parse(jsonStr), project)
 
     if (!parsed.activityTitle || !parsed.steps || !Array.isArray(parsed.steps)) {
       throw new Error('Resposta da IA incompleta: campos obrigatórios ausentes.')

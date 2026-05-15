@@ -74,12 +74,12 @@ export function createBlankProject() {
     finalProduct: "",
     steam: [],
     steamMatrix: {},
-    steamRubric: {},
     guidingQuestion: "",
     objectives: [],
     bncc: [],
     materials: [],
     activityManual: "",
+    accessibility: [],
     students: [],
     phases: createEmptyPhases(),
     createdAt: new Date().toISOString(),
@@ -110,12 +110,12 @@ export function createProjectFromTemplate(template) {
   project.finalProduct = template.finalProduct || "";
   project.steam = template.steam ? [...template.steam] : [];
   project.steamMatrix = template.steamMatrix ? clone(template.steamMatrix) : {};
-  project.steamRubric = template.steamRubric ? clone(template.steamRubric) : {};
   project.guidingQuestion = template.guidingQuestion || "";
   project.objectives = template.objectives ? [...template.objectives] : [];
   project.bncc = template.bncc ? [...template.bncc] : [];
   project.materials = template.materials ? [...template.materials] : [];
   project.activityManual = template.activityManual || "";
+  project.accessibility = template.accessibility ? [...template.accessibility] : [];
   project.students = template.students ? clone(template.students) : [];
   project.bibliography = template.bibliography ? [...template.bibliography] : [];
 

@@ -5,8 +5,6 @@
 //
 // Esta é a "central" do projeto. Combina:
 // - Edição dos dados gerais (título, tema, áreas, BNCC...)
-// - Lista das 5 fases com indicação de progresso
-// - Atalhos para abrir cada fase individualmente
 // - Exportação do relatório completo
 //
 // As alterações são salvas automaticamente conforme o
@@ -16,20 +14,14 @@
 
 import { useState, useEffect } from "react";
 import { useProjects } from "../hooks/useProjects.js";
-import { PHASES } from "../data/phases.js";
 import { STEAM_AREAS, STEAM_KEYS } from "../data/steamAreas.js";
-import { RUBRIC_LEVELS, STEAM_RUBRIC_CRITERIA } from "../data/rubric.js";
-import { getPhaseStatus, PHASE_STATUS } from "../lib/progress.js";
 import { openReportWindow, openClassroomActivityWindow } from "../lib/exportReport.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
-import { getProjectTimeline } from "../lib/timeline.js";
 import { trackEvent } from "../lib/analytics.js";
 
 import TextField from "../components/ui/TextField.jsx";
 import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
-import SteamBadges from "../components/project/SteamBadges.jsx";
-import ProgressBar from "../components/project/ProgressBar.jsx";
 
 // ------------------------------------------------------------
 // COMPONENTE PROJECT EDITOR
@@ -37,13 +29,11 @@ import ProgressBar from "../components/project/ProgressBar.jsx";
 // Propriedades:
 // - projectId  : id do projeto a editar
 // - onBack     : função para voltar ao dashboard
-// - onOpenPhase: função chamada ao clicar em uma fase
 // ------------------------------------------------------------
 export default function ProjectEditor({
   projectId,
   currentUser,
   onBack,
-  onOpenPhase,
   onOpenBibliography
 }) {
   const {
@@ -65,8 +55,6 @@ export default function ProjectEditor({
   const [finalProduct, setFinalProduct] = useState("");
   const [guidingQuestion, setGuidingQuestion] = useState("");
   const [steam, setSteam] = useState([]);
-  const [steamMatrix, setSteamMatrix] = useState({});
-  const [steamRubric, setSteamRubric] = useState({});
   const [objectivesText, setObjectivesText] = useState("");
   const [bnccText, setBnccText] = useState("");
   const [materialsText, setMaterialsText] = useState("");
@@ -86,8 +74,6 @@ export default function ProjectEditor({
       setFinalProduct(project.finalProduct || "");
       setGuidingQuestion(project.guidingQuestion || "");
       setSteam(project.steam || []);
-      setSteamMatrix(project.steamMatrix || {});
-      setSteamRubric(project.steamRubric || {});
       setObjectivesText((project.objectives || []).join("\n"));
       setBnccText((project.bncc || []).join(", "));
       setMaterialsText((project.materials || []).join("\n"));
@@ -119,8 +105,6 @@ export default function ProjectEditor({
       finalProduct,
       guidingQuestion,
       steam,
-      steamMatrix,
-      steamRubric,
       objectives,
       bncc,
       materials
@@ -143,31 +127,6 @@ export default function ProjectEditor({
     } else {
       setSteam([...steam, letter]);
     }
-  };
-
-  const updateSteamMatrix = (letter, field, value) => {
-    setSteamMatrix((current) => ({
-      ...current,
-      [letter]: {
-        contribution: "",
-        activity: "",
-        evidence: "",
-        ...(current[letter] || {}),
-        [field]: value
-      }
-    }));
-  };
-
-  const updateRubric = (criterionId, field, value) => {
-    setSteamRubric((current) => ({
-      ...current,
-      [criterionId]: {
-        level: "",
-        notes: "",
-        ...(current[criterionId] || {}),
-        [field]: value
-      }
-    }));
   };
 
   const handleAddStudent = () => {
@@ -264,27 +223,6 @@ export default function ProjectEditor({
     gap: "1rem"
   };
 
-  const matrixGridStyle = {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: "1rem"
-  };
-
-  const matrixCardStyle = (color) => ({
-    background: "rgba(255, 255, 255, 0.03)",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-    borderLeft: `3px solid ${color}`,
-    borderRadius: "8px",
-    padding: "1rem"
-  });
-
-  const matrixTitleStyle = (color) => ({
-    margin: "0 0 0.9rem",
-    color,
-    fontSize: "0.95rem",
-    fontWeight: 700
-  });
-
   const emptyMatrixStyle = {
     color: "rgba(255, 255, 255, 0.45)",
     fontSize: "0.9rem",
@@ -331,27 +269,6 @@ export default function ProjectEditor({
     margin: "0.2rem 0 0"
   };
 
-  const rubricRowStyle = {
-    display: "grid",
-    gridTemplateColumns: "1.2fr 190px 1.6fr",
-    gap: "0.75rem",
-    alignItems: "start",
-    padding: "0.9rem 0",
-    borderBottom: "1px solid rgba(255, 255, 255, 0.06)"
-  };
-
-  const selectStyle = {
-    width: "100%",
-    padding: "0.75rem 1rem",
-    borderRadius: "8px",
-    background: "rgba(255, 255, 255, 0.04)",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-    color: "#FFFFFF",
-    fontSize: "0.95rem",
-    fontFamily: "inherit",
-    outline: "none"
-  };
-
   const steamSelectorStyle = {
     display: "flex",
     gap: "0.5rem",
@@ -379,12 +296,6 @@ export default function ProjectEditor({
     };
   };
 
-  const phaseListStyle = {
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.75rem"
-  };
-
   const phaseRowStyle = (color) => ({
     display: "flex",
     alignItems: "center",
@@ -392,15 +303,6 @@ export default function ProjectEditor({
     padding: "1rem 1.25rem",
     cursor: "pointer",
     borderLeft: `3px solid ${color}`
-  });
-
-  const phaseNumberStyle = (color) => ({
-    fontSize: "0.75rem",
-    color: color,
-    fontWeight: 700,
-    textTransform: "uppercase",
-    letterSpacing: "0.05em",
-    minWidth: "60px"
   });
 
   const phaseInfoStyle = {
@@ -422,20 +324,6 @@ export default function ProjectEditor({
     fontStyle: "italic"
   };
 
-  const phaseStatusStyle = (status) => {
-    const colors = {
-      [PHASE_STATUS.NOT_STARTED]: "rgba(255, 255, 255, 0.3)",
-      [PHASE_STATUS.IN_PROGRESS]: "#C9A14A",
-      [PHASE_STATUS.COMPLETED]: "#5B8266"
-    };
-    return {
-      fontSize: "0.75rem",
-      color: colors[status],
-      fontWeight: 600,
-      whiteSpace: "nowrap"
-    };
-  };
-
   const actionsStyle = {
     display: "flex",
     gap: "0.75rem",
@@ -443,23 +331,6 @@ export default function ProjectEditor({
     marginTop: "2rem",
     paddingTop: "1.5rem",
     borderTop: "1px solid rgba(255, 255, 255, 0.06)"
-  };
-
-  const timelineBoxStyle = {
-    marginTop: "1rem",
-    paddingTop: "1rem",
-    borderTop: "1px solid rgba(255, 255, 255, 0.06)",
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "1rem",
-    flexWrap: "wrap",
-    color: "rgba(255, 255, 255, 0.65)",
-    fontSize: "0.9rem"
-  };
-
-  const timelineHighlightStyle = {
-    color: "#FFFFFF",
-    fontWeight: 700
   };
 
   // ----------------------------------------------------------
@@ -490,16 +361,6 @@ export default function ProjectEditor({
   // ----------------------------------------------------------
   // RENDERIZAÇÃO
   // ----------------------------------------------------------
-
-  const labelStatus = {
-    [PHASE_STATUS.NOT_STARTED]: "Não iniciada",
-    [PHASE_STATUS.IN_PROGRESS]: "Em andamento",
-    [PHASE_STATUS.COMPLETED]: "Concluída"
-  };
-  const timeline = getProjectTimeline(project);
-  const endDateLabel = timeline.endDate
-    ? timeline.endDate.toLocaleDateString("pt-BR")
-    : null;
 
   return (
     <div style={containerStyle}>
@@ -592,60 +453,6 @@ export default function ProjectEditor({
         </div>
       </div>
 
-      {/* SEÇÃO 3 — MATRIZ STEAM */}
-      <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Matriz STEAM do projeto</div>
-        {steam.length === 0 ? (
-          <div style={emptyMatrixStyle}>
-            Selecione ao menos uma área STEAM para preencher a matriz.
-          </div>
-        ) : (
-          <div style={matrixGridStyle}>
-            {steam.map((letter) => {
-              const area = STEAM_AREAS[letter];
-              const matrix = steamMatrix[letter] || {};
-              return (
-                <div key={letter} style={matrixCardStyle(area.color)}>
-                  <h3 style={matrixTitleStyle(area.color)}>
-                    {letter} · {area.name}
-                  </h3>
-                  <TextField
-                    label="Contribuição da área"
-                    value={matrix.contribution || ""}
-                    onChange={(value) =>
-                      updateSteamMatrix(letter, "contribution", value)
-                    }
-                    multiline
-                    rows={2}
-                    placeholder="Como esta área contribui para compreender ou resolver o desafio?"
-                  />
-                  <TextField
-                    label="Atividade relacionada"
-                    value={matrix.activity || ""}
-                    onChange={(value) =>
-                      updateSteamMatrix(letter, "activity", value)
-                    }
-                    multiline
-                    rows={2}
-                    placeholder="Que ação concreta os estudantes realizarão nessa área?"
-                  />
-                  <TextField
-                    label="Evidência esperada"
-                    value={matrix.evidence || ""}
-                    onChange={(value) =>
-                      updateSteamMatrix(letter, "evidence", value)
-                    }
-                    multiline
-                    rows={2}
-                    placeholder="Que registro, produto ou demonstração comprova essa aprendizagem?"
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
       {/* SEÇÃO 4 — QUESTÃO E OBJETIVOS */}
       <div style={sectionStyle}>
         <div style={sectionTitleStyle}>Pergunta e objetivos</div>
@@ -669,48 +476,7 @@ export default function ProjectEditor({
         />
       </div>
 
-      {/* SEÇÃO 5 — RUBRICA STEAM */}
-      <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Rubrica STEAM</div>
-        <Card>
-          {STEAM_RUBRIC_CRITERIA.map((criterion) => {
-            const rubric = steamRubric[criterion.id] || {};
-            return (
-              <div key={criterion.id} style={rubricRowStyle}>
-                <div>
-                  <p style={studentNameStyle}>{criterion.label}</p>
-                  <p style={studentMetaStyle}>{criterion.description}</p>
-                </div>
-                <select
-                  style={selectStyle}
-                  value={rubric.level || ""}
-                  onChange={(e) =>
-                    updateRubric(criterion.id, "level", e.target.value)
-                  }
-                >
-                  <option value="">Nível...</option>
-                  {RUBRIC_LEVELS.map((level) => (
-                    <option key={level.id} value={level.id}>
-                      {level.label}
-                    </option>
-                  ))}
-                </select>
-                <TextField
-                  value={rubric.notes || ""}
-                  onChange={(value) =>
-                    updateRubric(criterion.id, "notes", value)
-                  }
-                  multiline
-                  rows={2}
-                  placeholder="Observações/evidências para este critério."
-                />
-              </div>
-            );
-          })}
-        </Card>
-      </div>
-
-      {/* SEÇÃO 6 — BNCC E MATERIAIS */}
+      {/* SEÇÃO 5 — BNCC E MATERIAIS */}
       <div style={sectionStyle}>
         <div style={sectionTitleStyle}>BNCC e materiais</div>
         <TextField
@@ -731,7 +497,7 @@ export default function ProjectEditor({
         />
       </div>
 
-      {/* SEÇÃO 7 — TURMA E ALUNOS */}
+      {/* SEÇÃO 6 — TURMA E ALUNOS */}
       <div style={sectionStyle}>
         <div style={sectionTitleStyle}>Turma e alunos</div>
         <Card>
@@ -802,60 +568,6 @@ export default function ProjectEditor({
             )}
           </div>
         </Card>
-      </div>
-
-      {/* SEÇÃO 8 — PROGRESSO GERAL */}
-      <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Progresso geral do projeto</div>
-        <Card>
-          <ProgressBar project={project} showLabels />
-          <div style={timelineBoxStyle}>
-            <span>
-              Prazo:{" "}
-              <strong style={timelineHighlightStyle}>{timeline.label}</strong>
-            </span>
-            {endDateLabel && (
-              <span>
-                Previsão de término:{" "}
-                <strong style={timelineHighlightStyle}>{endDateLabel}</strong>
-              </span>
-            )}
-          </div>
-        </Card>
-      </div>
-
-      {/* SEÇÃO 9 — LISTA DAS 5 FASES */}
-      <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>As cinco fases STEAM</div>
-        <div style={phaseListStyle}>
-          {PHASES.map((phase) => {
-            const status = getPhaseStatus(project, phase.id);
-            return (
-              <Card
-                key={phase.id}
-                variant="clickable"
-                accentColor={phase.color}
-                onClick={() => onOpenPhase(phase.id)}
-                padding="0"
-              >
-                <div style={phaseRowStyle(phase.color)}>
-                  <div style={phaseNumberStyle(phase.color)}>
-                    Fase {phase.number}
-                  </div>
-                  <div style={phaseInfoStyle}>
-                    <h3 style={phaseNameStyle}>{phase.name}</h3>
-                    <p style={phaseSubtitleStyle}>{phase.subtitle}</p>
-                  </div>
-                  <div style={phaseStatusStyle(status.status)}>
-                    {labelStatus[status.status]}
-                    {status.status !== PHASE_STATUS.NOT_STARTED &&
-                      ` · ${status.completed}/3`}
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
       </div>
 
       {/* REFERÊNCIAS BIBLIOGRÁFICAS */}
