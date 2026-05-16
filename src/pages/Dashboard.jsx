@@ -176,15 +176,11 @@ export default function Dashboard({
             color="#FDE047"
             onClick={onOpenBNCC}
           />
-        </section>
-
-        <section className="secondary-grid" aria-label="Acessos rápidos">
           <DashboardCard
             title="GERAR NOVA ATIVIDADE"
             icon="document"
             text="Crie atividades personalizadas em poucos passos"
             color="#39FF88"
-            size="small"
             onClick={() => setShowPedagogicalModal(true)}
           />
         </section>
@@ -438,20 +434,10 @@ const retroCss = `
     box-shadow: inset -8px -4px 0 rgba(15, 23, 42, 0.36);
   }
 
-  .primary-grid,
-  .secondary-grid {
+  .primary-grid {
     display: grid;
     gap: 22px;
-  }
-
-  .primary-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-bottom: 22px;
-  }
-
-  .secondary-grid {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-    width: min(380px, 100%);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     margin-bottom: 22px;
   }
 
@@ -745,8 +731,7 @@ const retroCss = `
   }
 
   @media (max-width: 1040px) {
-    .primary-grid,
-    .secondary-grid {
+    .primary-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .retro-hero {
@@ -781,8 +766,7 @@ const retroCss = `
       height: 82px;
     }
 
-    .primary-grid,
-    .secondary-grid {
+    .primary-grid {
       grid-template-columns: 1fr;
     }
     .retro-card-large,
