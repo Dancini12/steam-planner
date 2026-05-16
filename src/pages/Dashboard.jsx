@@ -45,8 +45,7 @@ export default function Dashboard({
   onOpenProject,
   onOpenLibrary,
   onOpenBNCC,
-  onOpenActivityViewer,
-  onOpenRealWorldNews
+  onOpenActivityViewer
 }) {
   const { projects, addProjectFromTemplate, isLoaded } = useProjects(currentUser?.id);
   const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
@@ -187,14 +186,6 @@ export default function Dashboard({
             color="#39FF88"
             size="small"
             onClick={() => setShowPedagogicalModal(true)}
-          />
-          <DashboardCard
-            title="CONECTE COM O MUNDO REAL"
-            icon="globe"
-            text="Transforme temas atuais em atividades significativas"
-            color="#38BDF8"
-            size="small"
-            onClick={onOpenRealWorldNews}
           />
         </section>
 
@@ -603,15 +594,6 @@ const retroCss = `
       linear-gradient(#CBD5E1 0 0) 52px 8px / 8px 12px no-repeat,
       linear-gradient(#39FF88 0 0) 29px 32px / 20px 8px no-repeat,
       linear-gradient(#39FF88 0 0) 35px 26px / 8px 20px no-repeat;
-  }
-
-  .pixel-globe {
-    background:
-      radial-gradient(circle, #38BDF8 0 30px, transparent 31px) 8px 8px / 62px 62px no-repeat,
-      linear-gradient(#39FF88 0 0) 24px 20px / 28px 9px no-repeat,
-      linear-gradient(#39FF88 0 0) 16px 40px / 24px 9px no-repeat,
-      linear-gradient(#FFFFFF 0 0) 50px 10px / 22px 18px no-repeat,
-      linear-gradient(#FFFFFF 0 0) 58px 28px / 8px 8px no-repeat;
   }
 
   .retro-footer {

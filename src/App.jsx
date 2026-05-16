@@ -256,7 +256,6 @@ export default function App() {
           onOpenLibrary={goToLibrary}
           onOpenBNCC={goToBNCC}
           onOpenActivityViewer={goToActivityViewer}
-          onOpenRealWorldNews={goToRealWorldNews}
         />
       )}
 
