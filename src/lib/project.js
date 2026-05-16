@@ -82,6 +82,7 @@ export function createBlankProject() {
     accessibility: [],
     students: [],
     phases: createEmptyPhases(),
+    generatedAt: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -118,6 +119,7 @@ export function createProjectFromTemplate(template) {
   project.accessibility = template.accessibility ? [...template.accessibility] : [];
   project.students = template.students ? clone(template.students) : [];
   project.bibliography = template.bibliography ? [...template.bibliography] : [];
+  project.generatedAt = template.generatedAt || null;
 
   if (template.phases) {
     project.phases = clone(template.phases);

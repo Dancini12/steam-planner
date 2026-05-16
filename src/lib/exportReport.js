@@ -16,7 +16,7 @@ import { PHASES } from "../data/phases.js";
 import { STEAM_AREAS } from "../data/steamAreas.js";
 
 function buildActivityPrintHTML(activity) {
-  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, accessibility, bibliography, grade, discipline } = activity;
+  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, accessibility, bibliography, grade, discipline, generatedAt } = activity;
 
   const steamLetters = Object.keys(steamMatrix || {}).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
 
@@ -36,6 +36,7 @@ function buildActivityPrintHTML(activity) {
   const accessibilityHTML = (accessibility || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
   const bnccHTML = (bncc || []).map(escapeHtml).join(" · ");
   const bibliographyHTML = (bibliography || []).map((b) => `<li style="margin-bottom:0.4rem;">${escapeHtml(b)}</li>`).join("");
+  const generatedDate = generatedAt ? formatDate(generatedAt) : "";
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -63,7 +64,7 @@ function buildActivityPrintHTML(activity) {
 <body>
   <h1>${escapeHtml(title || "Atividade Pedagógica")}</h1>
   <div class="meta">
-    ${escapeHtml(theme || "")}${grade ? ` · ${escapeHtml(grade)}` : ""}${discipline ? ` · ${escapeHtml(discipline)}` : ""}${duration ? ` · ${escapeHtml(duration)}` : ""}
+    ${escapeHtml(theme || "")}${grade ? ` · ${escapeHtml(grade)}` : ""}${discipline ? ` · ${escapeHtml(discipline)}` : ""}${duration ? ` · ${escapeHtml(duration)}` : ""}${generatedDate ? ` · Gerada em ${escapeHtml(generatedDate)}` : ""}
   </div>
 
   ${problem ? `<h2>Problema ou Desafio</h2><div class="problem">${escapeHtml(problem)}</div>` : ""}
@@ -83,7 +84,7 @@ function buildActivityPrintHTML(activity) {
   ${accessibilityHTML ? `<h2>Acessibilidade e Inclusão</h2><ul>${accessibilityHTML}</ul>` : ""}
   ${bibliographyHTML ? `<h2>Referências Bibliográficas</h2><ul>${bibliographyHTML}</ul>` : ""}
 
-  <footer>Atividade gerada pelo STEAM Planner em ${new Date().toLocaleDateString("pt-BR")}</footer>
+  <footer>Atividade gerada pelo STEAM Planner em ${generatedDate || new Date().toLocaleDateString("pt-BR")}</footer>
 </body>
 </html>`;
 }
@@ -122,6 +123,7 @@ function formatDate(isoString) {
 
 // Constrói o HTML completo do relatório.
 function buildReportHTML(project) {
+  const generatedDate = project.generatedAt ? formatDate(project.generatedAt) : "";
   const steamBadges = (project.steam || [])
     .map((letter) => {
       const area = STEAM_AREAS[letter];
@@ -268,7 +270,7 @@ function buildReportHTML(project) {
 <body>
   <h1>${escapeHtml(project.title || "Projeto STEAM sem título")}</h1>
   <div class="meta">
-    ${escapeHtml(project.theme || "")} · ${escapeHtml(project.grade || "")} · ${escapeHtml(project.duration || "")}
+    ${escapeHtml(project.theme || "")} · ${escapeHtml(project.grade || "")} · ${escapeHtml(project.duration || "")}${generatedDate ? ` · Gerado em ${escapeHtml(generatedDate)}` : ""}
   </div>
   <div>${steamBadges}</div>
 

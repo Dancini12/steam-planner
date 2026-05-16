@@ -68,6 +68,7 @@ export default function Dashboard({
     setCreationError("");
     try {
       const data = result.activity || {};
+      const generatedAt = result.generatedAt || data.generatedAt || new Date().toISOString();
       const steamLetters = Object.keys(data.steamMatrix || {}).filter((key) =>
         ["S", "T", "E", "A", "M"].includes(key)
       );
@@ -77,6 +78,7 @@ export default function Dashboard({
           ...data,
           steam: steamLetters,
           grade: data.grade || result.formData?.grade,
+          generatedAt,
           source: "pedagogical-planner"
         },
         { waitForPersist: true }
@@ -89,7 +91,10 @@ export default function Dashboard({
       ).catch(console.error);
 
       setShowPedagogicalModal(false);
-      onOpenActivityViewer(result, newProject.id);
+      onOpenActivityViewer(
+        { ...result, activity: { ...data, generatedAt } },
+        newProject.id
+      );
     } catch (error) {
       console.error("Erro ao salvar atividade pedagógica:", error);
       setCreationError(

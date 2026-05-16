@@ -309,6 +309,7 @@ export async function generateProjectWithAI({ theme, grade, steamAreas }) {
     validateProjectStructure(projectData);
     projectData.grade = grade;
     projectData.steam = steamAreas;
+    projectData.generatedAt = new Date().toISOString();
 
     return projectData;
   } catch (parseError) {

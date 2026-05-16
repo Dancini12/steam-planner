@@ -23,6 +23,20 @@ import TextField from "../components/ui/TextField.jsx";
 import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
 
+function formatGeneratedDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
 // ------------------------------------------------------------
 // COMPONENTE PROJECT EDITOR
 // ------------------------------------------------------------
@@ -361,6 +375,7 @@ export default function ProjectEditor({
   // ----------------------------------------------------------
   // RENDERIZAÇÃO
   // ----------------------------------------------------------
+  const generatedDate = formatGeneratedDate(project.generatedAt);
 
   return (
     <div style={containerStyle}>
@@ -386,6 +401,11 @@ export default function ProjectEditor({
       {/* SEÇÃO 1 — IDENTIFICAÇÃO */}
       <div style={sectionStyle}>
         <div style={sectionTitleStyle}>Identificação</div>
+        {generatedDate && (
+          <p style={{ color: "rgba(255,255,255,0.58)", fontSize: "0.86rem", margin: "0 0 1rem" }}>
+            Atividade gerada em {generatedDate}
+          </p>
+        )}
         <TextField
           label="Título do projeto"
           value={title}

@@ -65,6 +65,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       steamMatrix,
       bibliography: bibliographyText.split("\n").map((s) => s.trim()).filter(Boolean),
+      generatedAt: activityData.generatedAt || null,
       grade: formData?.grade || "",
       discipline: formData?.discipline || ""
     });
