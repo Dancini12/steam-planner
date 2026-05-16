@@ -156,18 +156,18 @@ export default function Dashboard({
 
         <section className="primary-grid" aria-label="Acessos principais">
           <DashboardCard
-            title="MEUS PROJETOS"
-            icon="folder"
-            text="Acesse e gerencie seus projetos"
-            color="#22D3EE"
-            onClick={handleOpenProjects}
-          />
-          <DashboardCard
             title="GERAR NOVA ATIVIDADE"
             icon="document"
             text="Crie atividades personalizadas em poucos passos"
             color="#39FF88"
             onClick={() => setShowPedagogicalModal(true)}
+          />
+          <DashboardCard
+            title="MEUS PROJETOS"
+            icon="folder"
+            text="Acesse e gerencie seus projetos"
+            color="#22D3EE"
+            onClick={handleOpenProjects}
           />
           <DashboardCard
             title="BIBLIOTECA"
