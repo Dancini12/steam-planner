@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { trackEvent } from "../lib/analytics.js";
 
 const CATEGORIES = [
   "Todos",
@@ -198,7 +199,17 @@ function NewsVisual({ item, featured = false }) {
   );
 }
 
-function NewsCard({ item, featured = false }) {
+function NewsCard({ item, featured = false, currentUser }) {
+  const handleOpenNews = () => {
+    trackEvent(currentUser?.id, "news_opened", {
+      newsId: item.id,
+      title: item.title,
+      source: item.source,
+      category: item.category,
+      link: item.link
+    }).catch(console.error);
+  };
+
   return (
     <article className={featured ? "news-card featured-card" : "news-card"}>
       <NewsVisual item={item} featured={featured} />
@@ -214,7 +225,7 @@ function NewsCard({ item, featured = false }) {
         <p>{item.summary}</p>
         <div className="news-footer">
           <time>{formatDate(item.publishedAt)}</time>
-          <a href={item.link} target="_blank" rel="noreferrer">
+          <a href={item.link} target="_blank" rel="noreferrer" onClick={handleOpenNews}>
             Ler noticia
           </a>
         </div>
@@ -223,7 +234,7 @@ function NewsCard({ item, featured = false }) {
   );
 }
 
-export default function RealWorldNews({ onBack }) {
+export default function RealWorldNews({ currentUser, onBack }) {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [news, setNews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -344,11 +355,11 @@ export default function RealWorldNews({ onBack }) {
 
       {!isLoading && !error && featuredNews && (
         <section className="news-layout">
-          <NewsCard item={featuredNews} featured />
+          <NewsCard item={featuredNews} featured currentUser={currentUser} />
 
           <div className="news-grid">
             {gridNews.map((item) => (
-              <NewsCard key={item.id} item={item} />
+              <NewsCard key={item.id} item={item} currentUser={currentUser} />
             ))}
           </div>
         </section>

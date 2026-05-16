@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from "./supabaseClient.js";
+import { trackBehavior } from "./machine-learning/behavior-tracking/behaviorTracker.js";
 
 function canUseSupabase() {
   if (supabase && isSupabaseConfigured) {
@@ -35,7 +36,13 @@ export async function registerUserProfile(user) {
 }
 
 export async function trackEvent(userId, eventType, metadata = {}) {
-  if (!canUseSupabase() || !userId) return;
+  if (!userId) return;
+
+  trackBehavior(userId, eventType, metadata, { source: "app_usage_events" }).catch((error) => {
+    console.warn("Evento nao enviado para a camada inteligente:", error);
+  });
+
+  if (!canUseSupabase()) return;
 
   await supabase.from("app_usage_events").insert({
     user_id: userId,

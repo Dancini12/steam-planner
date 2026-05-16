@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useProjects } from "../hooks/useProjects.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
+import { trackEvent } from "../lib/analytics.js";
 import PedagogicalPlannerModal from "../components/project/PedagogicalPlannerModal.jsx";
 
 function formatSupabaseError(error) {
@@ -99,6 +100,17 @@ export default function Dashboard({
         result.formData?.discipline,
         result.competencies || []
       ).catch(console.error);
+
+      trackEvent(currentUser?.id, "activity_generated", {
+        projectId: newProject.id,
+        title: data.title,
+        theme: data.theme,
+        grade: data.grade || result.formData?.grade,
+        discipline: result.formData?.discipline,
+        steam: steamLetters,
+        bncc: data.bncc || [],
+        competencies: result.competencies || []
+      }).catch(console.error);
 
       setShowPedagogicalModal(false);
       onOpenActivityViewer(

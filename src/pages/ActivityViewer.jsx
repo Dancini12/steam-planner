@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { STEAM_AREAS } from "../data/steamAreas.js";
 import { openActivityPrintWindow } from "../lib/exportReport.js";
+import { trackEvent } from "../lib/analytics.js";
 import { useProjects } from "../hooks/useProjects.js";
 import Button from "../components/ui/Button.jsx";
 
@@ -52,6 +53,16 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
   };
 
   const handlePrint = () => {
+    trackEvent(currentUser?.id, "activity_printed", {
+      projectId,
+      title,
+      theme,
+      grade: formData?.grade || "",
+      discipline: formData?.discipline || "",
+      steam: steamLetters,
+      bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean)
+    }).catch(console.error);
+
     openActivityPrintWindow({
       title,
       theme,

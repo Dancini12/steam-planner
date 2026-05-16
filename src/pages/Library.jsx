@@ -12,9 +12,10 @@
 // é levado direto para a tela de edição.
 // ============================================================
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LIBRARY } from "../data/library.js";
 import { useProjects } from "../hooks/useProjects.js";
+import { trackEvent } from "../lib/analytics.js";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import Modal from "../components/ui/Modal.jsx";
@@ -220,6 +221,16 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
     setCreationError("");
     try {
       const newProject = await addProjectFromTemplate(template, { waitForPersist: true });
+      trackEvent(currentUser?.id, "library_model_used", {
+        projectId: newProject.id,
+        templateId: template.id,
+        title: template.title,
+        theme: template.theme,
+        grade: template.grade,
+        discipline: template.discipline,
+        steam: template.steam || [],
+        bncc: template.bncc || []
+      }).catch(console.error);
       setSelectedTemplate(null);
       if (onOpenActivityViewer) {
         onOpenActivityViewer(
@@ -244,6 +255,22 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
   );
 
   const templates = ef2Models;
+
+  useEffect(() => {
+    const query = searchTerm.trim();
+    if (query.length < 3) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      trackEvent(currentUser?.id, "library_search", {
+        query,
+        selectedDiscipline,
+        selectedSteam,
+        selectedGrade
+      }).catch(console.error);
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [currentUser?.id, searchTerm, selectedDiscipline, selectedGrade, selectedSteam]);
 
   const disciplineFilters = DISCIPLINE_CATEGORIES.map((category) => ({
     ...category,

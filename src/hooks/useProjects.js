@@ -22,6 +22,7 @@ import {
   saveProjects
 } from "../lib/storage.js";
 import { trackEvent } from "../lib/analytics.js";
+import { learnFromProject } from "../lib/machine-learning/index.js";
 import {
   createBlankProject,
   createProjectFromTemplate,
@@ -111,6 +112,7 @@ export function useProjects(userId) {
       throwOnError: options.waitForPersist
     });
     trackEvent(userId, "project_created", { source: "blank" });
+    learnFromProject(userId, newProject, { eventType: "project_created", source: "blank" });
     if (options.waitForPersist) {
       return persisted.then(() => newProject);
     }
@@ -130,6 +132,10 @@ export function useProjects(userId) {
       throwOnError: options.waitForPersist
     });
     trackEvent(userId, "project_created", { source: newProject.createdVia });
+    learnFromProject(userId, newProject, {
+      eventType: "project_created",
+      source: newProject.createdVia
+    });
     if (options.waitForPersist) {
       return persisted.then(() => newProject);
     }

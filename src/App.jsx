@@ -264,7 +264,7 @@ export default function App() {
       )}
 
       {currentScreen === SCREENS.REAL_WORLD_NEWS && (
-        <RealWorldNews onBack={goToDashboard} />
+        <RealWorldNews currentUser={currentUser} onBack={goToDashboard} />
       )}
 
       {currentScreen === SCREENS.ACTIVITY_VIEWER && activeActivityResult && (
