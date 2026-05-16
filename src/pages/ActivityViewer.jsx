@@ -28,12 +28,12 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
 
   const [savedMsg, setSavedMsg] = useState("");
 
+  const steamLetters = Object.keys(steamMatrix).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
+
   const continuitySuggestions = useMemo(() =>
     suggestProjectContinuity({ title, theme, grade: formData?.grade, steam: steamLetters }),
-    [title, theme, formData?.grade] // eslint-disable-line react-hooks/exhaustive-deps
+    [title, theme, formData?.grade, steamLetters] // eslint-disable-line react-hooks/exhaustive-deps
   );
-
-  const steamLetters = Object.keys(steamMatrix).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
 
   const updateMatrix = (letter, field, value) => {
     setSteamMatrix((m) => ({ ...m, [letter]: { ...(m[letter] || {}), [field]: value } }));
