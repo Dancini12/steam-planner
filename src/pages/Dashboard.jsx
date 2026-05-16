@@ -286,32 +286,31 @@ const retroCss = `
 
   .retro-brand {
     display: flex;
-    align-items: baseline;
-    gap: clamp(14px, 2.5vw, 28px);
-    flex-wrap: wrap;
+    align-items: center;
+    gap: clamp(10px, 1.8vw, 20px);
+    flex-wrap: nowrap;
+    white-space: nowrap;
   }
 
   .retro-brand h1 {
     margin: 0;
     color: #FDE047;
-    font-size: clamp(2.3rem, 7vw, 5.1rem);
+    font-size: clamp(2.1rem, 5.2vw, 4.3rem);
     font-weight: 700;
-    line-height: 1;
+    line-height: 1.05;
     text-shadow:
-      5px 0 #22D3EE,
-      -5px 0 #FF4FD8,
-      0 6px #7C3AED,
-      0 0 22px rgba(253, 224, 71, 0.72);
+      2px 0 rgba(34, 211, 238, 0.45),
+      -2px 0 rgba(255, 79, 216, 0.32);
     letter-spacing: 0;
   }
 
   .retro-brand p {
     margin: 0;
     color: #FFFFFF;
-    font-size: clamp(2.3rem, 7vw, 5.1rem);
+    font-size: clamp(2.1rem, 5.2vw, 4.3rem);
     font-weight: 700;
-    line-height: 1;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
+    line-height: 1.05;
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.12);
   }
 
   .speech-box {
