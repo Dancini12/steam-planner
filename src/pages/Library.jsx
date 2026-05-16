@@ -12,10 +12,9 @@
 // é levado direto para a tela de edição.
 // ============================================================
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { LIBRARY } from "../data/library.js";
 import { useProjects } from "../hooks/useProjects.js";
-import { loadPublicProjects } from "../lib/storage.js";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import Modal from "../components/ui/Modal.jsx";
@@ -203,37 +202,17 @@ const GRADE_GROUPS = [
 
 const EF2_MATCH = ["6º", "7º", "8º", "9º"];
 
-const LIBRARY_IDS = new Set(LIBRARY.map((t) => t.id));
-
 export default function Library({ currentUser, onBack, onOpenProject, onOpenActivityViewer }) {
-  const [activeSection, setActiveSection] = useState(null); // null | "models" | "activities"
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [selectedDiscipline, setSelectedDiscipline] = useState(null);
   const [selectedSteam, setSelectedSteam] = useState([]);
   const [selectedGrade, setSelectedGrade] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [publicProjects, setPublicProjects] = useState([]);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [creationError, setCreationError] = useState("");
 
   // Hook que cria projetos
   const { addProjectFromTemplate } = useProjects(currentUser?.id);
-
-  useEffect(() => {
-    let isCurrent = true;
-
-    async function loadCommunityProjects() {
-      const loaded = await loadPublicProjects(currentUser?.id);
-      if (!isCurrent) return;
-      setPublicProjects(loaded);
-    }
-
-    loadCommunityProjects();
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [currentUser?.id]);
 
   // Cria projeto a partir do template e abre no ActivityViewer
   const handleUseTemplate = async (template) => {
@@ -264,15 +243,7 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
     EF2_MATCH.some((m) => (t.grade || "").includes(m))
   );
 
-  const communityActivities = publicProjects.filter(
-    (p) => !LIBRARY_IDS.has(p.id) && EF2_MATCH.some((m) => (p.grade || "").includes(m))
-  );
-
-  const templates = activeSection === "models"
-    ? ef2Models
-    : activeSection === "activities"
-    ? communityActivities
-    : [];
+  const templates = ef2Models;
 
   const disciplineFilters = DISCIPLINE_CATEGORIES.map((category) => ({
     ...category,
@@ -337,7 +308,7 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
       : DISCIPLINE_CATEGORIES.find((category) => category.id === selectedDiscipline)?.name;
 
   const hasSelectedDiscipline = Boolean(selectedDiscipline);
-  const shouldShowProjects = activeSection !== null && (hasSelectedDiscipline || Boolean(normalizedSearchTerm));
+  const shouldShowProjects = hasSelectedDiscipline || Boolean(normalizedSearchTerm);
 
   // ----------------------------------------------------------
   // ESTILOS
@@ -496,58 +467,6 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
     margin: 0
   };
 
-  const sectionCardsStyle = {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "1rem",
-    marginBottom: "2rem"
-  };
-
-  const sectionCardStyle = (isActive, color) => ({
-    padding: "1.5rem",
-    borderRadius: "12px",
-    border: `2px solid ${isActive ? color : "rgba(255,255,255,0.08)"}`,
-    background: isActive ? `${color}12` : "rgba(255,255,255,0.03)",
-    cursor: "pointer",
-    textAlign: "left",
-    fontFamily: "inherit",
-    transition: "all 0.18s ease",
-    position: "relative",
-    overflow: "hidden"
-  });
-
-  const sectionCardIconStyle = {
-    fontSize: "2rem",
-    marginBottom: "0.75rem",
-    display: "block"
-  };
-
-  const sectionCardTitleStyle = (isActive, color) => ({
-    fontSize: "1.05rem",
-    fontWeight: 700,
-    color: isActive ? color : "#FFFFFF",
-    margin: "0 0 0.4rem"
-  });
-
-  const sectionCardDescStyle = {
-    fontSize: "0.85rem",
-    color: "rgba(255,255,255,0.55)",
-    lineHeight: 1.5,
-    margin: 0
-  };
-
-  const sectionCardCountStyle = (color) => ({
-    position: "absolute",
-    top: "1rem",
-    right: "1rem",
-    fontSize: "0.75rem",
-    fontWeight: 700,
-    background: `${color}22`,
-    color: color,
-    padding: "0.2rem 0.6rem",
-    borderRadius: "999px"
-  });
-
   const filterRowStyle = {
     display: "flex",
     gap: "0.5rem",
@@ -590,19 +509,6 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
     fontFamily: "inherit",
     transition: "all 0.15s"
   });
-
-  const communityBadgeStyle = {
-    fontSize: "0.65rem",
-    background: "rgba(59,149,242,0.18)",
-    color: "#7BB8F5",
-    border: "1px solid rgba(59,149,242,0.3)",
-    padding: "0.1rem 0.45rem",
-    borderRadius: "3px",
-    fontWeight: 600,
-    textTransform: "uppercase",
-    letterSpacing: "0.04em",
-    whiteSpace: "nowrap"
-  };
 
   const libraryStatusStyle = {
     display: "flex",
@@ -752,162 +658,109 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
         </button>
         <h1 style={titleStyle}>Biblioteca</h1>
         <p style={subtitleStyle}>
-          Modelos prontos para usar ou atividades geradas pela comunidade de professores.
-          Escolha uma seção para explorar.
+          Modelos prontos e editáveis para usar como ponto de partida.
+          Filtre por disciplina, área STEAM ou série para encontrar o projeto ideal.
         </p>
       </div>
 
-      {/* Dois painéis em cascata */}
-      <div style={sectionCardsStyle}>
-        <button
-          style={sectionCardStyle(activeSection === "models", "#6B2FE0")}
-          onClick={() => {
-            setActiveSection(activeSection === "models" ? null : "models");
-            setSelectedDiscipline(null);
-            setSearchTerm("");
-            setSelectedSteam([]);
-            setSelectedGrade(null);
-          }}
-        >
-          <span style={sectionCardCountStyle("#6B2FE0")}>{ef2Models.length}</span>
-          <span style={sectionCardIconStyle}>📚</span>
-          <p style={sectionCardTitleStyle(activeSection === "models", "#C9A0FF")}>
-            Modelos prontos e editáveis
-          </p>
-          <p style={sectionCardDescStyle}>
-            Atividades pedagógicas criadas por especialistas, prontas para usar.
-            Ao abrir, uma cópia editável é criada no seu perfil.
-          </p>
-        </button>
-
-        <button
-          style={sectionCardStyle(activeSection === "activities", "#3B95F2")}
-          onClick={() => {
-            setActiveSection(activeSection === "activities" ? null : "activities");
-            setSelectedDiscipline(null);
-            setSearchTerm("");
-            setSelectedSteam([]);
-            setSelectedGrade(null);
-          }}
-        >
-          <span style={sectionCardCountStyle("#3B95F2")}>{communityActivities.length}</span>
-          <span style={sectionCardIconStyle}>🌐</span>
-          <p style={sectionCardTitleStyle(activeSection === "activities", "#7BB8F5")}>
-            Atividades da comunidade
-          </p>
-          <p style={sectionCardDescStyle}>
-            Atividades geradas por professores e salvas para compartilhar.
-            Salve no seu perfil para editar e gerar PDF.
-          </p>
-        </button>
-      </div>
-
       {/* Submenu por disciplina */}
-      {activeSection && (
       <div style={submenuHeaderStyle}>
         <h2 style={submenuTitleStyle}>
           {hasSelectedDiscipline || normalizedSearchTerm
-            ? activeSection === "models" ? "Modelos encontrados" : "Atividades encontradas"
-            : activeSection === "models" ? "Escolha uma disciplina" : "Atividades da comunidade"}
+            ? "Modelos encontrados"
+            : "Escolha uma disciplina"}
         </h2>
         <p style={submenuTextStyle}>
           {hasSelectedDiscipline || normalizedSearchTerm
             ? "Refine a busca ou troque de disciplina a qualquer momento."
-            : activeSection === "models"
-            ? "Filtre por disciplina, área STEAM ou série para encontrar o modelo ideal."
-            : "Atividades criadas por outros professores, prontas para consulta e uso."}
+            : "Filtre por disciplina, área STEAM ou série para encontrar o modelo ideal."}
         </p>
       </div>
-      )}
 
-      {activeSection && (
-        <>
-          <div style={searchWrapperStyle}>
-            <span style={searchIconStyle}>⌕</span>
-            <input
-              type="search"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Buscar projeto por nome, disciplina, BNCC ou palavra-chave..."
-              style={searchInputStyle}
-              aria-label="Buscar projeto na biblioteca"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                style={clearSearchButtonStyle}
-                onClick={() => setSearchTerm("")}
-                aria-label="Limpar busca"
-              >
-                ×
-              </button>
-            )}
-          </div>
+      <div style={searchWrapperStyle}>
+        <span style={searchIconStyle}>⌕</span>
+        <input
+          type="search"
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder="Buscar projeto por nome, disciplina, BNCC ou palavra-chave..."
+          style={searchInputStyle}
+          aria-label="Buscar projeto na biblioteca"
+        />
+        {searchTerm && (
+          <button
+            type="button"
+            style={clearSearchButtonStyle}
+            onClick={() => setSearchTerm("")}
+            aria-label="Limpar busca"
+          >
+            ×
+          </button>
+        )}
+      </div>
 
-          {/* Filtros de STEAM e Série */}
-          <div style={filterRowStyle}>
-            <span style={filterLabelStyle}>STEAM</span>
-            {STEAM_KEYS.map((letter) => (
-              <button
-                key={letter}
-                type="button"
-                style={steamFilterBtnStyle(letter, selectedSteam.includes(letter))}
-                onClick={() => toggleSteam(letter)}
-                title={STEAM_NAMES[letter]}
-              >
-                {letter}
-              </button>
-            ))}
-            <span style={{ ...filterLabelStyle, marginLeft: "0.75rem" }}>Série</span>
-            {GRADE_GROUPS.map((group) => (
-              <button
-                key={group.id}
-                type="button"
-                style={gradeFilterBtnStyle(group.id, selectedGrade === group.id)}
-                onClick={() => setSelectedGrade(selectedGrade === group.id ? null : group.id)}
-              >
-                {group.label}
-              </button>
-            ))}
-            {(selectedSteam.length > 0 || selectedGrade) && (
-              <button
-                type="button"
-                style={{ ...gradeFilterBtnStyle("", false), color: "rgba(255,255,255,0.4)" }}
-                onClick={() => { setSelectedSteam([]); setSelectedGrade(null); }}
-              >
-                Limpar filtros
-              </button>
-            )}
-          </div>
+      {/* Filtros de STEAM e Série */}
+      <div style={filterRowStyle}>
+        <span style={filterLabelStyle}>STEAM</span>
+        {STEAM_KEYS.map((letter) => (
+          <button
+            key={letter}
+            type="button"
+            style={steamFilterBtnStyle(letter, selectedSteam.includes(letter))}
+            onClick={() => toggleSteam(letter)}
+            title={STEAM_NAMES[letter]}
+          >
+            {letter}
+          </button>
+        ))}
+        <span style={{ ...filterLabelStyle, marginLeft: "0.75rem" }}>Série</span>
+        {GRADE_GROUPS.map((group) => (
+          <button
+            key={group.id}
+            type="button"
+            style={gradeFilterBtnStyle(group.id, selectedGrade === group.id)}
+            onClick={() => setSelectedGrade(selectedGrade === group.id ? null : group.id)}
+          >
+            {group.label}
+          </button>
+        ))}
+        {(selectedSteam.length > 0 || selectedGrade) && (
+          <button
+            type="button"
+            style={{ ...gradeFilterBtnStyle("", false), color: "rgba(255,255,255,0.4)" }}
+            onClick={() => { setSelectedSteam([]); setSelectedGrade(null); }}
+          >
+            Limpar filtros
+          </button>
+        )}
+      </div>
 
-          <div style={submenuStyle} aria-label="Filtrar projetos por disciplina">
-            {disciplineFilters.map((filter) => {
-              const isActive = selectedDiscipline === filter.id;
+      <div style={submenuStyle} aria-label="Filtrar projetos por disciplina">
+        {disciplineFilters.map((filter) => {
+          const isActive = selectedDiscipline === filter.id;
 
-              return (
-                <button
-                  key={filter.id}
-                  type="button"
-                  style={themeButtonStyle(filter, isActive)}
-                  onClick={() => setSelectedDiscipline(filter.id)}
-                  aria-pressed={isActive}
-                >
-                  <span style={themeButtonTopStyle}>
-                    <span style={themeLetterStyle(filter)}>{filter.letter}</span>
-                    <span style={themeCountStyle}>
-                      {filter.count} {filter.count === 1 ? "projeto" : "projetos"}
-                    </span>
-                  </span>
-                  <span>
-                    <p style={themeNameStyle}>{filter.name}</p>
-                    <p style={themeDescriptionStyle}>{filter.description}</p>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
+          return (
+            <button
+              key={filter.id}
+              type="button"
+              style={themeButtonStyle(filter, isActive)}
+              onClick={() => setSelectedDiscipline(filter.id)}
+              aria-pressed={isActive}
+            >
+              <span style={themeButtonTopStyle}>
+                <span style={themeLetterStyle(filter)}>{filter.letter}</span>
+                <span style={themeCountStyle}>
+                  {filter.count} {filter.count === 1 ? "projeto" : "projetos"}
+                </span>
+              </span>
+              <span>
+                <p style={themeNameStyle}>{filter.name}</p>
+                <p style={themeDescriptionStyle}>{filter.description}</p>
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       {shouldShowProjects && (
         <>
@@ -952,12 +805,7 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
                   {/* Topo: título, tema e selos STEAM */}
                   <div style={cardHeaderStyle}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.2rem" }}>
-                        <h3 style={{ ...cardTitleStyle, margin: 0 }}>{template.title}</h3>
-                        {!LIBRARY_IDS.has(template.id) && (
-                          <span style={communityBadgeStyle}>Comunidade</span>
-                        )}
-                      </div>
+                      <h3 style={{ ...cardTitleStyle, margin: 0 }}>{template.title}</h3>
                       <p style={cardThemeStyle}>{template.theme}</p>
                     </div>
                     <SteamBadges areas={template.steam} size="small" />
@@ -1004,9 +852,7 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
         {selectedTemplate && (
           <div>
             <div style={readOnlyNoticeStyle}>
-              {activeSection === "activities"
-                ? "Esta atividade é da comunidade. Salve no seu perfil para editar e gerar PDF."
-                : "Este é um modelo pronto. Uma cópia editável será criada no seu perfil ao confirmar."}
+              Este é um modelo pronto. Uma cópia editável será criada no seu perfil ao confirmar.
             </div>
 
             {/* Informações principais */}
@@ -1109,11 +955,7 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
                 onClick={() => handleUseTemplate(selectedTemplate)}
                 disabled={isCreatingProject}
               >
-                {isCreatingProject
-                  ? "Salvando..."
-                  : activeSection === "activities"
-                  ? "Salvar no meu perfil"
-                  : "Usar como cópia editável"}
+                {isCreatingProject ? "Salvando..." : "Usar como cópia editável"}
               </Button>
             </div>
           </div>
