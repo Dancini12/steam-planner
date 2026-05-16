@@ -295,22 +295,20 @@ const retroCss = `
   .retro-brand h1 {
     margin: 0;
     color: #FDE047;
-    font-size: clamp(2.1rem, 5.2vw, 4.3rem);
-    font-weight: 700;
-    line-height: 1.05;
-    text-shadow:
-      2px 0 rgba(34, 211, 238, 0.45),
-      -2px 0 rgba(255, 79, 216, 0.32);
+    font-size: clamp(1.9rem, 4.4vw, 3.55rem);
+    font-weight: 600;
+    line-height: 1.08;
+    text-shadow: none;
     letter-spacing: 0;
   }
 
   .retro-brand p {
     margin: 0;
     color: #FFFFFF;
-    font-size: clamp(2.1rem, 5.2vw, 4.3rem);
-    font-weight: 700;
-    line-height: 1.05;
-    text-shadow: 0 0 6px rgba(255, 255, 255, 0.12);
+    font-size: clamp(1.9rem, 4.4vw, 3.55rem);
+    font-weight: 600;
+    line-height: 1.08;
+    text-shadow: none;
   }
 
   .speech-box {
