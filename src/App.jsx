@@ -255,6 +255,7 @@ export default function App() {
           onOpenProject={goToProjectEditor}
           onOpenLibrary={goToLibrary}
           onOpenBNCC={goToBNCC}
+          onOpenActivityViewer={goToActivityViewer}
         />
       )}
 
