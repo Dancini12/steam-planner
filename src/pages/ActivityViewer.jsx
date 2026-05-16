@@ -5,6 +5,7 @@ import { trackEvent } from "../lib/analytics.js";
 import { useProjects } from "../hooks/useProjects.js";
 import Button from "../components/ui/Button.jsx";
 import { suggestProjectContinuity } from "../lib/machine-learning/project-continuity/continuityEngine.js";
+import BibliographyVerifier from "../components/project/BibliographyVerifier.jsx";
 
 export default function ActivityViewer({ activityData, formData, projectId, currentUser, onBack }) {
   const { editProject } = useProjects(currentUser?.id);
@@ -298,6 +299,9 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
         <div style={sectionTitleStyle}>Referências Bibliográficas</div>
         <label style={labelStyle}>Referências ABNT (uma por linha)</label>
         <textarea style={textareaStyle("120px")} value={bibliographyText} onChange={(e) => setBibliographyText(e.target.value)} />
+        <BibliographyVerifier
+          references={bibliographyText.split('\n').map((s) => s.trim()).filter(Boolean)}
+        />
       </div>
 
       {/* Continuidade Pedagógica */}

@@ -3,6 +3,7 @@ import { useProjects } from "../hooks/useProjects.js";
 import { generateBibliographyWithAI } from "../lib/aiGenerator.js";
 import Button from "../components/ui/Button.jsx";
 import TextField from "../components/ui/TextField.jsx";
+import BibliographyVerifier from "../components/project/BibliographyVerifier.jsx";
 
 export default function BibliographyEditor({ projectId, currentUser, onBack }) {
   const { getProjectById, editBibliography, isLoaded } = useProjects(currentUser?.id);
@@ -382,8 +383,13 @@ export default function BibliographyEditor({ projectId, currentUser, onBack }) {
         )}
       </div>
 
+      {/* Verificação de fontes */}
+      {bibliography.length > 0 && (
+        <BibliographyVerifier references={bibliography} />
+      )}
+
       {/* Aviso */}
-      <div style={infoStyle}>
+      <div style={{ ...infoStyle, marginTop: '1.5rem' }}>
         ℹ️ Verifique a disponibilidade das referências na sua biblioteca escolar ou em
         plataformas de pesquisa acadêmica antes de usá-las.
       </div>
