@@ -156,11 +156,18 @@ export default function Dashboard({
 
         <section className="primary-grid" aria-label="Acessos principais">
           <DashboardCard
-            title="PROJETOS"
+            title="MEUS PROJETOS"
             icon="folder"
             text="Acesse e gerencie seus projetos"
             color="#22D3EE"
             onClick={handleOpenProjects}
+          />
+          <DashboardCard
+            title="GERAR NOVA ATIVIDADE"
+            icon="document"
+            text="Crie atividades personalizadas em poucos passos"
+            color="#39FF88"
+            onClick={() => setShowPedagogicalModal(true)}
           />
           <DashboardCard
             title="BIBLIOTECA"
@@ -175,13 +182,6 @@ export default function Dashboard({
             text="Consulte a BNCC e alinhamentos"
             color="#FDE047"
             onClick={onOpenBNCC}
-          />
-          <DashboardCard
-            title="GERAR NOVA ATIVIDADE"
-            icon="document"
-            text="Crie atividades personalizadas em poucos passos"
-            color="#39FF88"
-            onClick={() => setShowPedagogicalModal(true)}
           />
         </section>
 
