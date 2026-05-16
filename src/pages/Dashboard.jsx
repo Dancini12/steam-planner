@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useProjects } from "../hooks/useProjects.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 import PedagogicalPlannerModal from "../components/project/PedagogicalPlannerModal.jsx";
-import ActivityAdaptationModal from "../components/project/ActivityAdaptationModal.jsx";
 import CreationTipsModal from "../components/project/CreationTipsModal.jsx";
 
 function formatSupabaseError(error) {
@@ -52,7 +51,6 @@ export default function Dashboard({
 }) {
   const { projects, addProjectFromTemplate, isLoaded } = useProjects(currentUser?.id);
   const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
-  const [showAdaptationModal, setShowAdaptationModal] = useState(false);
   const [showTipsModal, setShowTipsModal] = useState(false);
   const [creationError, setCreationError] = useState("");
 
@@ -208,14 +206,6 @@ export default function Dashboard({
             size="small"
             onClick={onOpenRealWorldNews}
           />
-          <DashboardCard
-            title="ADAPTAÇÃO DE ATIVIDADE"
-            icon="adapt"
-            text="Envie um PDF e receba sugestões de adaptação para acessibilidade"
-            color="#A78BFA"
-            size="small"
-            onClick={() => setShowAdaptationModal(true)}
-          />
         </section>
 
         <footer className="retro-footer">
@@ -232,11 +222,6 @@ export default function Dashboard({
         onClose={() => setShowPedagogicalModal(false)}
         onActivityGenerated={handlePedagogicalActivityGenerated}
         accessibilityPreset={accessibilityPreset}
-      />
-
-      <ActivityAdaptationModal
-        isOpen={showAdaptationModal}
-        onClose={() => setShowAdaptationModal(false)}
       />
 
       <CreationTipsModal
@@ -650,16 +635,6 @@ const retroCss = `
       linear-gradient(#39FF88 0 0) 16px 40px / 24px 9px no-repeat,
       linear-gradient(#FFFFFF 0 0) 50px 10px / 22px 18px no-repeat,
       linear-gradient(#FFFFFF 0 0) 58px 28px / 8px 8px no-repeat;
-  }
-
-  .pixel-adapt {
-    background:
-      linear-gradient(#A78BFA 0 0) 30px 4px / 18px 18px no-repeat,
-      linear-gradient(#A78BFA 0 0) 33px 22px / 12px 20px no-repeat,
-      linear-gradient(#A78BFA 0 0) 10px 28px / 58px 8px no-repeat,
-      linear-gradient(#A78BFA 0 0) 22px 44px / 10px 22px no-repeat,
-      linear-gradient(#A78BFA 0 0) 46px 44px / 10px 22px no-repeat;
-    filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.28));
   }
 
   .retro-footer {
