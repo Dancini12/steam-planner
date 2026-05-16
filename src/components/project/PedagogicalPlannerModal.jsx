@@ -235,6 +235,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
   })
   const [previewData, setPreviewData] = useState(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [loadingPhase, setLoadingPhase] = useState('generating')
   const [activeProviders, setActiveProviders] = useState([])
   const [usedProvider, setUsedProvider] = useState(null)
   const [error, setError] = useState('')
@@ -410,6 +411,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
     const providers = AIProviderManager.getProviderNames()
     setActiveProviders(providers)
     setUsedProvider(null)
+    setLoadingPhase('sources')
     setIsGenerating(true)
     setError('')
 
@@ -419,6 +421,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
         throw new Error('Usuário não autenticado')
       }
 
+      setLoadingPhase('generating')
       const result = await PedagogicalPlannerService.generatePedagogicalActivity({
         ...formData,
         customInstructions: buildCustomInstructions(),
@@ -767,10 +770,35 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
         <span style={loadingIconStyle}>✨</span>
       </div>
 
-      <div style={loadingTitleStyle}>Gerando sua atividade</div>
+      <div style={loadingTitleStyle}>
+        {loadingPhase === 'sources' ? 'Buscando fontes reais…' : 'Gerando sua atividade'}
+      </div>
       <p style={loadingSubtitleStyle}>
-        Analisando o tema, selecionando competências BNCC e montando o planejamento completo…
+        {loadingPhase === 'sources'
+          ? 'Consultando Crossref, OpenAlex, SciELO e Semantic Scholar para validar referências antes de gerar o planejamento…'
+          : 'Analisando o tema, selecionando competências BNCC e montando o planejamento completo…'}
       </p>
+
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20 }}>
+        {[
+          { key: 'sources', label: '🔍 Fontes' },
+          { key: 'generating', label: '✨ Geração' }
+        ].map(({ key, label }, i) => {
+          const done = (key === 'sources' && loadingPhase === 'generating')
+          const active = key === loadingPhase
+          return (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {i > 0 && <div style={{ width: 24, height: 2, background: done ? '#10B981' : '#E5E7EB', borderRadius: 1 }} />}
+              <div style={{
+                padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                background: done ? '#D1FAE5' : active ? '#EDE9FE' : '#F3F4F6',
+                color: done ? '#065F46' : active ? '#5B21B6' : '#9CA3AF',
+                border: `1px solid ${done ? '#6EE7B7' : active ? '#C4B5FD' : '#E5E7EB'}`
+              }}>{done ? '✓ ' : ''}{label}</div>
+            </div>
+          )
+        })}
+      </div>
 
       <div style={loadingProviderBoxStyle}>
         <div style={loadingProviderLabelStyle}>IAs utilizadas</div>
