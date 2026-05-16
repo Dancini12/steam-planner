@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useProjects } from "../hooks/useProjects.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 import PedagogicalPlannerModal from "../components/project/PedagogicalPlannerModal.jsx";
-import CreationTipsModal from "../components/project/CreationTipsModal.jsx";
 
 function formatSupabaseError(error) {
   return [
@@ -51,7 +50,6 @@ export default function Dashboard({
 }) {
   const { projects, addProjectFromTemplate, isLoaded } = useProjects(currentUser?.id);
   const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
-  const [showTipsModal, setShowTipsModal] = useState(false);
   const [creationError, setCreationError] = useState("");
 
   const professorName = currentUser?.name || currentUser?.email?.split("@")[0] || "Professor";
@@ -191,14 +189,6 @@ export default function Dashboard({
             onClick={() => setShowPedagogicalModal(true)}
           />
           <DashboardCard
-            title="DICAS PARA CRIAÇÃO DE ATIVIDADE"
-            icon="bulb"
-            text="Dicas e orientações para criar atividades incríveis"
-            color="#FB923C"
-            size="small"
-            onClick={() => setShowTipsModal(true)}
-          />
-          <DashboardCard
             title="CONECTE COM O MUNDO REAL"
             icon="globe"
             text="Transforme temas atuais em atividades significativas"
@@ -224,10 +214,6 @@ export default function Dashboard({
         accessibilityPreset={accessibilityPreset}
       />
 
-      <CreationTipsModal
-        isOpen={showTipsModal}
-        onClose={() => setShowTipsModal(false)}
-      />
     </div>
   );
 }
@@ -617,15 +603,6 @@ const retroCss = `
       linear-gradient(#CBD5E1 0 0) 52px 8px / 8px 12px no-repeat,
       linear-gradient(#39FF88 0 0) 29px 32px / 20px 8px no-repeat,
       linear-gradient(#39FF88 0 0) 35px 26px / 8px 20px no-repeat;
-  }
-
-  .pixel-bulb {
-    background:
-      linear-gradient(#FB923C 0 0) 25px 10px / 28px 30px no-repeat,
-      linear-gradient(#FDE047 0 0) 30px 4px / 18px 10px no-repeat,
-      linear-gradient(#FFFFFF 0 0) 32px 40px / 14px 17px no-repeat,
-      linear-gradient(#FB923C 0 0) 28px 57px / 22px 8px no-repeat;
-    filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.28));
   }
 
   .pixel-globe {
