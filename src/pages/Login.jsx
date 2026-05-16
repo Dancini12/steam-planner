@@ -50,6 +50,27 @@ async function saveProfile(user) {
   console.warn("Supabase indisponível");
 }
 
+async function sendSignupEmails({ user, name, school, area }) {
+  if (!supabase || !user?.email) return;
+
+  const { error } = await supabase.functions.invoke("welcome-email", {
+    body: {
+      user: {
+        id: user.id,
+        email: user.email,
+        name,
+        school,
+        area
+      },
+      adminEmail: "marceldancini@gmail.com"
+    }
+  });
+
+  if (error) {
+    console.warn("E-mails de boas-vindas/cadastro nao foram enviados:", error.message);
+  }
+}
+
 export default function Login({ onLogin }) {
   const [activeTab, setActiveTab] = useState(null);
   const [showAbout, setShowAbout] = useState(false);
@@ -195,39 +216,32 @@ export default function Login({ onLogin }) {
           await registerUserProfile(data.user);
           await saveProfile(data.user);
           await trackEvent(data.user.id, "signup");
+          sendSignupEmails({
+            user: data.user,
+            name: signupName,
+            school: signupSchool,
+            area: signupArea
+          }).catch((emailError) => {
+            console.warn("Falha ao solicitar envio de e-mails:", emailError);
+          });
         }
 
-        if (data.session && data.user) {
+        if (data.user) {
           const userData = {
             id: data.user.id,
             email: data.user.email,
-            name: data.user.user_metadata?.name || data.user.email.split("@")[0],
-            school: data.user.user_metadata?.school,
-            area: data.user.user_metadata?.area
+            name: data.user.user_metadata?.name || signupName || data.user.email.split("@")[0],
+            school: data.user.user_metadata?.school || signupSchool,
+            area: data.user.user_metadata?.area || signupArea
           };
-          alert("Cadastro realizado com sucesso!");
+
+          setSignupSuccess("Cadastro realizado com sucesso! Você já pode acessar a plataforma.");
           onLogin(userData);
           return;
         }
 
-        if (data.user && !data.user.email_confirmed_at) {
-          setSignupSuccess(
-            "Cadastro realizado! Um link de confirmação foi enviado para seu e-mail. " +
-            "Verifique sua caixa de entrada e clique no link para ativar sua conta."
-          );
-          alert("Cadastro realizado com sucesso!");
-
-          // Limpa os campos
-          setSignupName("");
-          setSignupEmail("");
-          setSignupSchool("");
-          setSignupArea("");
-          setSignupPassword("");
-          setSignupPasswordConfirm("");
-        } else {
-          setSignupSuccess("Conta criada com sucesso! Você pode fazer login agora.");
-          alert("Cadastro realizado com sucesso!");
-        }
+        setSignupSuccess("Conta criada com sucesso! Você pode fazer login agora.");
+        alert("Cadastro realizado com sucesso!");
 
         return;
       }
@@ -637,7 +651,7 @@ export default function Login({ onLogin }) {
                   marginBottom: "1.5rem",
                   fontSize: "13px"
                 }}>
-                  ℹ️ Após o cadastro, enviaremos um link de confirmação para o seu e-mail. Sua conta será ativada quando você clicar no link.
+                  ℹ️ Após o cadastro, você será encaminhado para a plataforma. Também enviaremos um e-mail de boas-vindas com orientações de uso.
                 </div>
 
                 <button
