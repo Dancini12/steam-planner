@@ -50,10 +50,20 @@ export default function Dashboard({
   const { projects, addProjectFromTemplate, isLoaded } = useProjects(currentUser?.id);
   const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
   const [creationError, setCreationError] = useState("");
+  const [themeMode, setThemeMode] = useState(
+    () => localStorage.getItem("steam-dashboard-theme") || "dark"
+  );
 
   const professorName = currentUser?.name || currentUser?.email?.split("@")[0] || "Professor";
   const firstName = professorName.split(" ")[0] || "Professor";
   const accessibilityPreset = ["baixa_visao", "grupos_colaborativos"];
+  const isLightMode = themeMode === "light";
+
+  const toggleThemeMode = () => {
+    const nextMode = isLightMode ? "dark" : "light";
+    setThemeMode(nextMode);
+    localStorage.setItem("steam-dashboard-theme", nextMode);
+  };
 
   const handleOpenProjects = () => {
     if (projects.length > 0) {
@@ -105,7 +115,7 @@ export default function Dashboard({
 
   if (!isLoaded) {
     return (
-      <div className="retro-dashboard reduced-glow visual-accessibility">
+      <div className={`retro-dashboard reduced-glow visual-accessibility theme-${themeMode}`}>
         <style>{retroCss}</style>
         <div className="retro-loading">CARREGANDO...</div>
       </div>
@@ -113,7 +123,7 @@ export default function Dashboard({
   }
 
   return (
-    <div className="retro-dashboard reduced-glow visual-accessibility">
+    <div className={`retro-dashboard reduced-glow visual-accessibility theme-${themeMode}`}>
       <style>{retroCss}</style>
 
       <div className="pixel-stars" aria-hidden="true">
@@ -152,9 +162,19 @@ export default function Dashboard({
             <div className="computer-base" />
           </section>
 
-          <button type="button" className="logout-chip" onClick={onLogout}>
-            SAIR
-          </button>
+          <div className="top-actions">
+            <button
+              type="button"
+              className="theme-toggle"
+              onClick={toggleThemeMode}
+              aria-pressed={isLightMode}
+            >
+              {isLightMode ? "Modo escuro" : "Modo claro"}
+            </button>
+            <button type="button" className="logout-chip" onClick={onLogout}>
+              SAIR
+            </button>
+          </div>
         </header>
 
         {creationError && <div className="retro-error">{creationError}</div>}
@@ -358,10 +378,17 @@ const retroCss = `
     font-weight: 700;
   }
 
-  .logout-chip {
+  .top-actions {
     position: absolute;
     top: 14px;
     right: 14px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .logout-chip,
+  .theme-toggle {
     border: 2px solid #FF4FD8;
     border-radius: 10px;
     background: #0B1022;
@@ -371,6 +398,12 @@ const retroCss = `
     font-size: 0.58rem;
     cursor: pointer;
     box-shadow: 0 0 8px rgba(255, 79, 216, 0.15);
+  }
+
+  .theme-toggle {
+    border-color: #38BDF8;
+    color: #BAE6FD;
+    font-size: 0.58rem;
   }
 
   .pixel-computer {
@@ -732,6 +765,101 @@ const retroCss = `
     min-height: 48px;
   }
 
+  .theme-light.reduced-glow {
+    color: #1F2937;
+    background:
+      radial-gradient(circle at 18% 12%, rgba(79, 70, 229, 0.08), transparent 24rem),
+      radial-gradient(circle at 82% 16%, rgba(16, 185, 129, 0.08), transparent 26rem),
+      linear-gradient(180deg, #F8FAFC 0%, #F5F7FB 52%, #EEF2FF 100%);
+  }
+
+  .theme-light::before {
+    opacity: 0.035;
+    mix-blend-mode: normal;
+  }
+
+  .theme-light::after {
+    display: none;
+  }
+
+  .theme-light .retro-hero {
+    border-color: rgba(79, 70, 229, 0.18);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.9)),
+      repeating-linear-gradient(90deg, rgba(79, 70, 229, 0.035) 0 2px, transparent 2px 16px);
+  }
+
+  .theme-light .retro-brand h1 {
+    color: #4F46E5;
+  }
+
+  .theme-light .retro-brand p,
+  .theme-light .retro-footer {
+    color: #1F2937;
+  }
+
+  .theme-light .speech-box {
+    border-color: #CBD5E1;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  .theme-light .speech-box::after {
+    background: rgba(255, 255, 255, 0.94);
+    border-color: #CBD5E1;
+  }
+
+  .theme-light .speech-box strong {
+    color: #047857;
+  }
+
+  .theme-light .speech-box span,
+  .theme-light.visual-accessibility .speech-box span {
+    color: #374151;
+  }
+
+  .theme-light .retro-card,
+  .theme-light.visual-accessibility .retro-card {
+    background:
+      linear-gradient(180deg, #FFFFFF, #F8FAFC),
+      repeating-linear-gradient(45deg, rgba(79,70,229,0.03) 0 2px, transparent 2px 12px);
+    box-shadow:
+      0 0 0 1px rgba(148, 163, 184, 0.24),
+      0 18px 30px rgba(15, 23, 42, 0.09);
+  }
+
+  .theme-light .retro-card h2 {
+    color: #1F2937;
+  }
+
+  .theme-light .retro-card p,
+  .theme-light.visual-accessibility .retro-card p {
+    color: #4B5563;
+  }
+
+  .theme-light .retro-button {
+    background: #FFFFFF;
+    box-shadow: none;
+  }
+
+  .theme-light .theme-toggle {
+    background: #E0F2FE;
+    color: #075985;
+  }
+
+  .theme-light .logout-chip {
+    background: #FCE7F3;
+    color: #9D174D;
+  }
+
+  .theme-light .neon-grid {
+    opacity: 0.12;
+  }
+
+  .theme-light .pixel-stars {
+    opacity: 0.18;
+  }
+
   @media (max-width: 1040px) {
     .primary-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -776,7 +904,7 @@ const retroCss = `
       min-height: 0;
     }
 
-    .logout-chip {
+    .top-actions {
       top: 10px;
       right: 10px;
     }
