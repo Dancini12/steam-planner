@@ -1,11 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { PedagogicalPlannerService } from '../../lib/ai/pedagogicalPlannerService.js'
 import { AIProviderManager } from '../../lib/ai/AIProviderManager.js'
 import { supabase } from '../../lib/supabaseClient.js'
+import { buildUserLearningProfile } from '../../lib/machine-learning/user-profile/profileBuilder.js'
+import { suggestThemesFromProfile } from '../../lib/machine-learning/recommendation/recommendationEngine.js'
 
 import Modal from '../ui/Modal.jsx'
 import Button from '../ui/Button.jsx'
 import TextField from '../ui/TextField.jsx'
+
+const LOCAL_QUEUE_KEY = 'steam-ml-behavior-queue'
+
+function getLocalThemeSuggestions(limit = 5) {
+  try {
+    const events = JSON.parse(localStorage.getItem(LOCAL_QUEUE_KEY) || '[]')
+    if (!events.length) return []
+    const profile = buildUserLearningProfile({ events })
+    return suggestThemesFromProfile(profile, limit).map((s) => s.theme)
+  } catch {
+    return []
+  }
+}
 
 const DISCIPLINES = [
   'Matemática',
@@ -460,13 +475,44 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
           </div>
         )
 
-      case 2:
+      case 2: {
+        const themeSuggestions = getLocalThemeSuggestions(5)
         return (
           <div style={stepContentStyle}>
             <h3 style={stepTitleStyle}>🎯 Qual tema central?</h3>
             <p style={stepDescriptionStyle}>
               Descreva o tema principal da atividade (mínimo 3 caracteres).
             </p>
+            {themeSuggestions.length > 0 && (
+              <div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9CA3AF', marginBottom: '0.5rem' }}>
+                  Temas do seu histórico
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                  {themeSuggestions.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => handleThemeChange(t)}
+                      style={{
+                        padding: '0.3rem 0.75rem',
+                        background: formData.theme === t ? '#4F46E5' : 'rgba(79,70,229,0.1)',
+                        border: `1px solid ${formData.theme === t ? '#4F46E5' : 'rgba(79,70,229,0.35)'}`,
+                        borderRadius: '20px',
+                        color: formData.theme === t ? '#fff' : '#818CF8',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <TextField
               placeholder="Ex: Energia Renovável, Revolução Industrial, Frações e Decimais..."
               value={formData.theme}
@@ -477,6 +523,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
             />
           </div>
         )
+      }
 
       case 3:
         return (
