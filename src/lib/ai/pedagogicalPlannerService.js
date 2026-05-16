@@ -117,6 +117,50 @@ function extractJson(text) {
   throw new Error('JSON incompleto na resposta da IA')
 }
 
+function repairJson(raw) {
+  // Fix unescaped control characters inside string values
+  let result = ''
+  let inString = false
+  let escaped = false
+
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i]
+    if (escaped) {
+      escaped = false
+      result += c
+      continue
+    }
+    if (c === '\\') {
+      escaped = true
+      result += c
+      continue
+    }
+    if (c === '"') {
+      inString = !inString
+      result += c
+      continue
+    }
+    if (inString) {
+      // Escape raw control characters that break JSON
+      if (c === '\n') { result += '\\n'; continue }
+      if (c === '\r') { result += '\\r'; continue }
+      if (c === '\t') { result += '\\t'; continue }
+      // Remove other non-printable ASCII control chars
+      if (c.charCodeAt(0) < 0x20) continue
+    }
+    result += c
+  }
+  return result
+}
+
+function safeParseJson(raw) {
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return JSON.parse(repairJson(raw))
+  }
+}
+
 function validateActivity(data) {
   const required = ['title', 'theme', 'duration', 'problem', 'guidingQuestion', 'steamMatrix', 'objectives', 'bncc', 'materials', 'activityManual']
   for (const field of required) {
@@ -258,7 +302,7 @@ export class PedagogicalPlannerService {
 
     const jsonStr = extractJson(rawText)
     const parsed = applyAccessibilityAdaptations(
-      applyOfflineBncc(JSON.parse(jsonStr), bnccSuggestions),
+      applyOfflineBncc(safeParseJson(jsonStr), bnccSuggestions),
       personalization?.accessibility || []
     )
 
@@ -287,7 +331,7 @@ export class PedagogicalPlannerService {
     }
 
     const jsonStr = extractJson(rawText)
-    const parsed = applyProjectAccessibility(JSON.parse(jsonStr), project)
+    const parsed = applyProjectAccessibility(safeParseJson(jsonStr), project)
 
     if (!parsed.activityTitle || !parsed.steps || !Array.isArray(parsed.steps)) {
       throw new Error('Resposta da IA incompleta: campos obrigatórios ausentes.')

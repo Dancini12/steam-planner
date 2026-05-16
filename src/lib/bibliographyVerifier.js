@@ -58,7 +58,8 @@ export async function verifyBibliography(references = []) {
       const response = await AIProviderManager.request({ requestType: 'bibliography', prompt: buildPrompt(needsAI) })
       const rawText = response.content
       if (rawText && typeof rawText === 'string') {
-        const parsed = JSON.parse(extractJson(rawText))
+        const jsonStr = extractJson(rawText)
+        const parsed = (() => { try { return JSON.parse(jsonStr) } catch { return JSON.parse(jsonStr.replace(/[\n\r\t]/g, ' ')) } })()
         aiResults = needsAI.map((ref, localIdx) => {
           const r = parsed.find((p) => p.index === localIdx) || { status: 'doubtful', confidence: 0.5, note: 'Não avaliado pela IA.' }
           return { ref, status: r.status || 'doubtful', confidence: r.confidence ?? 0.5, note: r.note || '', source: 'ai' }
