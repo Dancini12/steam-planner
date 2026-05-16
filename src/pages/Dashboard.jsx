@@ -138,6 +138,20 @@ export default function Dashboard({
       </div>
 
       <main className="retro-shell">
+        <div className="top-actions">
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleThemeMode}
+            aria-pressed={isLightMode}
+          >
+            {isLightMode ? "Modo escuro" : "Modo claro"}
+          </button>
+          <button type="button" className="logout-chip" onClick={onLogout}>
+            SAIR
+          </button>
+        </div>
+
         <header className="retro-hero">
           <section className="retro-title-block">
             <div className="retro-brand">
@@ -162,19 +176,6 @@ export default function Dashboard({
             <div className="computer-base" />
           </section>
 
-          <div className="top-actions">
-            <button
-              type="button"
-              className="theme-toggle"
-              onClick={toggleThemeMode}
-              aria-pressed={isLightMode}
-            >
-              {isLightMode ? "Modo escuro" : "Modo claro"}
-            </button>
-            <button type="button" className="logout-chip" onClick={onLogout}>
-              SAIR
-            </button>
-          </div>
         </header>
 
         {creationError && <div className="retro-error">{creationError}</div>}
@@ -282,7 +283,7 @@ const retroCss = `
     width: min(1180px, calc(100% - 32px));
     min-height: 100vh;
     margin: 0 auto;
-    padding: 34px 0 108px;
+    padding: 82px 0 108px;
   }
 
   .retro-hero {
@@ -380,11 +381,12 @@ const retroCss = `
 
   .top-actions {
     position: absolute;
-    top: 14px;
-    right: 14px;
+    top: 24px;
+    right: 0;
     display: flex;
     gap: 8px;
     align-items: center;
+    z-index: 5;
   }
 
   .logout-chip,
@@ -877,7 +879,7 @@ const retroCss = `
   @media (max-width: 720px) {
     .retro-shell {
       width: min(100% - 22px, 560px);
-      padding-top: 18px;
+      padding-top: 76px;
       padding-bottom: 92px;
     }
 
@@ -905,8 +907,8 @@ const retroCss = `
     }
 
     .top-actions {
-      top: 10px;
-      right: 10px;
+      top: 18px;
+      right: 0;
     }
 
     .speech-box {
