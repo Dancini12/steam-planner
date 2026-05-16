@@ -1,16 +1,4 @@
-import { useState } from "react";
 import { useProjects } from "../hooks/useProjects.js";
-import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
-import PedagogicalPlannerModal from "../components/project/PedagogicalPlannerModal.jsx";
-
-function formatSupabaseError(error) {
-  return [
-    error?.message,
-    error?.details,
-    error?.hint,
-    error?.code ? `Código: ${error.code}` : ""
-  ].filter(Boolean).join(" | ");
-}
 
 function PixelIcon({ type }) {
   return (
@@ -44,16 +32,12 @@ export default function Dashboard({
   onLogout,
   onOpenProject,
   onOpenLibrary,
-  onOpenBNCC,
-  onOpenActivityViewer
+  onOpenBNCC
 }) {
-  const { projects, addProjectFromTemplate, isLoaded } = useProjects(currentUser?.id);
-  const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
-  const [creationError, setCreationError] = useState("");
+  const { projects, isLoaded } = useProjects(currentUser?.id);
 
   const professorName = currentUser?.name || currentUser?.email?.split("@")[0] || "Professor";
   const firstName = professorName.split(" ")[0] || "Professor";
-  const accessibilityPreset = ["baixa_visao", "grupos_colaborativos"];
 
   const handleOpenProjects = () => {
     if (projects.length > 0) {
@@ -62,40 +46,6 @@ export default function Dashboard({
     }
 
     onOpenLibrary();
-  };
-
-  const handlePedagogicalActivityGenerated = async (result) => {
-    setCreationError("");
-    try {
-      const data = result.activity || {};
-      const steamLetters = Object.keys(data.steamMatrix || {}).filter((key) =>
-        ["S", "T", "E", "A", "M"].includes(key)
-      );
-
-      const newProject = await addProjectFromTemplate(
-        {
-          ...data,
-          steam: steamLetters,
-          grade: data.grade || result.formData?.grade,
-          source: "pedagogical-planner"
-        },
-        { waitForPersist: true }
-      );
-
-      PedagogicalPlannerService.incrementUsage(
-        currentUser?.id,
-        result.formData?.discipline,
-        result.competencies || []
-      ).catch(console.error);
-
-      setShowPedagogicalModal(false);
-      onOpenActivityViewer(result, newProject.id);
-    } catch (error) {
-      console.error("Erro ao salvar atividade pedagógica:", error);
-      setCreationError(
-        `Não foi possível salvar a atividade. ${formatSupabaseError(error)}`
-      );
-    }
   };
 
   if (!isLoaded) {
@@ -152,8 +102,6 @@ export default function Dashboard({
           </button>
         </header>
 
-        {creationError && <div className="retro-error">{creationError}</div>}
-
         <section className="primary-grid" aria-label="Acessos principais">
           <DashboardCard
             title="PROJETOS"
@@ -178,17 +126,6 @@ export default function Dashboard({
           />
         </section>
 
-        <section className="secondary-grid" aria-label="Acessos rápidos">
-          <DashboardCard
-            title="GERAR NOVA ATIVIDADE"
-            icon="document"
-            text="Crie atividades personalizadas em poucos passos"
-            color="#39FF88"
-            size="small"
-            onClick={() => setShowPedagogicalModal(true)}
-          />
-        </section>
-
         <footer className="retro-footer">
           <span className="footer-pixel footer-apple" aria-hidden="true" />
           <strong>EDUCAÇÃO COM PROPÓSITO. TECNOLOGIA COM SENTIDO.</strong>
@@ -197,13 +134,6 @@ export default function Dashboard({
       </main>
 
       <div className="neon-grid" aria-hidden="true" />
-
-      <PedagogicalPlannerModal
-        isOpen={showPedagogicalModal}
-        onClose={() => setShowPedagogicalModal(false)}
-        onActivityGenerated={handlePedagogicalActivityGenerated}
-        accessibilityPreset={accessibilityPreset}
-      />
 
     </div>
   );
@@ -438,19 +368,11 @@ const retroCss = `
     box-shadow: inset -8px -4px 0 rgba(15, 23, 42, 0.36);
   }
 
-  .primary-grid,
-  .secondary-grid {
+  .primary-grid {
     display: grid;
     gap: 22px;
-  }
-
-  .primary-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     margin-bottom: 22px;
-  }
-
-  .secondary-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .retro-card {
@@ -588,14 +510,6 @@ const retroCss = `
     font-size: 0.45rem;
   }
 
-  .pixel-document {
-    background:
-      linear-gradient(#FFFFFF 0 0) 18px 8px / 42px 56px no-repeat,
-      linear-gradient(#CBD5E1 0 0) 52px 8px / 8px 12px no-repeat,
-      linear-gradient(#39FF88 0 0) 29px 32px / 20px 8px no-repeat,
-      linear-gradient(#39FF88 0 0) 35px 26px / 8px 20px no-repeat;
-  }
-
   .retro-footer {
     display: flex;
     align-items: center;
@@ -669,7 +583,6 @@ const retroCss = `
     opacity: 0.38;
   }
 
-  .retro-error,
   .retro-loading {
     position: relative;
     z-index: 4;
@@ -743,8 +656,7 @@ const retroCss = `
   }
 
   @media (max-width: 1040px) {
-    .primary-grid,
-    .secondary-grid {
+    .primary-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .retro-hero {
@@ -779,8 +691,7 @@ const retroCss = `
       height: 82px;
     }
 
-    .primary-grid,
-    .secondary-grid {
+    .primary-grid {
       grid-template-columns: 1fr;
     }
     .retro-card-large,
