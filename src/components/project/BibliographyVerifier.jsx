@@ -82,7 +82,7 @@ export default function BibliographyVerifier({ references = [] }) {
             {results.map((item, i) => {
               const meta = STATUS_META[item.status] || STATUS_META.doubtful
               return (
-                <div key={i} style={{ ...s.item, borderLeft: `3px solid ${meta.color}`, background: meta.bg, border: `1px solid ${meta.border}`, borderLeft: `3px solid ${meta.color}` }}>
+                <div key={i} style={{ ...s.item, background: meta.bg, border: `1px solid ${meta.border}`, borderLeft: `3px solid ${meta.color}` }}>
                   <div style={s.itemTop}>
                     <span style={{ ...s.statusBadge, color: meta.color }}>{meta.icon} {meta.label}</span>
                     <span style={s.confidence}>{Math.round(item.confidence * 100)}% confiança</span>

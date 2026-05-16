@@ -8,6 +8,7 @@ import {
 import { applyAccessibilityAdaptations } from '../accessibilityAdapter.js'
 import { getAccessibilityAdaptations } from '../../data/accessibilityAdaptations.js'
 import { GeminiService } from './geminiService.js'
+import { findSourcesForActivity } from '../sources/index.js'
 
 const COMPETENCY_TO_LETTER = {
   science: 'S',
@@ -17,7 +18,7 @@ const COMPETENCY_TO_LETTER = {
   mathematics: 'M',
 }
 
-function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, bnccSuggestions }) {
+function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, bnccSuggestions, verifiedSources = [] }) {
   const steamLetters = steamCompetencies
     .map((c) => COMPETENCY_TO_LETTER[String(c).toLowerCase()])
     .filter(Boolean)
@@ -56,7 +57,11 @@ Diretrizes obrigatórias:
    - "Resumo das competências": texto geral e breve relacionando as competências STEAM solicitadas à atividade
    - "Materiais utilizados": lista explicando para que serve cada material solicitado
    - "Como montar e conduzir": orientação prática para o professor montar o projeto, organizar a turma, usar os materiais, conduzir a produção, registrar evidências e finalizar
-9. Referências bibliográficas reais no formato ABNT
+9. Referências bibliográficas: use SOMENTE as fontes verificadas listadas abaixo. NÃO invente autores, títulos, editoras, DOIs ou anos. Se a lista estiver vazia ou for insuficiente, use apenas as fontes disponíveis e não crie referências fictícias.
+
+${verifiedSources.length > 0
+  ? `Fontes verificadas em bases acadêmicas reais (Crossref, OpenAlex, SciELO, Semantic Scholar):\n${verifiedSources.map((s, i) => `${i + 1}. ${s.abnt}`).join('\n')}`
+  : 'Nenhuma fonte localizada automaticamente. Deixe o campo "bibliography" vazio: [].'}
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -237,7 +242,9 @@ export class PedagogicalPlannerService {
       limit: 5
     })
 
-    const prompt = buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, bnccSuggestions })
+    const verifiedSources = await findSourcesForActivity({ theme, discipline, grade, limit: 5 }).catch(() => [])
+
+    const prompt = buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, bnccSuggestions, verifiedSources })
 
     const response = await AIProviderManager.request({
       requestType: 'pedagogicalactivity',
@@ -261,7 +268,8 @@ export class PedagogicalPlannerService {
       activity: parsed,
       generatedAt: new Date().toISOString(),
       competencies: steamCompetencies,
-      provider: response.provider || null
+      provider: response.provider || null,
+      verifiedSources
     }
   }
 

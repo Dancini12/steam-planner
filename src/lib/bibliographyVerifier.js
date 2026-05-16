@@ -1,11 +1,10 @@
 import { AIProviderManager } from './ai/AIProviderManager.js'
+import { validateExistingReferences } from './sources/index.js'
 
 function extractJson(text) {
   const start = text.indexOf('[')
   if (start === -1) throw new Error('Nenhum JSON encontrado na resposta')
-  let depth = 0
-  let inString = false
-  let escaped = false
+  let depth = 0, inString = false, escaped = false
   for (let i = start; i < text.length; i++) {
     const c = text[i]
     if (escaped) { escaped = false; continue }
@@ -22,14 +21,9 @@ function buildPrompt(references) {
   const list = references.map((r, i) => `${i + 1}. ${r}`).join('\n')
   return `Você é especialista em curadoria bibliográfica acadêmica brasileira.
 
-Analise as referências abaixo, geradas por IA, e verifique se cada uma é real, duvidosa ou provavelmente fabricada (alucinação da IA).
+Analise as referências abaixo e verifique se cada uma é real, duvidosa ou provavelmente fabricada (alucinação de IA).
 
-Para cada referência avalie:
-- O autor existe e publica nessa área do conhecimento?
-- O título faz sentido e é conhecido na literatura educacional/científica?
-- A editora é real e credível para esse tipo de obra no contexto brasileiro?
-- O ano e local de publicação são plausíveis?
-- A combinação autor + título + editora é verossímil?
+Avalie por referência: o autor existe nessa área? O título é conhecido? A editora é credível no Brasil? O ano é plausível?
 
 REFERÊNCIAS:
 ${list}
@@ -40,39 +34,55 @@ Responda APENAS com JSON válido (array), sem texto antes ou depois:
     "index": 0,
     "status": "real",
     "confidence": 0.9,
-    "note": "Breve explicação objetiva em português"
+    "note": "Explicação objetiva em português"
   }
 ]
 
-Valores possíveis para "status":
-- "real"      — referência provavelmente existe e é verificável
-- "doubtful"  — incerta; elementos plausíveis mas verificação necessária
-- "fabricated"— provavelmente alucinação: autor, título ou editora inexistentes`
+Status: "real" (provavelmente existe), "doubtful" (verificação necessária), "fabricated" (provavelmente alucinação)`
 }
 
 export async function verifyBibliography(references = []) {
   if (!references.length) return []
 
-  const prompt = buildPrompt(references)
-  const response = await AIProviderManager.request({
-    requestType: 'bibliography',
-    prompt
-  })
+  // Etapa 1: verificação real por DOI via Crossref
+  const doiResults = await validateExistingReferences(references).catch(() =>
+    references.map((ref) => ({ ref, status: 'no-doi', validated: null }))
+  )
 
-  const rawText = response.content
-  if (!rawText || typeof rawText !== 'string') {
-    throw new Error('A IA não retornou conteúdo válido.')
+  // Etapa 2: IA para as que não têm DOI verificado
+  const needsAI = references.filter((_, i) => doiResults[i]?.status !== 'doi-verified')
+
+  let aiResults = []
+  if (needsAI.length > 0) {
+    try {
+      const response = await AIProviderManager.request({ requestType: 'bibliography', prompt: buildPrompt(needsAI) })
+      const rawText = response.content
+      if (rawText && typeof rawText === 'string') {
+        const parsed = JSON.parse(extractJson(rawText))
+        aiResults = needsAI.map((ref, localIdx) => {
+          const r = parsed.find((p) => p.index === localIdx) || { status: 'doubtful', confidence: 0.5, note: 'Não avaliado pela IA.' }
+          return { ref, status: r.status || 'doubtful', confidence: r.confidence ?? 0.5, note: r.note || '', source: 'ai' }
+        })
+      }
+    } catch {
+      aiResults = needsAI.map((ref) => ({ ref, status: 'doubtful', confidence: 0.5, note: 'Verificação indisponível no momento.', source: 'ai' }))
+    }
   }
 
-  const parsed = JSON.parse(extractJson(rawText))
-
+  // Merge: DOI verificado > resultado da IA
+  let aiIdx = 0
   return references.map((ref, i) => {
-    const result = parsed.find((r) => r.index === i) || { status: 'doubtful', confidence: 0.5, note: 'Não avaliado.' }
-    return {
-      ref,
-      status: result.status || 'doubtful',
-      confidence: typeof result.confidence === 'number' ? result.confidence : 0.5,
-      note: result.note || ''
+    const doi = doiResults[i]
+    if (doi?.status === 'doi-verified' && doi.validated) {
+      return {
+        ref,
+        status: 'real',
+        confidence: 0.98,
+        note: `DOI verificado via Crossref. Obra: "${doi.validated.title}" (${doi.validated.year}).`,
+        source: 'crossref'
+      }
     }
+    const ai = aiResults[aiIdx++] || { ref, status: 'doubtful', confidence: 0.5, note: '', source: 'ai' }
+    return ai
   })
 }
