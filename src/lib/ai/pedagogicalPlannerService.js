@@ -55,38 +55,36 @@ ${classesInfo}
 ${formatBnccSuggestions(bnccSuggestions)}
 ${customInstructions?.trim() ? `\nSolicitações específicas do professor:\n${customInstructions.trim()}` : ''}
 
-Diretrizes obrigatórias:
-1. Materiais acessíveis para escolas públicas brasileiras (baixo custo)
-2. Questão norteadora aberta e investigativa
-3. Objetivos mensuráveis alinhados à série
-4. Use no campo "bncc" apenas códigos da lista BNCC offline fornecida acima; não invente códigos novos
-5. Cultura Maker ao longo de toda a atividade: mão na massa, prototipagem iterativa, ciclos de construir → testar → melhorar — inclusive atividades mais teóricas devem incluir produção prática, representação visual, criação ou resolução ativa
-6. Não organize a resposta por fases de Design Thinking (Imersão, Ideação, Prototipagem, Teste, Compartilhamento)
-7. Lista de materiais com quantidade por grupo e por turma. Ex.: "2 folhas de cartolina por grupo", "1 tesoura sem ponta por grupo"
-8. Manual da atividade em três partes no campo "activityManual" (texto corrido, não JSON):
-   - "Resumo das competências": texto conectando as áreas STEAM à atividade
-   - "Materiais utilizados": lista explicando o uso de cada material
-   - "Como montar e conduzir": visão geral da condução (roteiro detalhado fica em "stages")
-9. Referências bibliográficas: use SOMENTE as fontes verificadas listadas abaixo. Fontes jornalísticas e educacionais confiáveis também são aceitas quando relevantes: BBC Brasil, ONU Brasil, National Geographic, Canaltech, Olhar Digital, Nova Escola, Porvir, InfoMoney, SciELO, OpenAlex, Crossref. NUNCA use Wikipedia. NÃO invente autores, títulos, editoras, DOIs ou anos. Se a lista estiver vazia, deixe "bibliography": [].
-10. Roteiro pedagógico detalhado (campo "stages"): gerar EXATAMENTE 8 etapas em array JSON. Cada etapa deve ter description com MÍNIMO DE 150 PALAVRAS, rica, explicativa e prática, além de teacherScript com roteiro direto para o professor e questions com perguntas sugeridas. As 8 etapas obrigatórias:
-    • Etapa 1 — Introdução da aula: como o professor inicia, contextualiza o tema, desperta curiosidade, conecta ao cotidiano real dos alunos. Inclua frases-modelo de abertura.
-    • Etapa 2 — Explicação inicial: quais conceitos o professor ensina, com exemplos concretos, analogias acessíveis, linguagem adequada à série. Como verificar compreensão.
-    • Etapa 3 — Organização da atividade: como dividir os grupos (critérios, tamanhos), distribuir materiais (quem pega o quê), organizar o espaço físico, tempo estimado para cada parte.
-    • Etapa 4 — Desenvolvimento prático: o que os alunos constroem ou fazem passo a passo, como o desafio Maker se desenvolve, como estimular criatividade e protagonismo.
-    • Etapa 5 — Mediação do professor: como circular pela sala, como incentivar sem dar respostas prontas, perguntas de mediação, como trabalhar colaboração entre os grupos.
-    • Etapa 6 — Testes e experimentação: como os alunos testam suas soluções, como identificar erros construtivos, como incentivar ciclos de melhoria e prototipagem iterativa.
-    • Etapa 7 — Discussão e reflexão: perguntas para debate coletivo, como conectar com STEAM e cotidiano, como desenvolver pensamento crítico e síntese da aprendizagem.
-    • Etapa 8 — Finalização e fechamento: como concluir, como organizar apresentações dos grupos, como fazer o fechamento pedagógico com síntese do que foi aprendido.
-11. Antes da aula (campo "beforeClass"): texto de 100+ palavras sobre o que o professor deve preparar, organizar e providenciar ANTES da aula — materiais, ambiente, agrupamentos, impressões, recursos digitais ou físicos.
-12. Após a aula (campo "afterClass"): texto de 80+ palavras sobre o que fazer APÓS a aula — como registrar evidências, como fazer avaliação formativa, como dar devolutiva, como encaminhar a continuidade do aprendizado.
-13. Dicas para o professor (campo "teacherTips"): mínimo 6 dicas numeradas, práticas e acolhedoras sobre como adaptar a atividade a turmas agitadas, poucos recursos, escolas públicas, alunos com dificuldade, tempo reduzido e turmas avançadas.
-14. Atividade do aluno (campo "studentActivity"): criar material completo para uso direto pelo estudante, com:
-    - "textBase": texto-base pedagógico de qualidade (reportagem, notícia, situação real, excerto de livro, estudo de caso ou texto educativo) com MÍNIMO 150 PALAVRAS, linguagem adequada à série, que contextualiza o tema e mobiliza a investigação. Pode ser inspirado em fontes como BBC Brasil, National Geographic, Nova Escola, Porvir ou similares — crie um texto educativo coeso e rico se não houver fonte real disponível.
-    - "sourceInfo": referência da fonte do texto-base. Ex.: "Fonte: Nova Escola, 2023." ou "Fonte: Adaptado de National Geographic Brasil."
-    - "situationProblem": situação-problema concreta e instigante, escrita diretamente ao aluno (2-3 frases)
-    - "investigativeChallenge": desafio investigativo central que orienta toda a atividade prática do aluno
-    - "questions": 5 perguntas progressivas — (1) compreensão do texto, (2) interpretação e conexão, (3) investigação e hipótese, (4) conexão com a realidade do aluno, (5) reflexão crítica
-    - "practicalActivity": descrição clara e motivadora da atividade mão-na-massa que o aluno realiza, com passos simples, o desafio Maker integrado e o que deve produzir ou apresentar ao final
+ESTILO DE ESCRITA — aplicar em todos os campos:
+- Escreva como professor experiente: humano, natural, prático — não como artigo científico
+- Máximo 2-3 frases por parágrafo; prefira bullet points a blocos narrativos longos
+- Zero repetição de ideias entre campos
+- Linguagem acolhedora, próxima da sala de aula real
+- Use marcadores visuais: 💡 (dica), 📌 (atenção), 🛠 (momento maker), 🎯 (objetivo)
+
+Diretrizes:
+1. Materiais: máximo 6 itens acessíveis, com quantidade por grupo. Ex.: "2 cartolinas por grupo"
+2. Questão norteadora: 1 frase aberta e investigativa
+3. Objetivos: máximo 4, verbo de ação direto e mensurável
+4. Campo "bncc": use APENAS os códigos da lista offline acima, no formato "CÓDIGO — descrição breve". Não invente códigos.
+5. Cultura Maker obrigatória: construção + prototipagem + iteração (construir → testar → melhorar). Mesmo atividades teóricas devem ter produção prática ou representação visual.
+6. Não organize por fases de Design Thinking
+7. Campo "activityManual" em 3 partes, máximo 80 palavras no total:
+   - "Resumo das competências": 2 frases conectando STEAM à atividade
+   - "Materiais utilizados": lista curta com função de cada item
+   - "Como montar e conduzir": 2-3 frases sobre a condução geral
+8. Referências: use SOMENTE fontes verificadas abaixo. Aceitas também: BBC Brasil, ONU Brasil, National Geographic, Nova Escola, Porvir, InfoMoney, Canaltech. NUNCA Wikipedia. Não invente dados. Lista vazia → "bibliography": [].
+9. Campo "stages" — EXATAMENTE 8 etapas. Cada etapa DEVE ter:
+   - "objective": frase com 🎯, máx. 12 palavras — o que o aluno conquista nesta etapa
+   - "description": 50-70 palavras, linguagem natural e prática, sem repetir o teacherScript
+   - "teacherScript": 30-50 palavras, linguagem coloquial do professor, use 💡 ou 📌 quando útil
+   - "questions": 1-3 perguntas curtas e abertas
+   Soma dos tempos = ${numberOfClasses ? numberOfClasses * 50 : 50} min (${numberOfClasses || 1} aula${numberOfClasses > 1 ? 's' : ''} de 50 min). Distribua os tempos de forma realista.
+   Etapas: 1-Introdução · 2-Explicação · 3-Organização · 4-Desenvolvimento Maker · 5-Mediação · 6-Testes · 7-Reflexão · 8-Fechamento
+10. Campo "beforeClass": 3-4 bullet points do que preparar antes (materiais, ambiente, grupos)
+11. Campo "afterClass": 2-3 bullet points do que fazer após (registros, avaliação, devolutiva)
+12. Campo "teacherTips": 6 dicas numeradas, 1 frase cada, práticas para: turmas agitadas, poucos recursos, alunos com dificuldade, tempo reduzido, turmas avançadas, escolas públicas
+13. Campo "studentActivity": material completo para o aluno com textBase (mín. 150 palavras, linguagem da série), sourceInfo, situationProblem (2-3 frases ao aluno), investigativeChallenge (1 frase motivadora), questions (5 progressivas: compreensão → reflexão crítica), practicalActivity (passos claros, desafio Maker)
 
 ${verifiedSources.length > 0
   ? `Fontes verificadas em bases acadêmicas reais (Crossref, OpenAlex, SciELO, Semantic Scholar):\n${verifiedSources.map((s, i) => `${i + 1}. ${s.abnt}`).join('\n')}`
@@ -108,7 +106,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Objetivo 3",
     "Objetivo 4"
   ],
-  "bncc": ${JSON.stringify(getBnccCodes(bnccSuggestions))},
+  "bncc": ${JSON.stringify(getBnccCodes(bnccSuggestions).map(c => `${c} — descrição breve da habilidade`))},
   "materials": [
     "Material 1 — quantidade por grupo e/ou turma (acessível)",
     "Material 2 — quantidade por grupo e/ou turma",
@@ -120,72 +118,80 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "stages": [
     {
       "number": 1,
-      "title": "Etapa 1 — Introdução da aula",
-      "duration": "10 a 15 minutos",
-      "description": "Texto rico de 150+ palavras: como iniciar a aula, apresentar o tema, despertar curiosidade dos alunos, fazer conexão com situações do cotidiano deles e com o problema real da atividade. Inclua exemplos de como o professor pode abrir a conversa.",
-      "teacherScript": "Roteiro prático: o que o professor diz, como se posiciona, que recursos usa para introduzir. Inclua frases-modelo e tom de voz sugerido.",
-      "questions": ["Pergunta de abertura para despertar curiosidade 1?", "Pergunta para conectar ao cotidiano 2?"]
+      "title": "Etapa 1 — Introdução",
+      "duration": "10 min",
+      "objective": "🎯 Os alunos se conectam ao tema e levantam curiosidades sobre o problema.",
+      "description": "50-70 palavras: inicie com uma provocação do cotidiano dos alunos. Apresente o problema real da atividade e mostre como as áreas STEAM (liste quais) aparecem neste desafio. Desperte a curiosidade antes de qualquer explicação formal.",
+      "teacherScript": "💡 Abra com: [frase provocadora ligada ao tema]. Mostre imagem/objeto/notícia. Peça 2-3 alunos para falarem o que já sabem. Não corrija ainda — o objetivo é curiosidade.",
+      "questions": ["Pergunta de abertura para despertar curiosidade?", "O que você já sabe sobre esse assunto?"]
     },
     {
       "number": 2,
-      "title": "Etapa 2 — Explicação inicial",
-      "duration": "15 a 20 minutos",
-      "description": "Texto rico de 150+ palavras: quais conceitos o professor apresenta, como explicar de forma simples e acessível para a série, que exemplos concretos e analogias usar, como verificar se os alunos compreenderam antes de avançar.",
-      "teacherScript": "O que o professor explica, como usa exemplos do dia a dia, que vocabulário adota, como faz perguntas de verificação de compreensão.",
-      "questions": ["Pergunta de verificação de compreensão 1?", "O que você já sabe sobre esse assunto?"]
+      "title": "Etapa 2 — Explicação",
+      "duration": "10-15 min",
+      "objective": "🎯 Os alunos compreendem os conceitos-chave necessários para o desafio.",
+      "description": "50-70 palavras: apresente os 2-3 conceitos essenciais com exemplos concretos da realidade dos alunos. Use analogias simples. Verifique a compreensão com uma pergunta rápida antes de avançar. Evite explicações longas — o foco é mobilizar para a prática.",
+      "teacherScript": "📌 Explique o conceito com exemplo do dia a dia. Use o quadro para 1 diagrama simples. Faça a pergunta de verificação para a turma toda antes de seguir.",
+      "questions": ["Pergunta de verificação de compreensão?", "Alguém consegue dar um exemplo parecido?"]
     },
     {
       "number": 3,
-      "title": "Etapa 3 — Organização da atividade",
-      "duration": "10 minutos",
-      "description": "Texto rico de 150+ palavras: como dividir os grupos (critérios, tamanho ideal, perfis complementares), como distribuir os materiais (quem pega o quê, onde ficam), como organizar o espaço físico da sala, tempo estimado de cada parte, cuidados importantes de segurança e convivência.",
-      "teacherScript": "Instruções diretas para a turma sobre formação dos grupos, posicionamento na sala e recebimento dos materiais.",
+      "title": "Etapa 3 — Organização",
+      "duration": "5-8 min",
+      "objective": "🎯 Os grupos estão formados e prontos para iniciar o desafio.",
+      "description": "50-70 palavras: forme grupos de 3-4 alunos com perfis complementares. Distribua os materiais de forma organizada (um representante por grupo). Organize o espaço da sala para o trabalho prático. Explique os critérios do desafio antes de liberar os grupos.",
+      "teacherScript": "💡 Diga claramente: quem forma cada grupo, como pegar os materiais e o que cada grupo deve produzir. Reserve 1 min para perguntas antes de começar.",
       "questions": []
     },
     {
       "number": 4,
-      "title": "Etapa 4 — Desenvolvimento prático",
-      "duration": "30 a 40 minutos",
-      "description": "Texto rico de 150+ palavras: o que os alunos constroem, criam ou fazem passo a passo, como o desafio Maker se desenvolve na prática, como o professor estimula criatividade e protagonismo dos grupos, como garantir que todos participem ativamente.",
-      "teacherScript": "Como o professor lança o desafio, que instruções dá no início e no decorrer, como estimula os grupos sem fazer por eles.",
+      "title": "Etapa 4 — Desenvolvimento Maker",
+      "duration": "20-30 min",
+      "objective": "🛠 Os alunos constroem, criam e testam a primeira versão da sua solução.",
+      "description": "50-70 palavras: os grupos trabalham no desafio Maker de forma autônoma. Cada grupo deve produzir algo concreto (modelo, protótipo, representação visual ou solução prática). Estimule o protagonismo: o professor não resolve — orienta. Registre com fotos ou anotações das soluções emergentes.",
+      "teacherScript": "🛠 Lance o desafio: [frase de lançamento do desafio]. Circule discretamente. Se um grupo travar, pergunte — não responda. Avise o tempo restante a cada 10 min.",
       "questions": []
     },
     {
       "number": 5,
-      "title": "Etapa 5 — Mediação do professor",
+      "title": "Etapa 5 — Mediação",
       "duration": "durante o desenvolvimento",
-      "description": "Texto rico de 150+ palavras: como o professor deve circular pela sala sem interromper o fluxo, como incentiva grupos que travam, como estimula pensamento crítico com perguntas abertas, como trabalha colaboração e resolve conflitos sem tomar partido, como documenta evidências de aprendizagem.",
-      "teacherScript": "Perguntas de mediação que o professor faz ao visitar cada grupo, postura corporal, tom de voz e atitude de facilitador.",
+      "objective": "🎯 Os alunos avançam com autonomia, apoiados pelo professor facilitador.",
+      "description": "50-70 palavras: circule entre os grupos com postura de facilitador — observe antes de intervir. Incentive grupos travados com perguntas abertas, não com respostas. Estimule a colaboração dentro e entre grupos. Documente evidências de aprendizagem (fotos, anotações rápidas).",
+      "teacherScript": "📌 Perguntas de mediação: O que vocês já tentaram? O que aconteceu? Que outras formas existem? Evite falar mais que os alunos. Seu papel é provocar, não resolver.",
       "questions": ["O que vocês já tentaram?", "O que aconteceu quando fizeram isso?", "Que outras formas vocês podem testar?"]
     },
     {
       "number": 6,
-      "title": "Etapa 6 — Testes e experimentação",
-      "duration": "15 a 20 minutos",
-      "description": "Texto rico de 150+ palavras: como os alunos testam suas soluções de forma estruturada, como identificar e nomear os erros de forma construtiva, como o professor incentiva os ciclos de melhoria (construir → testar → ajustar → testar novamente), como cultivar a mentalidade de que errar faz parte do processo.",
-      "teacherScript": "Como o professor conduz a etapa de testes, que linguagem usa para normalizar o erro, como orienta o registro das tentativas.",
-      "questions": ["O que funcionou como esperado?", "O que não funcionou e por quê?", "Como podemos melhorar isso?"]
+      "title": "Etapa 6 — Testes e melhoria",
+      "duration": "10-15 min",
+      "objective": "🎯 Os alunos identificam erros, refinam e melhoram suas soluções.",
+      "description": "50-70 palavras: cada grupo testa sua solução e registra o que funcionou e o que não funcionou. Incentive ao menos um ciclo de melhoria (construir → testar → ajustar). Normalize o erro como parte do processo — quem errou e melhorou aprendeu mais.",
+      "teacherScript": "💡 Diga: Erro não é fracasso — é dado. O que mudaria se tivessem mais 5 minutos? Estimule os grupos a ajustar pelo menos 1 coisa antes da apresentação.",
+      "questions": ["O que funcionou?", "O que não funcionou e por quê?", "Como podemos melhorar?"]
     },
     {
       "number": 7,
-      "title": "Etapa 7 — Discussão e reflexão",
-      "duration": "15 minutos",
-      "description": "Texto rico de 150+ palavras: como o professor conduz o debate coletivo, que perguntas usa para estimular reflexão profunda, como conecta a atividade com situações reais e com as áreas STEAM, como desenvolver o pensamento crítico e a capacidade de argumentação dos alunos.",
-      "teacherScript": "Como abrir a roda de conversa, como distribuir a fala entre grupos diferentes, como registrar as conclusões coletivas no quadro ou em cartaz.",
-      "questions": ["Como o que fizemos hoje aparece na vida real?", "O que foi mais surpreendente neste processo?", "Como as áreas STEAM se conectam nesta atividade?", "O que você mudaria se fosse repetir?"]
+      "title": "Etapa 7 — Reflexão coletiva",
+      "duration": "10 min",
+      "objective": "🎯 Os alunos conectam o que fizeram com as áreas STEAM e a realidade.",
+      "description": "50-70 palavras: promova uma roda rápida de conversa. Cada grupo compartilha 1 descoberta e 1 dificuldade. Registre as conclusões no quadro. Conecte explicitamente a atividade com as áreas STEAM usadas e com situações reais do cotidiano dos alunos.",
+      "teacherScript": "📌 Abra a roda: Cada grupo tem 1 minuto. Anote no quadro: O que aprendemos + Onde isso aparece na vida real. Conduza para que TODOS os grupos falem.",
+      "questions": ["Como o que fizemos hoje aparece na vida real?", "Como as áreas STEAM se conectaram nesta atividade?", "O que você mudaria?"]
     },
     {
       "number": 8,
-      "title": "Etapa 8 — Finalização e fechamento",
-      "duration": "10 a 15 minutos",
-      "description": "Texto rico de 150+ palavras: como concluir a atividade de forma marcante, como organizar as apresentações dos grupos (tempo, formato, critérios), como o professor faz o fechamento pedagógico sintetizando aprendizagens, como conectar o que foi aprendido ao próximo passo do currículo.",
-      "teacherScript": "Roteiro do fechamento: o que o professor fala para concluir, como celebra os resultados, que síntese faz das aprendizagens, que encaminhamento dá.",
+      "title": "Etapa 8 — Fechamento",
+      "duration": "8-10 min",
+      "objective": "🎯 Os alunos sintetizam as aprendizagens e recebem encaminhamentos.",
+      "description": "50-70 palavras: conclua com uma síntese das aprendizagens do dia — o que foi construído, investigado e descoberto. Celebre os resultados de todos os grupos. Anuncie o próximo passo (continuação, avaliação ou nova atividade). Reserve 2 minutos para organização da sala.",
+      "teacherScript": "💡 Diga: Hoje vocês [síntese do que foi feito]. Destaque 2-3 pontos-chave. Pergunte: O que você vai lembrar desta aula amanhã? Encerre com energia positiva.",
       "questions": ["O que cada grupo aprendeu hoje?", "Como podemos levar esse conhecimento para fora da escola?"]
     }
   ],
-  "beforeClass": "Texto de 100+ palavras: o que o professor deve preparar, organizar e providenciar ANTES da aula — quais materiais separar e como, como reorganizar o espaço físico, se há algo para imprimir ou baixar, como pré-definir os grupos se necessário, quanto tempo de preparação estimar.",
-  "afterClass": "Texto de 80+ palavras: o que fazer APÓS a aula — como registrar as evidências de aprendizagem, como fazer avaliação formativa, como dar devolutiva significativa aos alunos, como guardar as produções, como encaminhar a continuidade para a próxima aula.",
-  "teacherTips": "1. Dica para turmas agitadas: ...\\n2. Dica para poucos recursos: ...\\n3. Dica para escolas públicas: ...\\n4. Dica para alunos com dificuldade: ...\\n5. Dica para tempo reduzido: ...\\n6. Dica para turmas avançadas: ...",
+  "beforeClass": "• Material 1: onde conseguir e como preparar\\n• Material 2: quantidade e organização\\n• Ambiente: como reorganizar a sala\\n• 📌 Atenção: [algo específico a não esquecer]",
+  "afterClass": "• Registre fotos das produções dos grupos\\n• Avaliação formativa: observe [o quê] em [quem]\\n• Devolutiva: [como e quando dar retorno aos alunos]",
+  "teacherTips": "1. Turmas agitadas: [dica prática em 1 frase]\\n2. Poucos recursos: [dica prática em 1 frase]\\n3. Alunos com dificuldade: [dica prática em 1 frase]\\n4. Tempo reduzido: [dica prática em 1 frase]\\n5. Turmas avançadas: [dica prática em 1 frase]\\n6. Escolas públicas: [dica prática em 1 frase]",
   "studentActivity": {
     "textBase": "Texto-base completo com mínimo 150 palavras, linguagem adequada à série. Pode ser uma reportagem, notícia, situação real ou texto educativo que contextualiza o tema e mobiliza a investigação. Escreva de forma cativante e adequada à faixa etária.",
     "sourceInfo": "Fonte: Nome da Publicação, Ano. (ex: Fonte: Nova Escola, 2024. ou Fonte: Adaptado de National Geographic Brasil.)",
@@ -291,13 +297,16 @@ function applyOfflineBncc(data, bnccSuggestions) {
   const offlineCodes = getBnccCodes(bnccSuggestions)
   if (offlineCodes.length === 0) return data
 
-  const selectedCodes = Array.isArray(data.bncc)
-    ? data.bncc.filter((code) => offlineCodes.includes(code))
+  // AI may return "EF09CI01 — description" or plain "EF09CI01"
+  const extractCode = (s) => (typeof s === 'string' ? s.split(' — ')[0].trim() : '')
+
+  const selectedItems = Array.isArray(data.bncc)
+    ? data.bncc.filter((item) => offlineCodes.includes(extractCode(item)))
     : []
 
   return {
     ...data,
-    bncc: selectedCodes.length > 0 ? selectedCodes : offlineCodes.slice(0, 3)
+    bncc: selectedItems.length > 0 ? selectedItems : offlineCodes.slice(0, 3)
   }
 }
 

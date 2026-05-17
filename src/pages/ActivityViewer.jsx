@@ -452,14 +452,17 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
           <div style={sectionTitleStyle}>Roteiro Pedagógico — {stages.length} Etapas</div>
           {stages.map((stage, i) => (
             <div key={i} style={{ ...matrixCardStyle("#4F46E5"), marginBottom: "1rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.5rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.3rem" }}>
                 <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#4F46E5" }}>
                   Etapa {stage.number || i + 1} — {stage.title || ""}
                 </div>
                 {stage.duration && (
-                  <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.45)", fontStyle: "italic" }}>{stage.duration}</div>
+                  <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.45)", fontStyle: "italic" }}>⏱ {stage.duration}</div>
                 )}
               </div>
+              {stage.objective && (
+                <div style={{ fontSize: "0.82rem", color: "#6EE7B7", marginBottom: "0.4rem" }}>{stage.objective}</div>
+              )}
               {stage.description && (
                 <p style={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.8)", lineHeight: 1.55, marginBottom: "0.5rem" }}>{stage.description}</p>
               )}

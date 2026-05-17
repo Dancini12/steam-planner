@@ -47,7 +47,12 @@ function buildActivityPrintHTML(activity) {
 
   const objectivesHTML = (objectives || []).map((o, i) => `<li>${String.fromCharCode(97 + i)}) ${escapeHtml(o)}</li>`).join('');
   const materialsHTML = (materials || []).map((m) => `<li>${escapeHtml(m)}</li>`).join('');
-  const bnccHTML = (bncc || []).map((c) => `<code>${escapeHtml(c)}</code>`).join(' ');
+  const bnccHTML = (bncc || []).map((c) => {
+    const parts = c.split(' — ')
+    const code = parts[0].trim()
+    const desc = parts[1] ? parts[1].trim() : ''
+    return `<span class="bncc-chip"><code>${escapeHtml(code)}</code>${desc ? ` <span class="bncc-desc">— ${escapeHtml(desc)}</span>` : ''}</span>`
+  }).join('');
   const bibliographyHTML = (bibliography || []).map((b) => `<p class="ref">${escapeHtml(b)}</p>`).join('');
   const accessibilityHTML = Array.isArray(accessibility) && accessibility.length
     ? `<ul>${accessibility.map((a) => `<li>${escapeHtml(a)}</li>`).join('')}</ul>`
@@ -130,11 +135,12 @@ function buildActivityPrintHTML(activity) {
       <div class="stage-header">
         <span class="stage-num">Etapa ${num}</span>
         <span class="stage-title">${escapeHtml(stage.title || '')}</span>
-        ${stage.duration ? `<span class="stage-dur">${escapeHtml(stage.duration)}</span>` : ''}
+        ${stage.duration ? `<span class="stage-dur">⏱ ${escapeHtml(stage.duration)}</span>` : ''}
       </div>
+      ${stage.objective ? `<div class="stage-objective">${escapeHtml(stage.objective)}</div>` : ''}
       ${stage.description ? `<p>${escapeHtml(stage.description)}</p>` : ''}
-      ${stage.teacherScript ? `<div class="stage-script"><strong>Roteiro do professor:</strong> ${escapeHtml(stage.teacherScript)}</div>` : ''}
-      ${qs ? `<div class="stage-q"><strong>Perguntas norteadoras:</strong><ul>${qs}</ul></div>` : ''}
+      ${stage.teacherScript ? `<div class="stage-script">${escapeHtml(stage.teacherScript)}</div>` : ''}
+      ${qs ? `<div class="stage-q"><strong>Perguntas:</strong><ul>${qs}</ul></div>` : ''}
     </div>`;
   }).join('');
 
@@ -253,7 +259,10 @@ function buildActivityPrintHTML(activity) {
     th { background: #f0f0f0; font-weight: bold; font-size: 10pt; text-transform: uppercase; letter-spacing: 0.04em; }
 
     /* ── BNCC ── */
-    .bncc-list { display: flex; flex-wrap: wrap; gap: 0.2cm; margin: 0.3cm 0; }
+    .bncc-list { display: flex; flex-wrap: wrap; gap: 0.2cm 0; margin: 0.3cm 0; }
+    .bncc-chip { display: block; margin-bottom: 0.2cm; font-size: 10pt; }
+    .bncc-chip code { font-family: 'Courier New', monospace; font-size: 10pt; background: #f0f0f0; padding: 0.05cm 0.25cm; border-radius: 2px; font-weight: bold; }
+    .bncc-desc { color: #333; font-style: italic; }
 
     /* ── AVALIAÇÃO / ESPAÇO ── */
     .blank-line {
@@ -301,6 +310,7 @@ function buildActivityPrintHTML(activity) {
     .stage-header { display: flex; align-items: baseline; gap: 0.5cm; margin-bottom: 0.2cm; flex-wrap: wrap; }
     .stage-num { font-size: 9pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.06em; color: #555; white-space: nowrap; }
     .stage-title { font-weight: bold; font-size: 11pt; }
+    .stage-objective { font-size: 10pt; font-style: italic; color: #333; margin-bottom: 0.15cm; }
     .stage-dur { font-size: 9pt; color: #666; font-style: italic; margin-left: auto; }
     .stage-script { background: #f5f5f5; border-left: 2px solid #999; padding: 0.2cm 0.4cm; margin: 0.2cm 0; font-size: 11pt; }
     .stage-q { margin-top: 0.2cm; font-size: 11pt; }
