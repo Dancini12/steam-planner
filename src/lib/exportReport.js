@@ -26,7 +26,7 @@ function parseActivityManual(text) {
 }
 
 function buildActivityPrintHTML(activity) {
-  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, accessibility, bibliography, grade, discipline, generatedAt, stages, beforeClass, afterClass, teacherTips } = activity;
+  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, accessibility, bibliography, grade, discipline, generatedAt, stages, beforeClass, afterClass, teacherTips, modality } = activity;
 
   const steamLetters = Object.keys(steamMatrix || {}).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
   const generatedDate = generatedAt ? formatDate(generatedAt) : new Date().toLocaleDateString("pt-BR");
@@ -261,6 +261,7 @@ function buildActivityPrintHTML(activity) {
       ${discipline ? `<span class="meta-label">Disciplina:</span><span class="meta-value">${escapeHtml(discipline)}</span>` : ''}
       ${grade ? `<span class="meta-label">Série/Turma:</span><span class="meta-value">${escapeHtml(grade)}</span>` : ''}
       ${duration ? `<span class="meta-label">Duração:</span><span class="meta-value">${escapeHtml(duration)}</span>` : ''}
+      ${modality ? `<span class="meta-label">Modalidade:</span><span class="meta-value">${modality === 'individual' ? 'Individual' : 'Em grupo'}</span>` : ''}
     </div>
     <div class="generated">Gerado em ${generatedDate} · STEAM Planner</div>
   </div>
@@ -275,6 +276,7 @@ function buildActivityPrintHTML(activity) {
         ${grade ? `<tr><td style="font-weight:bold;">Série/Turma</td><td>${escapeHtml(grade)}</td></tr>` : ''}
         ${theme ? `<tr><td style="font-weight:bold;">Tema</td><td>${escapeHtml(theme)}</td></tr>` : ''}
         ${duration ? `<tr><td style="font-weight:bold;">Duração total</td><td>${escapeHtml(duration)}</td></tr>` : ''}
+        ${modality ? `<tr><td style="font-weight:bold;">Modalidade</td><td>${modality === 'individual' ? 'Individual' : 'Em grupo'}</td></tr>` : ''}
       </tbody>
     </table>
   </div>

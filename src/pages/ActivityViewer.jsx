@@ -25,6 +25,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       : activityData.accessibility || ""
   );
   const [bibliographyText, setBibliographyText] = useState((activityData.bibliography || []).join("\n"));
+  const [modality, setModality] = useState(activityData.modality || 'grupo');
   const [stages] = useState(activityData.stages || []);
   const [beforeClass, setBeforeClass] = useState(activityData.beforeClass || '');
   const [afterClass, setAfterClass] = useState(activityData.afterClass || '');
@@ -57,6 +58,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       activityManual,
       accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       steamMatrix,
+      modality,
       stages,
       beforeClass,
       afterClass,
@@ -90,6 +92,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       activityManual,
       accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       steamMatrix,
+      modality,
       stages,
       beforeClass,
       afterClass,
@@ -217,6 +220,41 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
           <div>
             <label style={labelStyle}>Duração</label>
             <input style={inputStyle} value={duration} onChange={(e) => setDuration(e.target.value)} />
+          </div>
+        </div>
+        <div style={{ marginTop: "0.75rem" }}>
+          <label style={labelStyle}>Modalidade</label>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            {[
+              { value: 'grupo', label: 'Em grupo', icon: '👥' },
+              { value: 'individual', label: 'Individual', icon: '👤' },
+            ].map(({ value, label, icon }) => {
+              const active = modality === value;
+              return (
+                <button
+                  key={value}
+                  onClick={() => setModality(value)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    padding: "0.55rem 1.1rem",
+                    borderRadius: "8px",
+                    border: active ? "1px solid rgba(110,231,183,0.6)" : "1px solid rgba(255,255,255,0.08)",
+                    background: active ? "rgba(110,231,183,0.1)" : "rgba(255,255,255,0.04)",
+                    color: active ? "#6EE7B7" : "rgba(255,255,255,0.5)",
+                    fontSize: "0.88rem",
+                    fontWeight: active ? 600 : 400,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <span>{icon}</span>
+                  <span>{label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
