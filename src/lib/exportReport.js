@@ -15,76 +15,396 @@
 import { PHASES } from "../data/phases.js";
 import { STEAM_AREAS } from "../data/steamAreas.js";
 
+function parseActivityManual(text) {
+  if (!text) return { competencias: '', desenvolvimento: '' }
+  const compMatch = text.match(/resumo das competências:?\s*([\s\S]*?)(?=materiais utilizados:|como montar|$)/i)
+  const devMatch = text.match(/como montar e conduzir:?\s*([\s\S]*?)$/i)
+  return {
+    competencias: compMatch ? compMatch[1].trim() : '',
+    desenvolvimento: devMatch ? devMatch[1].trim() : text.trim()
+  }
+}
+
 function buildActivityPrintHTML(activity) {
   const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, accessibility, bibliography, grade, discipline, generatedAt } = activity;
 
   const steamLetters = Object.keys(steamMatrix || {}).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
+  const generatedDate = generatedAt ? formatDate(generatedAt) : new Date().toLocaleDateString("pt-BR");
+  const { competencias, desenvolvimento } = parseActivityManual(activityManual);
 
-  const matrixHTML = steamLetters.map((letter) => {
+  const steamAreaNames = { S: 'Ciências', T: 'Tecnologia', E: 'Engenharia', A: 'Artes', M: 'Matemática' };
+
+  const matrixRows = steamLetters.map((letter) => {
     const area = STEAM_AREAS[letter];
     const m = (steamMatrix || {})[letter] || {};
     return `<tr>
-      <td style="font-weight:700;color:#000">${letter} · ${escapeHtml(area?.name || letter)}</td>
+      <td><strong>${letter} — ${escapeHtml(area?.name || steamAreaNames[letter] || letter)}</strong></td>
       <td>${escapeHtml(m.contribution || '—')}</td>
       <td>${escapeHtml(m.activity || '—')}</td>
       <td>${escapeHtml(m.evidence || '—')}</td>
     </tr>`;
-  }).join("");
+  }).join('');
 
-  const objectivesHTML = (objectives || []).map((o) => `<li>${escapeHtml(o)}</li>`).join("");
-  const materialsHTML = (materials || []).map((m) => `<li>${escapeHtml(m)}</li>`).join("");
-  const accessibilityHTML = (accessibility || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
-  const bnccHTML = (bncc || []).map(escapeHtml).join(" · ");
-  const bibliographyHTML = (bibliography || []).map((b) => `<li style="margin-bottom:0.4rem;">${escapeHtml(b)}</li>`).join("");
-  const generatedDate = generatedAt ? formatDate(generatedAt) : "";
+  const objectivesHTML = (objectives || []).map((o, i) => `<li>${String.fromCharCode(97 + i)}) ${escapeHtml(o)}</li>`).join('');
+  const materialsHTML = (materials || []).map((m) => `<li>${escapeHtml(m)}</li>`).join('');
+  const bnccHTML = (bncc || []).map((c) => `<code>${escapeHtml(c)}</code>`).join(' ');
+  const bibliographyHTML = (bibliography || []).map((b) => `<p class="ref">${escapeHtml(b)}</p>`).join('');
+  const accessibilityHTML = Array.isArray(accessibility) && accessibility.length
+    ? `<ul>${accessibility.map((a) => `<li>${escapeHtml(a)}</li>`).join('')}</ul>`
+    : '';
+
+  const steamUsedList = steamLetters.map((l) => {
+    const area = STEAM_AREAS[l];
+    const m = (steamMatrix || {})[l] || {};
+    return `<li><strong>${l} — ${escapeHtml(area?.name || l)}:</strong> ${escapeHtml(m.contribution || area?.description || '')}</li>`;
+  }).join('');
+
+  const blankLines = (n) => Array(n).fill('<div class="blank-line"></div>').join('');
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>${escapeHtml(title || "Atividade Pedagógica")}</title>
+  <title>${escapeHtml(title || 'Atividade Pedagógica')}</title>
   <style>
-    * { box-sizing: border-box; }
-    body { font-family: Georgia, serif; max-width: 800px; margin: 2rem auto; padding: 1rem 1.5rem; color: #000; line-height: 1.6; }
-    h1 { color: #000; font-weight: bold; border-bottom: 3px solid #000; padding-bottom: 0.5rem; margin-bottom: 0.25rem; font-size: 1.6rem; }
-    h2 { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; color: #000; font-weight: bold; margin: 2rem 0 0.75rem; border-bottom: 1px solid #ccc; padding-bottom: 0.3rem; }
-    h3 { margin: 0 0 0.4rem; font-size: 1rem; color: #000; font-weight: bold; }
-    .meta { color: #333; font-size: 0.9rem; margin-bottom: 1.5rem; }
-    .question { background: #f5f5f5; border-left: 4px solid #000; padding: 0.75rem 1rem; margin: 0.75rem 0; font-style: italic; }
-    .problem { background: #f5f5f5; border-left: 4px solid #555; padding: 0.75rem 1rem; margin: 0.75rem 0; }
-    table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.9rem; }
-    th, td { border: 1px solid #ccc; padding: 0.5rem 0.75rem; vertical-align: top; }
-    th { background: #f0f0f0; text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: bold; color: #000; }
-    ul { padding-left: 1.5rem; margin: 0.5rem 0; }
-    li { margin-bottom: 0.3rem; }
-    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ccc; color: #333; font-size: 0.8rem; text-align: center; }
-    @media print { body { margin: 0; padding: 0.5cm 1cm; } h2 { page-break-after: avoid; } }
+    @page {
+      size: A4;
+      margin: 3cm 2cm 2cm 3cm;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 12pt;
+      line-height: 1.5;
+      color: #000;
+      background: #fff;
+      padding: 3cm 2cm 2cm 3cm;
+      max-width: 21cm;
+      margin: 0 auto;
+    }
+
+    /* ── CAPA ── */
+    .cover {
+      text-align: center;
+      margin-bottom: 2cm;
+      padding-bottom: 1.5cm;
+      border-bottom: 2px solid #000;
+    }
+    .cover-label {
+      font-size: 10pt;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: #555;
+      margin-bottom: 0.8cm;
+    }
+    .cover h1 {
+      font-size: 16pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      line-height: 1.4;
+      margin-bottom: 0.5cm;
+    }
+    .cover .subtitle {
+      font-size: 12pt;
+      font-style: italic;
+      color: #333;
+      margin-bottom: 0.8cm;
+    }
+    .cover .meta-grid {
+      display: inline-grid;
+      grid-template-columns: auto auto;
+      gap: 0.2cm 0.6cm;
+      text-align: left;
+      font-size: 11pt;
+      margin-top: 0.5cm;
+    }
+    .cover .meta-label { font-weight: bold; }
+    .cover .meta-value { color: #333; }
+    .cover .generated {
+      margin-top: 0.8cm;
+      font-size: 10pt;
+      color: #666;
+    }
+
+    /* ── SEÇÕES ── */
+    .section { margin-top: 1.2cm; page-break-inside: avoid; }
+    .section-title {
+      font-size: 12pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      border-bottom: 1px solid #000;
+      padding-bottom: 0.15cm;
+      margin-bottom: 0.5cm;
+    }
+    .subsection-title {
+      font-size: 12pt;
+      font-weight: bold;
+      margin: 0.5cm 0 0.25cm;
+    }
+
+    /* ── TEXTO ── */
+    p { text-align: justify; margin-bottom: 0.4cm; }
+    ul, ol { padding-left: 1.2cm; margin-bottom: 0.4cm; }
+    li { margin-bottom: 0.2cm; text-align: justify; }
+    code {
+      font-family: 'Courier New', monospace;
+      font-size: 10pt;
+      background: #f0f0f0;
+      padding: 0.05cm 0.2cm;
+      border-radius: 2px;
+    }
+
+    /* ── DESTAQUE ── */
+    .highlight {
+      background: #f8f8f8;
+      border-left: 3px solid #000;
+      padding: 0.4cm 0.6cm;
+      margin: 0.4cm 0;
+      font-style: italic;
+    }
+    .maker-box {
+      background: #f8f8f8;
+      border: 1px solid #ccc;
+      border-left: 4px solid #555;
+      padding: 0.4cm 0.6cm;
+      margin: 0.4cm 0;
+    }
+
+    /* ── TABELA STEAM ── */
+    table { width: 100%; border-collapse: collapse; margin: 0.4cm 0; font-size: 11pt; }
+    th, td { border: 1px solid #ccc; padding: 0.3cm 0.4cm; vertical-align: top; text-align: left; }
+    th { background: #f0f0f0; font-weight: bold; font-size: 10pt; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    /* ── BNCC ── */
+    .bncc-list { display: flex; flex-wrap: wrap; gap: 0.2cm; margin: 0.3cm 0; }
+
+    /* ── AVALIAÇÃO / ESPAÇO ── */
+    .blank-line {
+      border-bottom: 1px solid #bbb;
+      height: 0.9cm;
+      margin-bottom: 0.15cm;
+    }
+    .avaliacao-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.4cm;
+      margin: 0.3cm 0;
+    }
+    .avaliacao-item label {
+      font-size: 10pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      display: block;
+      margin-bottom: 0.15cm;
+    }
+
+    /* ── REFERÊNCIAS ── */
+    .ref {
+      text-align: justify;
+      padding-left: 1.27cm;
+      text-indent: -1.27cm;
+      margin-bottom: 0.3cm;
+      line-height: 1.5;
+    }
+
+    /* ── RODAPÉ ── */
+    .doc-footer {
+      margin-top: 1.5cm;
+      padding-top: 0.5cm;
+      border-top: 1px solid #ccc;
+      font-size: 9pt;
+      color: #555;
+      text-align: center;
+    }
+
+    @media print {
+      body { padding: 0; }
+      .section { page-break-inside: avoid; }
+      .section-title { page-break-after: avoid; }
+    }
   </style>
 </head>
 <body>
-  <h1>${escapeHtml(title || "Atividade Pedagógica")}</h1>
-  <div class="meta">
-    ${escapeHtml(theme || "")}${grade ? ` · ${escapeHtml(grade)}` : ""}${discipline ? ` · ${escapeHtml(discipline)}` : ""}${duration ? ` · ${escapeHtml(duration)}` : ""}${generatedDate ? ` · Gerada em ${escapeHtml(generatedDate)}` : ""}
+
+  <!-- CAPA -->
+  <div class="cover">
+    <div class="cover-label">Plano de Atividade Pedagógica · STEAM + Cultura Maker</div>
+    <h1>${escapeHtml(title || 'Atividade Pedagógica')}</h1>
+    ${theme ? `<div class="subtitle">${escapeHtml(theme)}</div>` : ''}
+    <div class="meta-grid">
+      ${discipline ? `<span class="meta-label">Disciplina:</span><span class="meta-value">${escapeHtml(discipline)}</span>` : ''}
+      ${grade ? `<span class="meta-label">Série/Turma:</span><span class="meta-value">${escapeHtml(grade)}</span>` : ''}
+      ${duration ? `<span class="meta-label">Duração:</span><span class="meta-value">${escapeHtml(duration)}</span>` : ''}
+    </div>
+    <div class="generated">Gerado em ${generatedDate} · STEAM Planner</div>
   </div>
 
-  ${problem ? `<h2>Problema ou Desafio</h2><div class="problem">${escapeHtml(problem)}</div>` : ""}
-  ${guidingQuestion ? `<h2>Questão Norteadora</h2><div class="question">${escapeHtml(guidingQuestion)}</div>` : ""}
+  <!-- 1. IDENTIFICAÇÃO -->
+  <div class="section">
+    <div class="section-title">1&nbsp;&nbsp;Identificação</div>
+    <table>
+      <tbody>
+        <tr><td style="width:30%;font-weight:bold;">Título</td><td>${escapeHtml(title || '—')}</td></tr>
+        ${discipline ? `<tr><td style="font-weight:bold;">Disciplina</td><td>${escapeHtml(discipline)}</td></tr>` : ''}
+        ${grade ? `<tr><td style="font-weight:bold;">Série/Turma</td><td>${escapeHtml(grade)}</td></tr>` : ''}
+        ${theme ? `<tr><td style="font-weight:bold;">Tema</td><td>${escapeHtml(theme)}</td></tr>` : ''}
+        ${duration ? `<tr><td style="font-weight:bold;">Duração total</td><td>${escapeHtml(duration)}</td></tr>` : ''}
+      </tbody>
+    </table>
+  </div>
 
+  <!-- 2. CONTEXTUALIZAÇÃO -->
+  ${problem || guidingQuestion ? `
+  <div class="section">
+    <div class="section-title">2&nbsp;&nbsp;Contextualização</div>
+    ${problem ? `<p>${escapeHtml(problem)}</p>` : ''}
+    ${guidingQuestion ? `
+    <div class="subsection-title">Questão norteadora</div>
+    <div class="highlight">${escapeHtml(guidingQuestion)}</div>` : ''}
+  </div>` : ''}
+
+  <!-- 3. OBJETIVOS DE APRENDIZAGEM -->
+  ${objectivesHTML ? `
+  <div class="section">
+    <div class="section-title">3&nbsp;&nbsp;Objetivos de Aprendizagem</div>
+    <ul>${objectivesHTML}</ul>
+  </div>` : ''}
+
+  <!-- 4. COMPETÊNCIAS DA BNCC -->
+  ${bnccHTML ? `
+  <div class="section">
+    <div class="section-title">4&nbsp;&nbsp;Competências da BNCC</div>
+    <p>As seguintes habilidades da Base Nacional Comum Curricular são trabalhadas nesta atividade:</p>
+    <div class="bncc-list">${bnccHTML}</div>
+    <p style="font-size:10pt;color:#555;font-style:italic;">
+      Conforme ABNT NBR 6024, as habilidades estão organizadas de acordo com a área do conhecimento e a série indicada.
+    </p>
+  </div>` : ''}
+
+  <!-- 5. ÁREAS STEAM UTILIZADAS -->
   ${steamLetters.length > 0 ? `
-  <h2>Matriz STEAM</h2>
-  <table>
-    <thead><tr><th>Área</th><th>Contribuição</th><th>Atividade</th><th>Evidência</th></tr></thead>
-    <tbody>${matrixHTML}</tbody>
-  </table>` : ""}
+  <div class="section">
+    <div class="section-title">5&nbsp;&nbsp;Áreas STEAM Utilizadas</div>
+    ${competencias ? `<p>${formatMultiline(competencias)}</p>` : ''}
+    <ul>${steamUsedList}</ul>
+    <table style="margin-top:0.4cm;">
+      <thead>
+        <tr>
+          <th>Área</th>
+          <th>Contribuição pedagógica</th>
+          <th>Atividade proposta</th>
+          <th>Evidência esperada</th>
+        </tr>
+      </thead>
+      <tbody>${matrixRows}</tbody>
+    </table>
+  </div>` : ''}
 
-  ${objectivesHTML ? `<h2>Objetivos de Aprendizagem</h2><ul>${objectivesHTML}</ul>` : ""}
-  ${bnccHTML ? `<h2>Habilidades BNCC</h2><p style="font-family:monospace;font-size:0.9rem;">${bnccHTML}</p>` : ""}
-  ${materialsHTML ? `<h2>Materiais</h2><ul>${materialsHTML}</ul>` : ""}
-  ${activityManual ? `<h2>Resumo, Materiais e Montagem</h2><div class="problem">${formatMultiline(activityManual)}</div>` : ""}
-  ${accessibilityHTML ? `<h2>Acessibilidade e Inclusão</h2><ul>${accessibilityHTML}</ul>` : ""}
-  ${bibliographyHTML ? `<h2>Referências Bibliográficas</h2><ul>${bibliographyHTML}</ul>` : ""}
+  <!-- 6. CULTURA MAKER -->
+  <div class="section">
+    <div class="section-title">6&nbsp;&nbsp;Cultura Maker</div>
+    <div class="maker-box">
+      <p>Esta atividade integra princípios da <strong>Cultura Maker</strong> como metodologia central: os estudantes aprendem fazendo, testando, errando e melhorando. O processo de construção, prototipagem e iteração é tão valorizado quanto o produto final.</p>
+      <p>Elementos Maker presentes:</p>
+      <ul>
+        <li>Prototipagem prática com materiais acessíveis;</li>
+        <li>Ciclos de iteração: construir → testar → melhorar;</li>
+        <li>Trabalho colaborativo em grupos com papéis definidos;</li>
+        <li>Protagonismo estudantil na resolução do problema;</li>
+        <li>Aprendizagem mão na massa (<em>hands-on learning</em>).</li>
+      </ul>
+    </div>
+  </div>
 
-  <footer>Atividade gerada pelo STEAM Planner em ${generatedDate || new Date().toLocaleDateString("pt-BR")}</footer>
+  <!-- 7. MATERIAIS NECESSÁRIOS -->
+  ${materialsHTML ? `
+  <div class="section">
+    <div class="section-title">7&nbsp;&nbsp;Materiais Necessários</div>
+    <ul>${materialsHTML}</ul>
+  </div>` : ''}
+
+  <!-- 8. DESENVOLVIMENTO DA ATIVIDADE -->
+  <div class="section">
+    <div class="section-title">8&nbsp;&nbsp;Desenvolvimento da Atividade</div>
+    ${desenvolvimento ? `<div>${formatMultiline(desenvolvimento)}</div>` :
+      activityManual ? `<div>${formatMultiline(activityManual)}</div>` :
+      '<p>(Desenvolvimento a ser preenchido pelo professor.)</p>'}
+  </div>
+
+  <!-- 9. DESAFIO MAKER -->
+  <div class="section">
+    <div class="section-title">9&nbsp;&nbsp;Desafio Maker</div>
+    ${problem ? `<div class="highlight"><strong>Desafio central:</strong> ${escapeHtml(problem)}</div>` : ''}
+    <p>Os estudantes devem, ao final da atividade, ter produzido um artefato, modelo ou solução concreta para o problema proposto, demonstrando domínio das competências STEAM selecionadas.</p>
+    <div class="subsection-title">Critérios do desafio</div>
+    <ul>
+      <li>Utilizar os materiais disponíveis de forma criativa e sustentável;</li>
+      <li>Apresentar ao menos um ciclo completo de prototipagem e melhoria;</li>
+      <li>Documentar o processo com registros do grupo (fotos, croquis ou anotações);</li>
+      <li>Apresentar e explicar a solução para a turma ao final.</li>
+    </ul>
+  </div>
+
+  <!-- 10. ACESSIBILIDADE E INCLUSÃO -->
+  ${accessibilityHTML ? `
+  <div class="section">
+    <div class="section-title">10&nbsp;&nbsp;Acessibilidade e Inclusão</div>
+    ${accessibilityHTML}
+  </div>` : ''}
+
+  <!-- 11. AVALIAÇÃO -->
+  <div class="section">
+    <div class="section-title">${accessibilityHTML ? '11' : '10'}&nbsp;&nbsp;Avaliação</div>
+    <p>A avaliação desta atividade é processual e formativa, com foco nas competências desenvolvidas ao longo do processo, não apenas no produto final.</p>
+    <div class="avaliacao-grid">
+      <div class="avaliacao-item">
+        <label>Instrumento principal</label>
+        <div class="blank-line"></div>
+        <div class="blank-line"></div>
+      </div>
+      <div class="avaliacao-item">
+        <label>Indicadores observados</label>
+        <div class="blank-line"></div>
+        <div class="blank-line"></div>
+      </div>
+      <div class="avaliacao-item">
+        <label>Evidências coletadas</label>
+        <div class="blank-line"></div>
+        <div class="blank-line"></div>
+      </div>
+      <div class="avaliacao-item">
+        <label>Devolutiva ao estudante</label>
+        <div class="blank-line"></div>
+        <div class="blank-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 12. ESPAÇO PARA RESPOSTAS -->
+  <div class="section" style="page-break-before:always;">
+    <div class="section-title">${accessibilityHTML ? '12' : '11'}&nbsp;&nbsp;Espaço para Respostas dos Estudantes</div>
+    <p style="font-size:10pt;color:#555;font-style:italic;">Este espaço destina-se ao registro das respostas, reflexões e conclusões dos estudantes durante e após a atividade.</p>
+    <div style="margin-top:0.4cm;">
+      <div class="subsection-title" style="font-size:10pt;">Nome: <span style="display:inline-block;width:8cm;border-bottom:1px solid #bbb;">&nbsp;</span>&nbsp;&nbsp;&nbsp;Data: <span style="display:inline-block;width:3cm;border-bottom:1px solid #bbb;">&nbsp;</span></div>
+    </div>
+    <div style="margin-top:0.5cm;">${blankLines(18)}</div>
+  </div>
+
+  <!-- REFERÊNCIAS -->
+  ${bibliographyHTML ? `
+  <div class="section" style="page-break-before:auto;">
+    <div class="section-title">Referências</div>
+    <p style="font-size:10pt;color:#555;font-style:italic;margin-bottom:0.5cm;">
+      Conforme ABNT NBR 6023:2018. Fontes verificadas em bases acadêmicas (SciELO, OpenAlex, Crossref).
+    </p>
+    ${bibliographyHTML}
+  </div>` : ''}
+
+  <div class="doc-footer">
+    Documento gerado pelo STEAM Planner em ${generatedDate} · Normas ABNT NBR 14724, NBR 6023 e NBR 6024
+  </div>
+
 </body>
 </html>`;
 }
