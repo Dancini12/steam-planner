@@ -38,13 +38,19 @@ function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClas
 
   return `Você é especialista em educação STEAM, Cultura Maker e BNCC para o sistema educacional brasileiro.
 
+ESSÊNCIA OBRIGATÓRIA — toda atividade DEVE integrar:
+- STEAM (${uniqueLetters.join(', ')}): mostrar claramente quais áreas estão sendo usadas, como cada uma aparece e como as disciplinas se conectam
+- Cultura Maker: construção, criação, prototipagem, testes, experimentação, produção manual ou tecnológica — os alunos criam, testam, modificam, experimentam e desenvolvem soluções
+- Aprendizagem ativa e protagonismo estudantil: aprender fazendo
+- Resolução de problemas reais e investigação
+- Criatividade como ferramenta pedagógica central
+
 Crie uma atividade pedagógica completa para:
 - Disciplina principal: ${discipline}
 - Série/Ano: ${grade}
 - Tema central: ${theme}
 - Áreas STEAM envolvidas: ${uniqueLetters.join(', ')}
 ${classesInfo}
-- Cultura Maker: obrigatória na atividade
 - Habilidades BNCC selecionadas do banco offline:
 ${formatBnccSuggestions(bnccSuggestions)}
 ${customInstructions?.trim() ? `\nSolicitações específicas do professor:\n${customInstructions.trim()}` : ''}
@@ -54,14 +60,14 @@ Diretrizes obrigatórias:
 2. Questão norteadora aberta e investigativa
 3. Objetivos mensuráveis alinhados à série
 4. Use no campo "bncc" apenas códigos da lista BNCC offline fornecida acima; não invente códigos novos
-5. Cultura Maker ao longo da atividade: mão na massa, prototipagem, iteração
-6. Não organize a resposta por fases, etapas de Design Thinking ou blocos como Imersão, Ideação, Prototipagem, Teste e Compartilhamento
-7. Lista de materiais com quantidade por grupo e, quando fizer sentido, quantidade para a turma. Ex.: "2 folhas de cartolina por grupo", "4 canetas coloridas por grupo", "1 tesoura sem ponta por grupo"
+5. Cultura Maker ao longo de toda a atividade: mão na massa, prototipagem iterativa, ciclos de construir → testar → melhorar — inclusive atividades mais teóricas devem incluir produção prática, representação visual, criação ou resolução ativa
+6. Não organize a resposta por fases de Design Thinking (Imersão, Ideação, Prototipagem, Teste, Compartilhamento)
+7. Lista de materiais com quantidade por grupo e por turma. Ex.: "2 folhas de cartolina por grupo", "1 tesoura sem ponta por grupo"
 8. Manual da atividade em três partes no campo "activityManual" (texto corrido, não JSON):
    - "Resumo das competências": texto conectando as áreas STEAM à atividade
    - "Materiais utilizados": lista explicando o uso de cada material
-   - "Como montar e conduzir": visão geral da condução (o roteiro detalhado por etapas fica em "stages")
-9. Referências bibliográficas: use SOMENTE as fontes verificadas listadas abaixo. NÃO invente autores, títulos, editoras, DOIs ou anos. Se a lista estiver vazia, deixe "bibliography": [].
+   - "Como montar e conduzir": visão geral da condução (roteiro detalhado fica em "stages")
+9. Referências bibliográficas: use SOMENTE as fontes verificadas listadas abaixo. Fontes jornalísticas e educacionais confiáveis também são aceitas quando relevantes: BBC Brasil, ONU Brasil, National Geographic, Canaltech, Olhar Digital, Nova Escola, Porvir, InfoMoney, SciELO, OpenAlex, Crossref. NUNCA use Wikipedia. NÃO invente autores, títulos, editoras, DOIs ou anos. Se a lista estiver vazia, deixe "bibliography": [].
 10. Roteiro pedagógico detalhado (campo "stages"): gerar EXATAMENTE 8 etapas em array JSON. Cada etapa deve ter description com MÍNIMO DE 150 PALAVRAS, rica, explicativa e prática, além de teacherScript com roteiro direto para o professor e questions com perguntas sugeridas. As 8 etapas obrigatórias:
     • Etapa 1 — Introdução da aula: como o professor inicia, contextualiza o tema, desperta curiosidade, conecta ao cotidiano real dos alunos. Inclua frases-modelo de abertura.
     • Etapa 2 — Explicação inicial: quais conceitos o professor ensina, com exemplos concretos, analogias acessíveis, linguagem adequada à série. Como verificar compreensão.
@@ -74,6 +80,13 @@ Diretrizes obrigatórias:
 11. Antes da aula (campo "beforeClass"): texto de 100+ palavras sobre o que o professor deve preparar, organizar e providenciar ANTES da aula — materiais, ambiente, agrupamentos, impressões, recursos digitais ou físicos.
 12. Após a aula (campo "afterClass"): texto de 80+ palavras sobre o que fazer APÓS a aula — como registrar evidências, como fazer avaliação formativa, como dar devolutiva, como encaminhar a continuidade do aprendizado.
 13. Dicas para o professor (campo "teacherTips"): mínimo 6 dicas numeradas, práticas e acolhedoras sobre como adaptar a atividade a turmas agitadas, poucos recursos, escolas públicas, alunos com dificuldade, tempo reduzido e turmas avançadas.
+14. Atividade do aluno (campo "studentActivity"): criar material completo para uso direto pelo estudante, com:
+    - "textBase": texto-base pedagógico de qualidade (reportagem, notícia, situação real, excerto de livro, estudo de caso ou texto educativo) com MÍNIMO 150 PALAVRAS, linguagem adequada à série, que contextualiza o tema e mobiliza a investigação. Pode ser inspirado em fontes como BBC Brasil, National Geographic, Nova Escola, Porvir ou similares — crie um texto educativo coeso e rico se não houver fonte real disponível.
+    - "sourceInfo": referência da fonte do texto-base. Ex.: "Fonte: Nova Escola, 2023." ou "Fonte: Adaptado de National Geographic Brasil."
+    - "situationProblem": situação-problema concreta e instigante, escrita diretamente ao aluno (2-3 frases)
+    - "investigativeChallenge": desafio investigativo central que orienta toda a atividade prática do aluno
+    - "questions": 5 perguntas progressivas — (1) compreensão do texto, (2) interpretação e conexão, (3) investigação e hipótese, (4) conexão com a realidade do aluno, (5) reflexão crítica
+    - "practicalActivity": descrição clara e motivadora da atividade mão-na-massa que o aluno realiza, com passos simples, o desafio Maker integrado e o que deve produzir ou apresentar ao final
 
 ${verifiedSources.length > 0
   ? `Fontes verificadas em bases acadêmicas reais (Crossref, OpenAlex, SciELO, Semantic Scholar):\n${verifiedSources.map((s, i) => `${i + 1}. ${s.abnt}`).join('\n')}`
@@ -173,6 +186,20 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "beforeClass": "Texto de 100+ palavras: o que o professor deve preparar, organizar e providenciar ANTES da aula — quais materiais separar e como, como reorganizar o espaço físico, se há algo para imprimir ou baixar, como pré-definir os grupos se necessário, quanto tempo de preparação estimar.",
   "afterClass": "Texto de 80+ palavras: o que fazer APÓS a aula — como registrar as evidências de aprendizagem, como fazer avaliação formativa, como dar devolutiva significativa aos alunos, como guardar as produções, como encaminhar a continuidade para a próxima aula.",
   "teacherTips": "1. Dica para turmas agitadas: ...\\n2. Dica para poucos recursos: ...\\n3. Dica para escolas públicas: ...\\n4. Dica para alunos com dificuldade: ...\\n5. Dica para tempo reduzido: ...\\n6. Dica para turmas avançadas: ...",
+  "studentActivity": {
+    "textBase": "Texto-base completo com mínimo 150 palavras, linguagem adequada à série. Pode ser uma reportagem, notícia, situação real ou texto educativo que contextualiza o tema e mobiliza a investigação. Escreva de forma cativante e adequada à faixa etária.",
+    "sourceInfo": "Fonte: Nome da Publicação, Ano. (ex: Fonte: Nova Escola, 2024. ou Fonte: Adaptado de National Geographic Brasil.)",
+    "situationProblem": "Situação-problema concreta escrita diretamente ao aluno: apresente um desafio real e instigante relacionado ao texto-base que os alunos precisarão investigar.",
+    "investigativeChallenge": "Desafio investigativo central: uma frase motivadora que orienta toda a atividade prática do aluno, conectando o texto-base ao desafio Maker.",
+    "questions": [
+      "Pergunta 1 — compreensão: o que o texto diz sobre...?",
+      "Pergunta 2 — interpretação: por que isso acontece / o que significa...?",
+      "Pergunta 3 — investigação: se você fosse investigar esse problema, por onde começaria?",
+      "Pergunta 4 — conexão com a realidade: você já viveu ou viu algo parecido? Onde?",
+      "Pergunta 5 — reflexão crítica: o que pode ser feito para mudar / melhorar essa situação?"
+    ],
+    "practicalActivity": "Descrição clara e motivadora do que o aluno vai fazer na prática: os passos da atividade mão-na-massa, o desafio Maker integrado e o que deve produzir, criar ou apresentar ao final. Escreva em linguagem direta ao aluno."
+  },
   "bibliography": [
     "AUTOR, A. B. Título do livro. Cidade: Editora, ano.",
     "AUTOR, C. D. Título do artigo. Revista, v. X, n. Y, p. ZZ-ZZ, ano."

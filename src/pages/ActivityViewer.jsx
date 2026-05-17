@@ -26,6 +26,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
   );
   const [bibliographyText, setBibliographyText] = useState((activityData.bibliography || []).join("\n"));
   const [modality, setModality] = useState(activityData.modality || 'grupo');
+  const [studentActivity, setStudentActivity] = useState(activityData.studentActivity || {});
   const [stages] = useState(activityData.stages || []);
   const [beforeClass, setBeforeClass] = useState(activityData.beforeClass || '');
   const [afterClass, setAfterClass] = useState(activityData.afterClass || '');
@@ -59,6 +60,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       steamMatrix,
       modality,
+      studentActivity,
       stages,
       beforeClass,
       afterClass,
@@ -93,6 +95,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       steamMatrix,
       modality,
+      studentActivity,
       stages,
       beforeClass,
       afterClass,
@@ -343,6 +346,96 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
           onChange={(e) => setAccessibilityText(e.target.value)}
         />
       </div>
+
+      {/* Atividade do Aluno */}
+      {(studentActivity?.textBase || studentActivity?.questions?.length > 0) && (
+        <div style={sectionStyle}>
+          <div style={{ ...sectionTitleStyle, color: "#6EE7B7", borderBottom: "1px solid rgba(110,231,183,0.2)" }}>
+            Atividade do Aluno
+          </div>
+          <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.4)", marginBottom: "1.2rem" }}>
+            Material para uso direto pelo estudante — texto-base, situação-problema, perguntas e desafio prático.
+          </p>
+
+          {/* Texto-base */}
+          {studentActivity.textBase && (
+            <div style={{ marginBottom: "1rem" }}>
+              <label style={labelStyle}>Texto-base / Reportagem</label>
+              <textarea
+                style={textareaStyle("160px")}
+                value={studentActivity.textBase}
+                onChange={(e) => setStudentActivity((prev) => ({ ...prev, textBase: e.target.value }))}
+              />
+              {studentActivity.sourceInfo && (
+                <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.35)", marginTop: "0.3rem", fontStyle: "italic" }}>
+                  <input
+                    style={{ ...inputStyle, fontSize: "0.8rem", color: "rgba(255,255,255,0.5)", padding: "0.4rem 0.75rem" }}
+                    value={studentActivity.sourceInfo}
+                    onChange={(e) => setStudentActivity((prev) => ({ ...prev, sourceInfo: e.target.value }))}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Situação-problema + Desafio */}
+          <div style={twoColStyle}>
+            {studentActivity.situationProblem && (
+              <div>
+                <label style={labelStyle}>Situação-problema</label>
+                <textarea
+                  style={textareaStyle("90px")}
+                  value={studentActivity.situationProblem}
+                  onChange={(e) => setStudentActivity((prev) => ({ ...prev, situationProblem: e.target.value }))}
+                />
+              </div>
+            )}
+            {studentActivity.investigativeChallenge && (
+              <div>
+                <label style={labelStyle}>Desafio investigativo</label>
+                <textarea
+                  style={textareaStyle("90px")}
+                  value={studentActivity.investigativeChallenge}
+                  onChange={(e) => setStudentActivity((prev) => ({ ...prev, investigativeChallenge: e.target.value }))}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Perguntas */}
+          {studentActivity.questions?.length > 0 && (
+            <div style={{ marginTop: "0.75rem" }}>
+              <label style={labelStyle}>Perguntas ({studentActivity.questions.length})</label>
+              {studentActivity.questions.map((q, qi) => (
+                <div key={qi} style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start", marginBottom: "0.4rem" }}>
+                  <span style={{ fontSize: "0.78rem", color: "#6EE7B7", fontWeight: 700, minWidth: "1.2rem", paddingTop: "0.85rem" }}>{qi + 1}.</span>
+                  <input
+                    style={inputStyle}
+                    value={q}
+                    onChange={(e) => {
+                      const next = [...studentActivity.questions];
+                      next[qi] = e.target.value;
+                      setStudentActivity((prev) => ({ ...prev, questions: next }));
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Atividade prática */}
+          {studentActivity.practicalActivity && (
+            <div style={{ marginTop: "0.75rem" }}>
+              <label style={labelStyle}>Atividade prática / Desafio Maker</label>
+              <textarea
+                style={textareaStyle("120px")}
+                value={studentActivity.practicalActivity}
+                onChange={(e) => setStudentActivity((prev) => ({ ...prev, practicalActivity: e.target.value }))}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Antes da Aula */}
       {(beforeClass || activityData.beforeClass) && (

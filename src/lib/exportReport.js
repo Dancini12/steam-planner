@@ -26,7 +26,7 @@ function parseActivityManual(text) {
 }
 
 function buildActivityPrintHTML(activity) {
-  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, accessibility, bibliography, grade, discipline, generatedAt, stages, beforeClass, afterClass, teacherTips, modality } = activity;
+  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, accessibility, bibliography, grade, discipline, generatedAt, stages, beforeClass, afterClass, teacherTips, modality, studentActivity } = activity;
 
   const steamLetters = Object.keys(steamMatrix || {}).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
   const generatedDate = generatedAt ? formatDate(generatedAt) : new Date().toLocaleDateString("pt-BR");
@@ -60,6 +60,68 @@ function buildActivityPrintHTML(activity) {
   }).join('');
 
   const blankLines = (n) => Array(n).fill('<div class="blank-line"></div>').join('');
+
+  const sa = studentActivity || {}
+  const studentActivityHTML = sa.textBase ? `
+    <div class="sa-sheet">
+      <div class="sa-header">
+        <div class="sa-label">Atividade do Aluno · STEAM + Cultura Maker</div>
+        <div class="sa-title">${escapeHtml(title || '')}</div>
+        ${grade ? `<div class="sa-meta">${escapeHtml(grade)}${discipline ? ` · ${escapeHtml(discipline)}` : ''}</div>` : ''}
+        <div class="sa-name-row">
+          <span>Nome: <span class="sa-line" style="width:9cm;"></span></span>
+          <span style="margin-left:1cm;">Data: <span class="sa-line" style="width:3.5cm;"></span></span>
+          <span style="margin-left:1cm;">Turma: <span class="sa-line" style="width:2.5cm;"></span></span>
+        </div>
+      </div>
+
+      <div class="sa-section">
+        <div class="sa-section-title">Leia com atenção</div>
+        <div class="sa-text-base">${formatMultiline(sa.textBase || '')}</div>
+        ${sa.sourceInfo ? `<div class="sa-source">${escapeHtml(sa.sourceInfo)}</div>` : ''}
+      </div>
+
+      ${sa.situationProblem ? `
+      <div class="sa-section">
+        <div class="sa-section-title">Situação-problema</div>
+        <div class="sa-highlight">${escapeHtml(sa.situationProblem)}</div>
+      </div>` : ''}
+
+      ${sa.investigativeChallenge ? `
+      <div class="sa-section">
+        <div class="sa-section-title">Seu desafio</div>
+        <div class="sa-challenge">${escapeHtml(sa.investigativeChallenge)}</div>
+      </div>` : ''}
+
+      ${(sa.questions || []).length > 0 ? `
+      <div class="sa-section">
+        <div class="sa-section-title">Responda</div>
+        <ol class="sa-questions">
+          ${(sa.questions || []).map(q => `<li>
+            <div class="sa-q-text">${escapeHtml(q)}</div>
+            <div class="sa-answer-lines">
+              <div class="blank-line"></div>
+              <div class="blank-line"></div>
+              <div class="blank-line"></div>
+            </div>
+          </li>`).join('')}
+        </ol>
+      </div>` : ''}
+
+      ${sa.practicalActivity ? `
+      <div class="sa-section">
+        <div class="sa-section-title">Atividade prática — Desafio Maker</div>
+        <div class="sa-practical">${formatMultiline(sa.practicalActivity)}</div>
+        <div style="margin-top:0.5cm;">
+          <div class="sa-section-title" style="font-size:9pt;">Minha solução / O que criei</div>
+          <div class="blank-line"></div>
+          <div class="blank-line"></div>
+          <div class="blank-line"></div>
+          <div class="blank-line"></div>
+          <div class="blank-line"></div>
+        </div>
+      </div>` : ''}
+    </div>` : ''
 
   const stagesHTML = (stages || []).map((stage, i) => {
     const num = stage.number || (i + 1);
@@ -214,6 +276,26 @@ function buildActivityPrintHTML(activity) {
       margin-bottom: 0.15cm;
     }
 
+    /* ── ATIVIDADE DO ALUNO ── */
+    .sa-sheet { page-break-before: always; border: 2px solid #000; padding: 0.6cm 0.8cm; margin-top: 1cm; }
+    .sa-header { border-bottom: 2px solid #000; padding-bottom: 0.4cm; margin-bottom: 0.5cm; }
+    .sa-label { font-size: 9pt; text-transform: uppercase; letter-spacing: 0.12em; color: #555; margin-bottom: 0.2cm; }
+    .sa-title { font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 0.15cm; }
+    .sa-meta { font-size: 10pt; color: #444; margin-bottom: 0.3cm; }
+    .sa-name-row { font-size: 10pt; display: flex; flex-wrap: wrap; gap: 0.2cm; margin-top: 0.3cm; }
+    .sa-line { display: inline-block; border-bottom: 1px solid #000; vertical-align: bottom; }
+    .sa-section { margin-top: 0.5cm; }
+    .sa-section-title { font-size: 10pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 1px solid #ccc; padding-bottom: 0.1cm; margin-bottom: 0.25cm; }
+    .sa-text-base { font-size: 11pt; line-height: 1.6; text-align: justify; background: #f9f9f9; border-left: 3px solid #555; padding: 0.35cm 0.5cm; }
+    .sa-source { font-size: 9pt; color: #666; font-style: italic; margin-top: 0.15cm; text-align: right; }
+    .sa-highlight { font-size: 11pt; font-weight: bold; background: #f0f0f0; border-left: 4px solid #000; padding: 0.3cm 0.5cm; text-align: justify; }
+    .sa-challenge { font-size: 12pt; font-weight: bold; font-style: italic; text-align: center; border: 2px dashed #555; padding: 0.4cm 0.6cm; margin: 0.2cm 0; }
+    .sa-questions { padding-left: 1.2cm; }
+    .sa-questions li { margin-bottom: 0.5cm; }
+    .sa-q-text { font-size: 11pt; font-weight: 500; margin-bottom: 0.2cm; text-align: justify; }
+    .sa-answer-lines { margin-left: 0; }
+    .sa-practical { font-size: 11pt; line-height: 1.6; text-align: justify; border: 1px solid #ccc; padding: 0.35cm 0.5cm; }
+
     /* ── ETAPAS ── */
     .stage-card { border: 1px solid #ccc; border-left: 4px solid #333; border-radius: 3px; padding: 0.35cm 0.55cm; margin-bottom: 0.4cm; page-break-inside: avoid; }
     .stage-header { display: flex; align-items: baseline; gap: 0.5cm; margin-bottom: 0.2cm; flex-wrap: wrap; }
@@ -365,6 +447,9 @@ function buildActivityPrintHTML(activity) {
       activityManual ? `<div>${formatMultiline(activityManual)}</div>` :
       '<p>(Desenvolvimento a ser preenchido pelo professor.)</p>')}
   </div>
+
+  <!-- ATIVIDADE DO ALUNO (folha separada) -->
+  ${studentActivityHTML}
 
   <!-- 10. DESAFIO MAKER -->
   <div class="section">
