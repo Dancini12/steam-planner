@@ -118,34 +118,40 @@ function extractJson(text) {
 }
 
 function repairJson(raw) {
-  // Fix unescaped control characters inside string values
   let result = ''
   let inString = false
   let escaped = false
 
   for (let i = 0; i < raw.length; i++) {
     const c = raw[i]
-    if (escaped) {
-      escaped = false
-      result += c
-      continue
-    }
-    if (c === '\\') {
-      escaped = true
-      result += c
-      continue
-    }
+    if (escaped) { escaped = false; result += c; continue }
+    if (c === '\\') { escaped = true; result += c; continue }
+
     if (c === '"') {
-      inString = !inString
-      result += c
+      if (!inString) {
+        inString = true
+        result += c
+        continue
+      }
+      // Lookahead past whitespace to decide: closing quote or unescaped quote inside string?
+      let j = i + 1
+      while (j < raw.length && /[ \t\n\r]/.test(raw[j])) j++
+      const next = raw[j]
+      if (next === undefined || next === ':' || next === ',' || next === '}' || next === ']') {
+        // Looks like a closing quote — exit string
+        inString = false
+        result += c
+      } else {
+        // Unescaped quote inside string value — escape it
+        result += '\\"'
+      }
       continue
     }
+
     if (inString) {
-      // Escape raw control characters that break JSON
       if (c === '\n') { result += '\\n'; continue }
       if (c === '\r') { result += '\\r'; continue }
       if (c === '\t') { result += '\\t'; continue }
-      // Remove other non-printable ASCII control chars
       if (c.charCodeAt(0) < 0x20) continue
     }
     result += c
@@ -154,10 +160,9 @@ function repairJson(raw) {
 }
 
 function safeParseJson(raw) {
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return JSON.parse(repairJson(raw))
+  try { return JSON.parse(raw) } catch { /* try repair */ }
+  try { return JSON.parse(repairJson(raw)) } catch (e) {
+    throw new Error(`JSON inválido na resposta da IA: ${e.message}`)
   }
 }
 
