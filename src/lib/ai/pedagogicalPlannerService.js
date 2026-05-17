@@ -44,6 +44,8 @@ ESSÊNCIA OBRIGATÓRIA — toda atividade DEVE integrar:
 - Aprendizagem ativa e protagonismo estudantil: aprender fazendo
 - Resolução de problemas reais e investigação
 - Criatividade como ferramenta pedagógica central
+- Títulos: curtos e pedagógicos (máx. 6 palavras), próximos da sala de aula real. Ex.: "Ciências e o Lixo da Escola", "Luz, Sombra e Arte", "Matemática com Embalagens". Nunca títulos poéticos, elaborados ou "cinematográficos".
+- STEAM pelo fazer, nunca pelo explicar: não escreva "aqui utilizamos Arte" ou "neste momento aparece a Matemática". Os alunos investigam, criam, constroem, analisam e experimentam — o STEAM emerge naturalmente das ações, sem precisar ser nomeado.
 
 Crie uma atividade pedagógica completa para:
 - Disciplina principal: ${discipline}

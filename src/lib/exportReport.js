@@ -15,6 +15,17 @@
 import { PHASES } from "../data/phases.js";
 import { STEAM_AREAS } from "../data/steamAreas.js";
 
+function renderBulletText(text) {
+  if (!text) return ''
+  const lines = text.split(/\n+/).map(l => l.trim()).filter(Boolean)
+  const isBulletList = lines.length > 1 && lines.every(l => /^[•\-\d]/.test(l))
+  if (isBulletList) {
+    const items = lines.map(l => `<li>${escapeHtml(l.replace(/^[•\-]\s*/, '').replace(/^\d+\.\s*/, ''))}</li>`).join('')
+    return `<ul class="bullet-list">${items}</ul>`
+  }
+  return `<p>${formatMultiline(text)}</p>`
+}
+
 function parseActivityManual(text) {
   if (!text) return { competencias: '', desenvolvimento: '' }
   const compMatch = text.match(/resumo das competências:?\s*([\s\S]*?)(?=materiais utilizados:|como montar|$)/i)
@@ -47,12 +58,13 @@ function buildActivityPrintHTML(activity) {
 
   const objectivesHTML = (objectives || []).map((o, i) => `<li>${String.fromCharCode(97 + i)}) ${escapeHtml(o)}</li>`).join('');
   const materialsHTML = (materials || []).map((m) => `<li>${escapeHtml(m)}</li>`).join('');
-  const bnccHTML = (bncc || []).map((c) => {
-    const parts = c.split(' — ')
-    const code = parts[0].trim()
-    const desc = parts[1] ? parts[1].trim() : ''
-    return `<span class="bncc-chip"><code>${escapeHtml(code)}</code>${desc ? ` <span class="bncc-desc">— ${escapeHtml(desc)}</span>` : ''}</span>`
-  }).join('');
+  const bnccRows = (bncc || []).map((c) => {
+    const sep = c.indexOf(' — ')
+    const code = sep > -1 ? c.slice(0, sep).trim() : c.trim()
+    const desc = sep > -1 ? c.slice(sep + 3).trim() : ''
+    return `<tr><td class="bncc-code-cell"><code>${escapeHtml(code)}</code></td><td class="bncc-desc-cell">${escapeHtml(desc)}</td></tr>`
+  }).join('')
+  const bnccHTML = bnccRows ? `<table class="bncc-table"><tbody>${bnccRows}</tbody></table>` : ''
   const bibliographyHTML = (bibliography || []).map((b) => `<p class="ref">${escapeHtml(b)}</p>`).join('');
   const accessibilityHTML = Array.isArray(accessibility) && accessibility.length
     ? `<ul>${accessibility.map((a) => `<li>${escapeHtml(a)}</li>`).join('')}</ul>`
@@ -128,19 +140,22 @@ function buildActivityPrintHTML(activity) {
       </div>` : ''}
     </div>` : ''
 
+  const STAGE_COLORS = ['#2563EB','#7C3AED','#475569','#059669','#9333EA','#D97706','#0D9488','#DB2777']
   const stagesHTML = (stages || []).map((stage, i) => {
     const num = stage.number || (i + 1);
+    const color = STAGE_COLORS[(i) % STAGE_COLORS.length]
+    const colorBg = color + '12'
     const qs = (stage.questions || []).map(q => `<li>${escapeHtml(q)}</li>`).join('');
-    return `<div class="stage-card">
+    return `<div class="stage-card" style="border-left-color:${color};background:${colorBg};">
       <div class="stage-header">
-        <span class="stage-num">Etapa ${num}</span>
+        <span class="stage-badge" style="color:${color};border:1px solid ${color}40;">Etapa ${num}</span>
         <span class="stage-title">${escapeHtml(stage.title || '')}</span>
         ${stage.duration ? `<span class="stage-dur">⏱ ${escapeHtml(stage.duration)}</span>` : ''}
       </div>
-      ${stage.objective ? `<div class="stage-objective">${escapeHtml(stage.objective)}</div>` : ''}
-      ${stage.description ? `<p>${escapeHtml(stage.description)}</p>` : ''}
-      ${stage.teacherScript ? `<div class="stage-script">${escapeHtml(stage.teacherScript)}</div>` : ''}
-      ${qs ? `<div class="stage-q"><strong>Perguntas:</strong><ul>${qs}</ul></div>` : ''}
+      ${stage.objective ? `<div class="stage-objective" style="color:${color};">${escapeHtml(stage.objective)}</div>` : ''}
+      ${stage.description ? `<p class="stage-desc">${escapeHtml(stage.description)}</p>` : ''}
+      ${stage.teacherScript ? `<div class="stage-script"><span class="script-icon">💡</span> ${escapeHtml(stage.teacherScript)}</div>` : ''}
+      ${qs ? `<div class="stage-q"><strong>Perguntas sugeridas:</strong><ul>${qs}</ul></div>` : ''}
     </div>`;
   }).join('');
 
@@ -259,10 +274,12 @@ function buildActivityPrintHTML(activity) {
     th { background: #f0f0f0; font-weight: bold; font-size: 10pt; text-transform: uppercase; letter-spacing: 0.04em; }
 
     /* ── BNCC ── */
-    .bncc-list { display: flex; flex-wrap: wrap; gap: 0.2cm 0; margin: 0.3cm 0; }
-    .bncc-chip { display: block; margin-bottom: 0.2cm; font-size: 10pt; }
-    .bncc-chip code { font-family: 'Courier New', monospace; font-size: 10pt; background: #f0f0f0; padding: 0.05cm 0.25cm; border-radius: 2px; font-weight: bold; }
-    .bncc-desc { color: #333; font-style: italic; }
+    .bncc-table { width: 100%; border-collapse: collapse; margin: 0.25cm 0; font-size: 10pt; }
+    .bncc-code-cell { padding: 0.2cm 0.3cm 0.2cm 0; vertical-align: top; width: 2.8cm; border-bottom: 1px solid #eee; }
+    .bncc-code-cell code { font-family: 'Courier New', monospace; font-size: 9pt; font-weight: bold; background: #f0f0f0; padding: 0.06cm 0.2cm; border-radius: 3px; }
+    .bncc-desc-cell { padding: 0.2cm 0; color: #333; border-bottom: 1px solid #eee; font-size: 10pt; }
+    .bullet-list { padding-left: 1cm; margin: 0.2cm 0; }
+    .bullet-list li { margin-bottom: 0.2cm; font-size: 11pt; }
 
     /* ── AVALIAÇÃO / ESPAÇO ── */
     .blank-line {
@@ -306,15 +323,18 @@ function buildActivityPrintHTML(activity) {
     .sa-practical { font-size: 11pt; line-height: 1.6; text-align: justify; border: 1px solid #ccc; padding: 0.35cm 0.5cm; }
 
     /* ── ETAPAS ── */
-    .stage-card { border: 1px solid #ccc; border-left: 4px solid #333; border-radius: 3px; padding: 0.35cm 0.55cm; margin-bottom: 0.4cm; page-break-inside: avoid; }
-    .stage-header { display: flex; align-items: baseline; gap: 0.5cm; margin-bottom: 0.2cm; flex-wrap: wrap; }
-    .stage-num { font-size: 9pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.06em; color: #555; white-space: nowrap; }
-    .stage-title { font-weight: bold; font-size: 11pt; }
-    .stage-objective { font-size: 10pt; font-style: italic; color: #333; margin-bottom: 0.15cm; }
-    .stage-dur { font-size: 9pt; color: #666; font-style: italic; margin-left: auto; }
-    .stage-script { background: #f5f5f5; border-left: 2px solid #999; padding: 0.2cm 0.4cm; margin: 0.2cm 0; font-size: 11pt; }
-    .stage-q { margin-top: 0.2cm; font-size: 11pt; }
-    .stage-q ul { margin: 0.1cm 0 0; }
+    .stage-card { border: 1px solid #e0e0e0; border-left: 4px solid #333; border-radius: 0 6px 6px 0; padding: 0.4cm 0.6cm; margin-bottom: 0.5cm; page-break-inside: avoid; }
+    .stage-header { display: flex; align-items: center; gap: 0.4cm; margin-bottom: 0.25cm; flex-wrap: wrap; }
+    .stage-badge { font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.07em; white-space: nowrap; padding: 0.05cm 0.25cm; border-radius: 3px; }
+    .stage-title { font-weight: bold; font-size: 11pt; color: #111; }
+    .stage-objective { font-size: 10pt; font-style: italic; margin-bottom: 0.2cm; }
+    .stage-dur { font-size: 9pt; color: #666; margin-left: auto; white-space: nowrap; }
+    .stage-desc { font-size: 11pt; line-height: 1.6; color: #222; margin: 0.15cm 0 0.2cm; text-align: justify; }
+    .stage-script { background: #fffbea; border-left: 3px solid #d97706; padding: 0.2cm 0.45cm; margin: 0.2cm 0; font-size: 10pt; line-height: 1.5; border-radius: 0 4px 4px 0; color: #444; }
+    .script-icon { margin-right: 0.15cm; }
+    .stage-q { margin-top: 0.2cm; font-size: 10pt; color: #444; }
+    .stage-q ul { margin: 0.1cm 0 0; padding-left: 1cm; }
+    .stage-q li { font-style: italic; margin-bottom: 0.1cm; }
 
     /* ── REFERÊNCIAS ── */
     .ref {
@@ -393,12 +413,8 @@ function buildActivityPrintHTML(activity) {
   <!-- 4. COMPETÊNCIAS DA BNCC -->
   ${bnccHTML ? `
   <div class="section">
-    <div class="section-title">4&nbsp;&nbsp;Competências da BNCC</div>
-    <p>As seguintes habilidades da Base Nacional Comum Curricular são trabalhadas nesta atividade:</p>
-    <div class="bncc-list">${bnccHTML}</div>
-    <p style="font-size:10pt;color:#555;font-style:italic;">
-      Conforme ABNT NBR 6024, as habilidades estão organizadas de acordo com a área do conhecimento e a série indicada.
-    </p>
+    <div class="section-title">4&nbsp;&nbsp;Habilidades da BNCC</div>
+    ${bnccHTML}
   </div>` : ''}
 
   <!-- 5. ÁREAS STEAM UTILIZADAS -->
@@ -447,7 +463,7 @@ function buildActivityPrintHTML(activity) {
   ${beforeClass ? `
   <div class="section">
     <div class="section-title">8&nbsp;&nbsp;Preparação — Antes da Aula</div>
-    <p>${formatMultiline(beforeClass)}</p>
+    ${renderBulletText(beforeClass)}
   </div>` : ''}
 
   <!-- 9. ROTEIRO PEDAGÓGICO -->
@@ -479,14 +495,14 @@ function buildActivityPrintHTML(activity) {
   ${afterClass ? `
   <div class="section">
     <div class="section-title">11&nbsp;&nbsp;Encerramento — Após a Aula</div>
-    <p>${formatMultiline(afterClass)}</p>
+    ${renderBulletText(afterClass)}
   </div>` : ''}
 
   <!-- 12. DICAS PARA O PROFESSOR -->
   ${teacherTips ? `
   <div class="section">
     <div class="section-title">12&nbsp;&nbsp;Dicas para o Professor</div>
-    <p>${formatMultiline(teacherTips)}</p>
+    ${renderBulletText(teacherTips)}
   </div>` : ''}
 
   <!-- 13. ACESSIBILIDADE E INCLUSÃO -->
