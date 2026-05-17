@@ -26,7 +26,7 @@ function parseActivityManual(text) {
 }
 
 function buildActivityPrintHTML(activity) {
-  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, accessibility, bibliography, grade, discipline, generatedAt } = activity;
+  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, accessibility, bibliography, grade, discipline, generatedAt, stages, beforeClass, afterClass, teacherTips } = activity;
 
   const steamLetters = Object.keys(steamMatrix || {}).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
   const generatedDate = generatedAt ? formatDate(generatedAt) : new Date().toLocaleDateString("pt-BR");
@@ -60,6 +60,21 @@ function buildActivityPrintHTML(activity) {
   }).join('');
 
   const blankLines = (n) => Array(n).fill('<div class="blank-line"></div>').join('');
+
+  const stagesHTML = (stages || []).map((stage, i) => {
+    const num = stage.number || (i + 1);
+    const qs = (stage.questions || []).map(q => `<li>${escapeHtml(q)}</li>`).join('');
+    return `<div class="stage-card">
+      <div class="stage-header">
+        <span class="stage-num">Etapa ${num}</span>
+        <span class="stage-title">${escapeHtml(stage.title || '')}</span>
+        ${stage.duration ? `<span class="stage-dur">${escapeHtml(stage.duration)}</span>` : ''}
+      </div>
+      ${stage.description ? `<p>${escapeHtml(stage.description)}</p>` : ''}
+      ${stage.teacherScript ? `<div class="stage-script"><strong>Roteiro do professor:</strong> ${escapeHtml(stage.teacherScript)}</div>` : ''}
+      ${qs ? `<div class="stage-q"><strong>Perguntas norteadoras:</strong><ul>${qs}</ul></div>` : ''}
+    </div>`;
+  }).join('');
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -199,6 +214,16 @@ function buildActivityPrintHTML(activity) {
       margin-bottom: 0.15cm;
     }
 
+    /* ── ETAPAS ── */
+    .stage-card { border: 1px solid #ccc; border-left: 4px solid #333; border-radius: 3px; padding: 0.35cm 0.55cm; margin-bottom: 0.4cm; page-break-inside: avoid; }
+    .stage-header { display: flex; align-items: baseline; gap: 0.5cm; margin-bottom: 0.2cm; flex-wrap: wrap; }
+    .stage-num { font-size: 9pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.06em; color: #555; white-space: nowrap; }
+    .stage-title { font-weight: bold; font-size: 11pt; }
+    .stage-dur { font-size: 9pt; color: #666; font-style: italic; margin-left: auto; }
+    .stage-script { background: #f5f5f5; border-left: 2px solid #999; padding: 0.2cm 0.4cm; margin: 0.2cm 0; font-size: 11pt; }
+    .stage-q { margin-top: 0.2cm; font-size: 11pt; }
+    .stage-q ul { margin: 0.1cm 0 0; }
+
     /* ── REFERÊNCIAS ── */
     .ref {
       text-align: justify;
@@ -324,17 +349,24 @@ function buildActivityPrintHTML(activity) {
     <ul>${materialsHTML}</ul>
   </div>` : ''}
 
-  <!-- 8. DESENVOLVIMENTO DA ATIVIDADE -->
+  <!-- 8. ANTES DA AULA -->
+  ${beforeClass ? `
   <div class="section">
-    <div class="section-title">8&nbsp;&nbsp;Desenvolvimento da Atividade</div>
-    ${desenvolvimento ? `<div>${formatMultiline(desenvolvimento)}</div>` :
+    <div class="section-title">8&nbsp;&nbsp;Preparação — Antes da Aula</div>
+    <p>${formatMultiline(beforeClass)}</p>
+  </div>` : ''}
+
+  <!-- 9. ROTEIRO PEDAGÓGICO -->
+  <div class="section">
+    <div class="section-title">9&nbsp;&nbsp;Roteiro Pedagógico</div>
+    ${stagesHTML || (desenvolvimento ? `<div>${formatMultiline(desenvolvimento)}</div>` :
       activityManual ? `<div>${formatMultiline(activityManual)}</div>` :
-      '<p>(Desenvolvimento a ser preenchido pelo professor.)</p>'}
+      '<p>(Desenvolvimento a ser preenchido pelo professor.)</p>')}
   </div>
 
-  <!-- 9. DESAFIO MAKER -->
+  <!-- 10. DESAFIO MAKER -->
   <div class="section">
-    <div class="section-title">9&nbsp;&nbsp;Desafio Maker</div>
+    <div class="section-title">10&nbsp;&nbsp;Desafio Maker</div>
     ${problem ? `<div class="highlight"><strong>Desafio central:</strong> ${escapeHtml(problem)}</div>` : ''}
     <p>Os estudantes devem, ao final da atividade, ter produzido um artefato, modelo ou solução concreta para o problema proposto, demonstrando domínio das competências STEAM selecionadas.</p>
     <div class="subsection-title">Critérios do desafio</div>
@@ -346,16 +378,30 @@ function buildActivityPrintHTML(activity) {
     </ul>
   </div>
 
-  <!-- 10. ACESSIBILIDADE E INCLUSÃO -->
+  <!-- 11. APÓS A AULA -->
+  ${afterClass ? `
+  <div class="section">
+    <div class="section-title">11&nbsp;&nbsp;Encerramento — Após a Aula</div>
+    <p>${formatMultiline(afterClass)}</p>
+  </div>` : ''}
+
+  <!-- 12. DICAS PARA O PROFESSOR -->
+  ${teacherTips ? `
+  <div class="section">
+    <div class="section-title">12&nbsp;&nbsp;Dicas para o Professor</div>
+    <p>${formatMultiline(teacherTips)}</p>
+  </div>` : ''}
+
+  <!-- 13. ACESSIBILIDADE E INCLUSÃO -->
   ${accessibilityHTML ? `
   <div class="section">
-    <div class="section-title">10&nbsp;&nbsp;Acessibilidade e Inclusão</div>
+    <div class="section-title">13&nbsp;&nbsp;Acessibilidade e Inclusão</div>
     ${accessibilityHTML}
   </div>` : ''}
 
-  <!-- 11. AVALIAÇÃO -->
+  <!-- 14. AVALIAÇÃO -->
   <div class="section">
-    <div class="section-title">${accessibilityHTML ? '11' : '10'}&nbsp;&nbsp;Avaliação</div>
+    <div class="section-title">14&nbsp;&nbsp;Avaliação</div>
     <p>A avaliação desta atividade é processual e formativa, com foco nas competências desenvolvidas ao longo do processo, não apenas no produto final.</p>
     <div class="avaliacao-grid">
       <div class="avaliacao-item">
@@ -381,9 +427,9 @@ function buildActivityPrintHTML(activity) {
     </div>
   </div>
 
-  <!-- 12. ESPAÇO PARA RESPOSTAS -->
+  <!-- 15. ESPAÇO PARA RESPOSTAS -->
   <div class="section" style="page-break-before:always;">
-    <div class="section-title">${accessibilityHTML ? '12' : '11'}&nbsp;&nbsp;Espaço para Respostas dos Estudantes</div>
+    <div class="section-title">15&nbsp;&nbsp;Espaço para Respostas dos Estudantes</div>
     <p style="font-size:10pt;color:#555;font-style:italic;">Este espaço destina-se ao registro das respostas, reflexões e conclusões dos estudantes durante e após a atividade.</p>
     <div style="margin-top:0.4cm;">
       <div class="subsection-title" style="font-size:10pt;">Nome: <span style="display:inline-block;width:8cm;border-bottom:1px solid #bbb;">&nbsp;</span>&nbsp;&nbsp;&nbsp;Data: <span style="display:inline-block;width:3cm;border-bottom:1px solid #bbb;">&nbsp;</span></div>

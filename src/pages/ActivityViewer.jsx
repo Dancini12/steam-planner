@@ -25,6 +25,10 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       : activityData.accessibility || ""
   );
   const [bibliographyText, setBibliographyText] = useState((activityData.bibliography || []).join("\n"));
+  const [stages] = useState(activityData.stages || []);
+  const [beforeClass, setBeforeClass] = useState(activityData.beforeClass || '');
+  const [afterClass, setAfterClass] = useState(activityData.afterClass || '');
+  const [teacherTips, setTeacherTips] = useState(activityData.teacherTips || '');
 
   const [savedMsg, setSavedMsg] = useState("");
 
@@ -53,6 +57,10 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       activityManual,
       accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       steamMatrix,
+      stages,
+      beforeClass,
+      afterClass,
+      teacherTips,
       bibliography: bibliographyText.split("\n").map((s) => s.trim()).filter(Boolean)
     });
     setSavedMsg("Alterações salvas.");
@@ -82,6 +90,10 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       activityManual,
       accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       steamMatrix,
+      stages,
+      beforeClass,
+      afterClass,
+      teacherTips,
       bibliography: bibliographyText.split("\n").map((s) => s.trim()).filter(Boolean),
       generatedAt: activityData.generatedAt || null,
       grade: formData?.grade || "",
@@ -293,6 +305,71 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
           onChange={(e) => setAccessibilityText(e.target.value)}
         />
       </div>
+
+      {/* Antes da Aula */}
+      {(beforeClass || activityData.beforeClass) && (
+        <div style={sectionStyle}>
+          <div style={sectionTitleStyle}>Preparação — Antes da Aula</div>
+          <label style={labelStyle}>O que preparar antes da aula</label>
+          <textarea style={textareaStyle("120px")} value={beforeClass} onChange={(e) => setBeforeClass(e.target.value)} />
+        </div>
+      )}
+
+      {/* Roteiro Pedagógico — Etapas */}
+      {stages.length > 0 && (
+        <div style={sectionStyle}>
+          <div style={sectionTitleStyle}>Roteiro Pedagógico — {stages.length} Etapas</div>
+          {stages.map((stage, i) => (
+            <div key={i} style={{ ...matrixCardStyle("#4F46E5"), marginBottom: "1rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.5rem" }}>
+                <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#4F46E5" }}>
+                  Etapa {stage.number || i + 1} — {stage.title || ""}
+                </div>
+                {stage.duration && (
+                  <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.45)", fontStyle: "italic" }}>{stage.duration}</div>
+                )}
+              </div>
+              {stage.description && (
+                <p style={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.8)", lineHeight: 1.55, marginBottom: "0.5rem" }}>{stage.description}</p>
+              )}
+              {stage.teacherScript && (
+                <div style={{ background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.2)", borderRadius: "6px", padding: "0.5rem 0.75rem", marginBottom: "0.4rem" }}>
+                  <div style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "#4F46E5", fontWeight: 600, marginBottom: "0.25rem" }}>Roteiro do professor</div>
+                  <p style={{ fontSize: "0.84rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}>{stage.teacherScript}</p>
+                </div>
+              )}
+              {stage.questions?.length > 0 && (
+                <div>
+                  <div style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "rgba(255,255,255,0.4)", fontWeight: 600, marginBottom: "0.25rem" }}>Perguntas norteadoras</div>
+                  <ul style={{ paddingLeft: "1.2rem", margin: 0 }}>
+                    {stage.questions.map((q, qi) => (
+                      <li key={qi} style={{ fontSize: "0.84rem", color: "rgba(255,255,255,0.7)", marginBottom: "0.2rem" }}>{q}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Após a Aula */}
+      {(afterClass || activityData.afterClass) && (
+        <div style={sectionStyle}>
+          <div style={sectionTitleStyle}>Encerramento — Após a Aula</div>
+          <label style={labelStyle}>Reflexão, avaliação formativa e próximos passos</label>
+          <textarea style={textareaStyle("120px")} value={afterClass} onChange={(e) => setAfterClass(e.target.value)} />
+        </div>
+      )}
+
+      {/* Dicas para o Professor */}
+      {(teacherTips || activityData.teacherTips) && (
+        <div style={sectionStyle}>
+          <div style={sectionTitleStyle}>Dicas para o Professor</div>
+          <label style={labelStyle}>Orientações práticas e sugestões pedagógicas</label>
+          <textarea style={textareaStyle("140px")} value={teacherTips} onChange={(e) => setTeacherTips(e.target.value)} />
+        </div>
+      )}
 
       {/* Referências */}
       <div style={sectionStyle}>
