@@ -9,6 +9,10 @@ import { applyAccessibilityAdaptations } from '../accessibilityAdapter.js'
 import { getAccessibilityAdaptations } from '../../data/accessibilityAdaptations.js'
 import { GeminiService } from './geminiService.js'
 import { findSourcesForActivity } from '../sources/index.js'
+import {
+  getContextForActivity,
+  saveSourcesAsync,
+} from '../knowledge/knowledgeBaseService.js'
 
 const COMPETENCY_TO_LETTER = {
   science: 'S',
@@ -18,7 +22,7 @@ const COMPETENCY_TO_LETTER = {
   mathematics: 'M',
 }
 
-function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, bnccSuggestions, verifiedSources = [] }) {
+function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, bnccSuggestions, verifiedSources = [], knowledgeContext = '' }) {
   const steamLetters = steamCompetencies
     .map((c) => COMPETENCY_TO_LETTER[String(c).toLowerCase()])
     .filter(Boolean)
@@ -62,6 +66,7 @@ Diretrizes obrigatórias:
 ${verifiedSources.length > 0
   ? `Fontes verificadas em bases acadêmicas reais (Crossref, OpenAlex, SciELO, Semantic Scholar):\n${verifiedSources.map((s, i) => `${i + 1}. ${s.abnt}`).join('\n')}`
   : 'Nenhuma fonte localizada automaticamente. Deixe o campo "bibliography" vazio: [].'}
+${knowledgeContext ? `\nBase de conhecimento pedagógico local (use para enriquecer a atividade — conteúdo já validado):\n${knowledgeContext}` : ''}
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -291,9 +296,29 @@ export class PedagogicalPlannerService {
       limit: 5
     })
 
-    const verifiedSources = await findSourcesForActivity({ theme, discipline, grade, limit: 5 }).catch(() => [])
+    // ── 1. Consulta a base de conhecimento local antes de qualquer API externa ──
+    const kb = await getContextForActivity({ theme, discipline, grade, steamCompetencies })
 
-    const prompt = buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, bnccSuggestions, verifiedSources })
+    // ── 2. Se KB tem >= 3 fontes confiáveis, ignora as chamadas externas (4 APIs) ──
+    const externalSources = kb.skipSourceSearch
+      ? []
+      : await findSourcesForActivity({ theme, discipline, grade, limit: 5 }).catch(() => [])
+
+    // Mescla fontes KB + externas, desduplicando por DOI
+    const seenDois = new Set()
+    const verifiedSources = [...externalSources, ...kb.sources].filter((s) => {
+      if (!s.doi) return true
+      if (seenDois.has(s.doi)) return false
+      seenDois.add(s.doi)
+      return true
+    }).slice(0, 7)
+
+    // ── 3. Gera prompt com contexto local (reduz alucinações e tokens da IA) ──
+    const prompt = buildPrompt({
+      discipline, grade, theme, steamCompetencies, numberOfClasses,
+      customInstructions, bnccSuggestions, verifiedSources,
+      knowledgeContext: kb.contextSummary,
+    })
 
     const response = await AIProviderManager.request({
       requestType: 'pedagogicalactivity',
@@ -313,12 +338,24 @@ export class PedagogicalPlannerService {
 
     validateActivity(parsed)
 
+    // ── 4. Salva fontes novas na KB de forma assíncrona (fire-and-forget) ──
+    if (externalSources.length) {
+      saveSourcesAsync(externalSources, {
+        theme,
+        discipline,
+        grade,
+        steamAreas: steamCompetencies,
+        bnccCodes: getBnccCodes(bnccSuggestions),
+      })
+    }
+
     return {
       activity: parsed,
       generatedAt: new Date().toISOString(),
       competencies: steamCompetencies,
       provider: response.provider || null,
-      verifiedSources
+      verifiedSources,
+      usedLocalKnowledge: kb.skipSourceSearch,
     }
   }
 
