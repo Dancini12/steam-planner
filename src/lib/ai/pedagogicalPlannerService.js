@@ -22,7 +22,7 @@ const COMPETENCY_TO_LETTER = {
   mathematics: 'M',
 }
 
-function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, bnccSuggestions, verifiedSources = [], knowledgeContext = '' }) {
+function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, modality, customInstructions, bnccSuggestions, verifiedSources = [], knowledgeContext = '' }) {
   const steamLetters = steamCompetencies
     .map((c) => COMPETENCY_TO_LETTER[String(c).toLowerCase()])
     .filter(Boolean)
@@ -35,6 +35,9 @@ function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClas
   }, {})
 
   const classesInfo = numberOfClasses ? `- Duração total: ${numberOfClasses} aulas` : ''
+  const modalityInfo = modality === 'individual'
+    ? '- Modalidade: INDIVIDUAL — os alunos trabalham sozinhos; adapte etapas, materiais e Atividade do Aluno para trabalho solo com reflexão pessoal'
+    : '- Modalidade: EM GRUPO — organize grupos de 3-4 alunos com papéis definidos (construtor, testador, registrador, apresentador)'
 
   return `Você é especialista em educação STEAM, Cultura Maker e BNCC para o sistema educacional brasileiro.
 
@@ -44,6 +47,8 @@ ESSÊNCIA OBRIGATÓRIA — toda atividade DEVE integrar:
 - Aprendizagem ativa e protagonismo estudantil: aprender fazendo
 - Resolução de problemas reais e investigação
 - Criatividade como ferramenta pedagógica central
+- Títulos: curtos e pedagógicos (máx. 6 palavras), próximos da sala de aula real. Ex.: "Ciências e o Lixo da Escola", "Luz, Sombra e Arte", "Matemática com Embalagens". Nunca títulos poéticos, elaborados ou "cinematográficos".
+- STEAM pelo fazer, nunca pelo explicar: não escreva "aqui utilizamos Arte" ou "neste momento aparece a Matemática". Os alunos investigam, criam, constroem, analisam e experimentam — o STEAM emerge naturalmente das ações, sem precisar ser nomeado.
 
 Crie uma atividade pedagógica completa para:
 - Disciplina principal: ${discipline}
@@ -51,6 +56,7 @@ Crie uma atividade pedagógica completa para:
 - Tema central: ${theme}
 - Áreas STEAM envolvidas: ${uniqueLetters.join(', ')}
 ${classesInfo}
+${modalityInfo}
 - Habilidades BNCC selecionadas do banco offline:
 ${formatBnccSuggestions(bnccSuggestions)}
 ${customInstructions?.trim() ? `\nSolicitações específicas do professor:\n${customInstructions.trim()}` : ''}
@@ -403,7 +409,7 @@ function applyProjectAccessibility(data, project) {
 
 export class PedagogicalPlannerService {
   static async generatePedagogicalActivity(params) {
-    const { discipline, grade, theme, steamCompetencies, numberOfClasses, customInstructions, personalization, userId } = params
+    const { discipline, grade, theme, steamCompetencies, numberOfClasses, modality, customInstructions, personalization, userId } = params
 
     const bnccSuggestions = selectBnccHabilidades({
       grade,
@@ -432,7 +438,7 @@ export class PedagogicalPlannerService {
 
     // ── 3. Gera prompt com contexto local (reduz alucinações e tokens da IA) ──
     const prompt = buildPrompt({
-      discipline, grade, theme, steamCompetencies, numberOfClasses,
+      discipline, grade, theme, steamCompetencies, numberOfClasses, modality,
       customInstructions, bnccSuggestions, verifiedSources,
       knowledgeContext: kb.contextSummary,
     })
@@ -467,7 +473,7 @@ export class PedagogicalPlannerService {
     }
 
     return {
-      activity: parsed,
+      activity: { ...parsed, modality: modality || 'grupo' },
       generatedAt: new Date().toISOString(),
       competencies: steamCompetencies,
       provider: response.provider || null,
