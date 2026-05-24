@@ -19,11 +19,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
   const [materialsText, setMaterialsText] = useState((activityData.materials || []).join("\n"));
   const [activityManual, setActivityManual] = useState(activityData.activityManual || "");
   const [steamMatrix, setSteamMatrix] = useState({ ...(activityData.steamMatrix || {}) });
-  const [accessibilityText, setAccessibilityText] = useState(
-    Array.isArray(activityData.accessibility)
-      ? activityData.accessibility.join("\n")
-      : activityData.accessibility || ""
-  );
   const [bibliographyText, setBibliographyText] = useState((activityData.bibliography || []).join("\n"));
   const [modality, setModality] = useState(activityData.modality || 'grupo');
   const [studentActivity, setStudentActivity] = useState(activityData.studentActivity || {});
@@ -57,7 +52,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
       materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
       activityManual,
-      accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       steamMatrix,
       modality,
       studentActivity,
@@ -92,7 +86,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
       materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
       activityManual,
-      accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       steamMatrix,
       modality,
       studentActivity,
@@ -326,24 +319,23 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
 
       {/* Manual */}
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Resumo, Materiais e Montagem</div>
-        <label style={labelStyle}>Competências solicitadas, materiais utilizados e como montar o projeto</label>
+        <div style={sectionTitleStyle}>Instruções de aplicação</div>
+        <label style={labelStyle}>Como preparar, conduzir, desenvolver STEAM/Maker e fechar a atividade</label>
         <textarea
           style={textareaStyle("180px")}
           value={activityManual}
           onChange={(e) => setActivityManual(e.target.value)}
-          placeholder="Resumo das competências: ...&#10;&#10;Materiais utilizados: ...&#10;&#10;Como montar e conduzir: ..."
+          placeholder="1. Materiais necessários&#10;- Material — quantidade e uso.&#10;&#10;2. Passo a passo da atividade&#10;Engenharia e Matemática: organize a estrutura, medidas e montagem.&#10;Ciência e Tecnologia: investigue o funcionamento e teste a solução.&#10;Teste e Arte: melhore, finalize visualmente e apresente.&#10;&#10;3. Integração STEAM e Cultura Maker&#10;Explique como a turma investigou, construiu, testou, melhorou e apresentou."
         />
       </div>
 
-      {/* Acessibilidade */}
+      {/* Referências */}
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Acessibilidade e Inclusão</div>
-        <label style={labelStyle}>Adaptações, padrões visuais/táteis e alternativas ao uso exclusivo de cores</label>
-        <textarea
-          style={textareaStyle("110px")}
-          value={accessibilityText}
-          onChange={(e) => setAccessibilityText(e.target.value)}
+        <div style={sectionTitleStyle}>Referências Bibliográficas</div>
+        <label style={labelStyle}>Referências ABNT (uma por linha)</label>
+        <textarea style={textareaStyle("120px")} value={bibliographyText} onChange={(e) => setBibliographyText(e.target.value)} />
+        <BibliographyVerifier
+          references={bibliographyText.split('\n').map((s) => s.trim()).filter(Boolean)}
         />
       </div>
 
@@ -504,16 +496,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
           <textarea style={textareaStyle("140px")} value={teacherTips} onChange={(e) => setTeacherTips(e.target.value)} />
         </div>
       )}
-
-      {/* Referências */}
-      <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Referências Bibliográficas</div>
-        <label style={labelStyle}>Referências ABNT (uma por linha)</label>
-        <textarea style={textareaStyle("120px")} value={bibliographyText} onChange={(e) => setBibliographyText(e.target.value)} />
-        <BibliographyVerifier
-          references={bibliographyText.split('\n').map((s) => s.trim()).filter(Boolean)}
-        />
-      </div>
 
       {/* Continuidade Pedagógica */}
       <div style={{ ...sectionStyle, marginTop: "2.5rem" }}>

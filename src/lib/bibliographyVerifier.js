@@ -55,7 +55,7 @@ export async function verifyBibliography(references = []) {
   let aiResults = []
   if (needsAI.length > 0) {
     try {
-      const response = await AIProviderManager.request({ requestType: 'bibliography', prompt: buildPrompt(needsAI) })
+      const response = await AIProviderManager.request({ requestType: 'bibliographyverification', prompt: buildPrompt(needsAI) })
       const rawText = response.content
       if (rawText && typeof rawText === 'string') {
         const jsonStr = extractJson(rawText)

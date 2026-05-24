@@ -5,9 +5,6 @@ import {
   getBnccCodes,
   selectBnccHabilidades
 } from '../bnccSelector.js'
-import { applyAccessibilityAdaptations } from '../accessibilityAdapter.js'
-import { getAccessibilityAdaptations } from '../../data/accessibilityAdaptations.js'
-import { GeminiService } from './geminiService.js'
 import { findSourcesForActivity } from '../sources/index.js'
 import {
   getContextForActivity,
@@ -63,7 +60,8 @@ ${customInstructions?.trim() ? `\nSolicitações específicas do professor:\n${c
 
 ESTILO DE ESCRITA — aplicar em todos os campos:
 - Escreva como professor experiente: humano, natural, prático — não como artigo científico
-- Máximo 2-3 frases por parágrafo; prefira bullet points a blocos narrativos longos
+- Frases curtas, comandos claros e vocabulário simples
+- Prefira listas objetivas a blocos narrativos longos
 - Zero repetição de ideias entre campos
 - Linguagem acolhedora, próxima da sala de aula real
 - Use marcadores visuais: 💡 (dica), 📌 (atenção), 🛠 (momento maker), 🎯 (objetivo)
@@ -75,16 +73,17 @@ Diretrizes:
 4. Campo "bncc": use APENAS os códigos da lista offline acima, no formato "CÓDIGO — descrição breve". Não invente códigos.
 5. Cultura Maker obrigatória: construção + prototipagem + iteração (construir → testar → melhorar). Mesmo atividades teóricas devem ter produção prática ou representação visual.
 6. Não organize por fases de Design Thinking
-7. Campo "activityManual" em 3 partes, máximo 80 palavras no total:
-   - "Resumo das competências": 2 frases conectando STEAM à atividade
-   - "Materiais utilizados": lista curta com função de cada item
-   - "Como montar e conduzir": 2-3 frases sobre a condução geral
+7. Campo "activityManual" no estilo de roteiro maker, com linguagem simples e objetiva:
+   - "1. Materiais necessários": lista com quantidade e finalidade curta
+   - "2. Passo a passo da atividade": etapas concretas de construção, investigação, teste e apresentação
+   - "3. Integração STEAM e Cultura Maker": explique como investigar, criar, construir, testar, melhorar e explicar aparecem na prática
+   Use frases curtas. Explique o que o professor faz e o que os alunos fazem.
 8. Referências: use SOMENTE fontes verificadas abaixo. Aceitas também: BBC Brasil, ONU Brasil, National Geographic, Nova Escola, Porvir, InfoMoney, Canaltech. NUNCA Wikipedia. Não invente dados. Lista vazia → "bibliography": [].
-9. Campo "stages" — EXATAMENTE 8 etapas. Cada etapa DEVE ter:
-   - "objective": frase com 🎯, máx. 12 palavras — o que o aluno conquista nesta etapa
-   - "description": 50-70 palavras, linguagem natural e prática, sem repetir o teacherScript
-   - "teacherScript": 30-50 palavras, linguagem coloquial do professor, use 💡 ou 📌 quando útil
-   - "questions": 1-3 perguntas curtas e abertas
+9. Campo "stages" — EXATAMENTE 8 etapas, com instruções completas e objetivas. Cada etapa DEVE ter:
+   - "objective": frase com 🎯, máx. 10 palavras
+   - "description": 3 comandos práticos, com no máximo 50 palavras no total. Diga o que o professor faz e o que os alunos fazem.
+   - "teacherScript": 1 fala curta do professor, com no máximo 25 palavras
+   - "questions": 0-2 perguntas curtas e abertas
    Soma dos tempos = ${numberOfClasses ? numberOfClasses * 50 : 50} min (${numberOfClasses || 1} aula${numberOfClasses > 1 ? 's' : ''} de 50 min). Distribua os tempos de forma realista.
    Etapas: 1-Introdução · 2-Explicação · 3-Organização · 4-Desenvolvimento Maker · 5-Mediação · 6-Testes · 7-Reflexão · 8-Fechamento
 10. Campo "beforeClass": 3-4 bullet points do que preparar antes (materiais, ambiente, grupos)
@@ -120,79 +119,79 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Material 4 — quantidade por grupo e/ou turma",
     "Material 5 — quantidade por grupo e/ou turma"
   ],
-  "activityManual": "Resumo das competências:\\nTexto conectando as áreas STEAM à atividade.\\n\\nMateriais utilizados:\\n- Material 1: para que serve e como usar.\\n- Material 2: para que serve e como usar.\\n\\nComo montar e conduzir:\\nVisão geral da condução (detalhes completos estão nas etapas).",
+  "activityManual": "1. Materiais necessários\\n- Material 1 — quantidade e uso.\\n- Material 2 — quantidade e uso.\\n\\n2. Passo a passo da atividade\\nPreparação: organize os grupos, distribua os materiais e apresente o desafio.\\nConstrução maker: os alunos produzem uma primeira versão da solução com orientação do professor.\\nTeste e melhoria: os grupos testam, observam problemas e ajustam o produto.\\nSocialização: cada grupo apresenta o que fez, o que funcionou e o que mudaria.\\n\\n3. Integração STEAM e Cultura Maker\\nA atividade integra investigação, criação, construção, teste, melhoria e explicação das escolhas feitas pelos estudantes.",
   "stages": [
     {
       "number": 1,
       "title": "Etapa 1 — Introdução",
       "duration": "10 min",
-      "objective": "🎯 Os alunos se conectam ao tema e levantam curiosidades sobre o problema.",
-      "description": "50-70 palavras: inicie com uma provocação do cotidiano dos alunos. Apresente o problema real da atividade e mostre como as áreas STEAM (liste quais) aparecem neste desafio. Desperte a curiosidade antes de qualquer explicação formal.",
-      "teacherScript": "💡 Abra com: [frase provocadora ligada ao tema]. Mostre imagem/objeto/notícia. Peça 2-3 alunos para falarem o que já sabem. Não corrija ainda — o objetivo é curiosidade.",
+      "objective": "🎯 A turma entende o desafio.",
+      "description": "Mostre uma imagem, objeto ou notícia. Apresente o problema em linguagem simples. Peça que os alunos digam hipóteses e dúvidas iniciais.",
+      "teacherScript": "💡 Hoje vamos investigar este problema e criar uma resposta prática.",
       "questions": ["Pergunta de abertura para despertar curiosidade?", "O que você já sabe sobre esse assunto?"]
     },
     {
       "number": 2,
       "title": "Etapa 2 — Explicação",
       "duration": "10-15 min",
-      "objective": "🎯 Os alunos compreendem os conceitos-chave necessários para o desafio.",
-      "description": "50-70 palavras: apresente os 2-3 conceitos essenciais com exemplos concretos da realidade dos alunos. Use analogias simples. Verifique a compreensão com uma pergunta rápida antes de avançar. Evite explicações longas — o foco é mobilizar para a prática.",
-      "teacherScript": "📌 Explique o conceito com exemplo do dia a dia. Use o quadro para 1 diagrama simples. Faça a pergunta de verificação para a turma toda antes de seguir.",
+      "objective": "🎯 A turma relembra conceitos essenciais.",
+      "description": "Explique apenas 2 conceitos-chave. Use um exemplo do cotidiano. Faça uma pergunta de verificação antes da prática e anote palavras importantes no quadro.",
+      "teacherScript": "📌 Guardem esta ideia: ela vai orientar a construção de vocês.",
       "questions": ["Pergunta de verificação de compreensão?", "Alguém consegue dar um exemplo parecido?"]
     },
     {
       "number": 3,
       "title": "Etapa 3 — Organização",
       "duration": "5-8 min",
-      "objective": "🎯 Os grupos estão formados e prontos para iniciar o desafio.",
-      "description": "50-70 palavras: forme grupos de 3-4 alunos com perfis complementares. Distribua os materiais de forma organizada (um representante por grupo). Organize o espaço da sala para o trabalho prático. Explique os critérios do desafio antes de liberar os grupos.",
-      "teacherScript": "💡 Diga claramente: quem forma cada grupo, como pegar os materiais e o que cada grupo deve produzir. Reserve 1 min para perguntas antes de começar.",
+      "objective": "🎯 Os grupos sabem o que fazer.",
+      "description": "Forme grupos e defina papéis simples. Distribua materiais. Combine tempo, produto esperado, cuidado com materiais e regra de colaboração.",
+      "teacherScript": "💡 Antes de começar: cada grupo precisa saber o que vai entregar.",
       "questions": []
     },
     {
       "number": 4,
       "title": "Etapa 4 — Desenvolvimento Maker",
       "duration": "20-30 min",
-      "objective": "🛠 Os alunos constroem, criam e testam a primeira versão da sua solução.",
-      "description": "50-70 palavras: os grupos trabalham no desafio Maker de forma autônoma. Cada grupo deve produzir algo concreto (modelo, protótipo, representação visual ou solução prática). Estimule o protagonismo: o professor não resolve — orienta. Registre com fotos ou anotações das soluções emergentes.",
-      "teacherScript": "🛠 Lance o desafio: [frase de lançamento do desafio]. Circule discretamente. Se um grupo travar, pergunte — não responda. Avise o tempo restante a cada 10 min.",
+      "objective": "🛠 Os grupos criam uma primeira versão.",
+      "description": "Os grupos constroem, desenham ou montam a solução. O professor circula, observa e faz perguntas. Avise o tempo restante e peça registro das decisões.",
+      "teacherScript": "🛠 Façam uma primeira versão simples. Depois vamos melhorar.",
       "questions": []
     },
     {
       "number": 5,
       "title": "Etapa 5 — Mediação",
       "duration": "durante o desenvolvimento",
-      "objective": "🎯 Os alunos avançam com autonomia, apoiados pelo professor facilitador.",
-      "description": "50-70 palavras: circule entre os grupos com postura de facilitador — observe antes de intervir. Incentive grupos travados com perguntas abertas, não com respostas. Estimule a colaboração dentro e entre grupos. Documente evidências de aprendizagem (fotos, anotações rápidas).",
-      "teacherScript": "📌 Perguntas de mediação: O que vocês já tentaram? O que aconteceu? Que outras formas existem? Evite falar mais que os alunos. Seu papel é provocar, não resolver.",
+      "objective": "🎯 Os grupos destravam dificuldades.",
+      "description": "Observe antes de intervir. Ajude com perguntas, não respostas prontas. Registre evidências rápidas sobre participação, colaboração e escolhas dos grupos.",
+      "teacherScript": "📌 O que vocês já tentaram? O que pode ser testado agora?",
       "questions": ["O que vocês já tentaram?", "O que aconteceu quando fizeram isso?", "Que outras formas vocês podem testar?"]
     },
     {
       "number": 6,
       "title": "Etapa 6 — Testes e melhoria",
       "duration": "10-15 min",
-      "objective": "🎯 Os alunos identificam erros, refinam e melhoram suas soluções.",
-      "description": "50-70 palavras: cada grupo testa sua solução e registra o que funcionou e o que não funcionou. Incentive ao menos um ciclo de melhoria (construir → testar → ajustar). Normalize o erro como parte do processo — quem errou e melhorou aprendeu mais.",
-      "teacherScript": "💡 Diga: Erro não é fracasso — é dado. O que mudaria se tivessem mais 5 minutos? Estimule os grupos a ajustar pelo menos 1 coisa antes da apresentação.",
+      "objective": "🎯 Os grupos testam e melhoram.",
+      "description": "Cada grupo testa a produção. Registra o que funcionou e o que precisa melhorar. Ajusta pelo menos uma coisa antes de apresentar.",
+      "teacherScript": "💡 Erro é dado. Usem o teste para melhorar a solução.",
       "questions": ["O que funcionou?", "O que não funcionou e por quê?", "Como podemos melhorar?"]
     },
     {
       "number": 7,
       "title": "Etapa 7 — Reflexão coletiva",
       "duration": "10 min",
-      "objective": "🎯 Os alunos conectam o que fizeram com as áreas STEAM e a realidade.",
-      "description": "50-70 palavras: promova uma roda rápida de conversa. Cada grupo compartilha 1 descoberta e 1 dificuldade. Registre as conclusões no quadro. Conecte explicitamente a atividade com as áreas STEAM usadas e com situações reais do cotidiano dos alunos.",
-      "teacherScript": "📌 Abra a roda: Cada grupo tem 1 minuto. Anote no quadro: O que aprendemos + Onde isso aparece na vida real. Conduza para que TODOS os grupos falem.",
-      "questions": ["Como o que fizemos hoje aparece na vida real?", "Como as áreas STEAM se conectaram nesta atividade?", "O que você mudaria?"]
+      "objective": "🎯 A turma socializa descobertas.",
+      "description": "Cada grupo apresenta em 1 minuto. Peça uma descoberta, uma dificuldade e uma melhoria feita. Registre ideias comuns no quadro.",
+      "teacherScript": "📌 Apresentem o que fizeram, o que funcionou e o que mudariam.",
+      "questions": ["O que funcionou melhor?", "O que vocês mudariam?"]
     },
     {
       "number": 8,
       "title": "Etapa 8 — Fechamento",
       "duration": "8-10 min",
-      "objective": "🎯 Os alunos sintetizam as aprendizagens e recebem encaminhamentos.",
-      "description": "50-70 palavras: conclua com uma síntese das aprendizagens do dia — o que foi construído, investigado e descoberto. Celebre os resultados de todos os grupos. Anuncie o próximo passo (continuação, avaliação ou nova atividade). Reserve 2 minutos para organização da sala.",
-      "teacherScript": "💡 Diga: Hoje vocês [síntese do que foi feito]. Destaque 2-3 pontos-chave. Pergunte: O que você vai lembrar desta aula amanhã? Encerre com energia positiva.",
-      "questions": ["O que cada grupo aprendeu hoje?", "Como podemos levar esse conhecimento para fora da escola?"]
+      "objective": "🎯 A turma fecha a aprendizagem.",
+      "description": "Retome o desafio inicial. Destaque 2 aprendizagens. Combine entrega, registro, avaliação rápida ou próximo passo.",
+      "teacherScript": "💡 Hoje vocês investigaram, criaram, testaram e melhoraram uma solução.",
+      "questions": ["O que você aprendeu hoje?", "Onde isso aparece fora da escola?"]
     }
   ],
   "beforeClass": "• Material 1: onde conseguir e como preparar\\n• Material 2: quantidade e organização\\n• Ambiente: como reorganizar a sala\\n• 📌 Atenção: [algo específico a não esquecer]",
@@ -354,12 +353,19 @@ ${matrixLines}
 ${phaseLines || '  (sem planos específicos registrados)'}
 
 TAREFA:
-Gere um roteiro de aula completo, prático e pronto para o professor usar em sala. O roteiro deve ser sequenciado, com tempos estimados, ações concretas e linguagem direta. Deve caber em 2–3 aulas (ajuste conforme a duração do projeto).
+Gere uma atividade prática no estilo de roteiro maker para aplicar em sala. O resultado deve ficar parecido com este formato: "Projeto: [nome]", "1. Materiais Necessários", "2. Passo a Passo da Construção/Atividade", "3. Integração das Disciplinas". Use linguagem simples, objetiva e direta.
 
 Regras obrigatórias para o roteiro:
-1. Detalhe cada momento com instruções executáveis, evitando descrições genéricas.
-2. Liste materiais com quantidades por grupo e/ou por turma.
-3. Não crie adaptações de acessibilidade; elas serão aplicadas pelo sistema a partir do banco local.
+1. Liste materiais com quantidades e finalidade curta.
+2. Use de 4 a 6 passos práticos, organizados como construção/aplicação da atividade.
+3. Cada passo pode agrupar áreas, como "Engenharia e Matemática", "Ciência e Tecnologia", "Teste e Arte", quando fizer sentido.
+4. Em cada passo, diga exatamente o que o professor prepara/orienta e o que os alunos fazem.
+5. Mostre como o STEAM e a Cultura Maker acontecem na prática: investigar, criar, construir, testar, melhorar e explicar.
+6. Evite teoria longa. Quando precisar explicar conceito, use 1 frase simples ligada ao que foi feito.
+7. Use linguagem direta, simples e adequada ao professor.
+8. Inclua "steamIntegration" com S, T, E, A, M, cada item com 1 frase curta e aplicada ao projeto.
+9. "assessment" deve ter no máximo 3 frases simples.
+10. "tips" deve ter no máximo 4 bullets curtos.
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -374,37 +380,51 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   ],
   "steps": [
     {
+      "time": "Antes da aula",
+      "actor": "Professor",
+      "title": "Preparação",
+      "description": "Separe os materiais por grupo e organize o espaço da sala. Deixe claro qual produto os alunos deverão construir, testar e apresentar."
+    },
+    {
       "time": "10 min",
       "actor": "Professor",
-      "title": "Título do momento",
-      "description": "Descrição detalhada e operacional do que fazer. Use linguagem direta: 'Apresente...', 'Pergunte...', 'Organize...'"
+      "title": "Abertura",
+      "description": "Apresente o problema em uma frase e conecte com a realidade dos alunos. Peça que a turma levante hipóteses rápidas."
     },
     {
       "time": "20 min",
       "actor": "Alunos",
-      "title": "Título do momento",
-      "description": "O que os alunos fazem concretamente neste momento."
+      "title": "Engenharia e Matemática",
+      "description": "Organize os grupos e entregue os materiais. Peça que montem a estrutura, observem medidas, alinhamento, equilíbrio ou organização dos elementos."
+    },
+    {
+      "time": "20 min",
+      "actor": "Alunos",
+      "title": "Ciência e Tecnologia",
+      "description": "Peça que investiguem o funcionamento da solução e testem uma primeira versão. Oriente os grupos a registrar o que funcionou e o que precisa melhorar."
+    },
+    {
+      "time": "15 min",
+      "actor": "Alunos",
+      "title": "Teste, melhoria e Arte",
+      "description": "Peça que ajustem a produção, melhorem a apresentação visual e testem novamente. Feche com apresentação curta de cada grupo."
     }
   ],
+  "steamIntegration": {
+    "S": "Ciências: explica o fenômeno, causa, efeito ou funcionamento observado na atividade.",
+    "T": "Tecnologia: usa materiais, ferramentas ou técnicas para melhorar a solução.",
+    "E": "Engenharia: orienta o desenho, montagem, equilíbrio, estrutura ou funcionamento do produto.",
+    "A": "Artes: aparece no design visual, comunicação, criatividade e acabamento.",
+    "M": "Matemática: aparece em medidas, comparação, contagem, proporção, distância, tempo ou organização dos dados."
+  },
   "discussionQuestions": [
-    "Pergunta para discussão em sala 1?",
-    "Pergunta para reflexão 2?"
+    "O que funcionou melhor?",
+    "O que vocês mudariam?"
   ],
-  "assessment": "Como o professor avalia a participação e aprendizagem nesta aula (observação, produto, apresentação, etc.).",
-  "tips": "2–3 dicas práticas para o professor: como lidar com imprevistos, diferenciar para alunos com dificuldade, etc.",
+  "assessment": "Observe participação, colaboração, registro das ideias e melhoria da solução. Use a apresentação curta como evidência de aprendizagem. Valorize o processo, não apenas o produto final.",
+  "tips": "• Pouco tempo: reduza a produção para um esboço testável.\\n• Poucos materiais: trabalhe com papel, caneta e reaproveitamento.\\n• Dificuldade: entregue um exemplo simples para iniciar.\\n• Turma agitada: combine papéis e tempo para cada grupo.",
   "bncc": ["EF07CI05", "EF07MA03"]
 }`
-}
-
-function applyProjectAccessibility(data, project) {
-  const accessibility = Array.isArray(project.accessibility)
-    ? project.accessibility.join(" ")
-    : project.accessibility || ""
-
-  return {
-    ...data,
-    accessibility
-  }
 }
 
 export class PedagogicalPlannerService {
@@ -454,10 +474,7 @@ export class PedagogicalPlannerService {
     }
 
     const jsonStr = extractJson(rawText)
-    const parsed = applyAccessibilityAdaptations(
-      applyOfflineBncc(safeParseJson(jsonStr), bnccSuggestions),
-      personalization?.accessibility || []
-    )
+    const parsed = applyOfflineBncc(safeParseJson(jsonStr), bnccSuggestions)
 
     validateActivity(parsed)
 
@@ -486,7 +503,7 @@ export class PedagogicalPlannerService {
     const prompt = buildClassroomPrompt(project)
 
     const response = await AIProviderManager.request({
-      requestType: 'pedagogicalactivity',
+      requestType: 'classroomactivity',
       prompt
     })
 
@@ -496,52 +513,13 @@ export class PedagogicalPlannerService {
     }
 
     const jsonStr = extractJson(rawText)
-    const parsed = applyProjectAccessibility(safeParseJson(jsonStr), project)
+    const parsed = safeParseJson(jsonStr)
 
     if (!parsed.activityTitle || !parsed.steps || !Array.isArray(parsed.steps)) {
       throw new Error('Resposta da IA incompleta: campos obrigatórios ausentes.')
     }
 
     return parsed
-  }
-
-  static async adaptActivityFromPDF(base64Content, selectedAdaptationIds = []) {
-    const adaptations = getAccessibilityAdaptations(selectedAdaptationIds)
-
-    const adaptationDetails = adaptations
-      .map((a) => `- ${a.label}: ${a.guidance} ${a.materialGuidance}`)
-      .join('\n')
-
-    const colorblindRule = selectedAdaptationIds.includes('daltonismo')
-      ? 'Para daltonismo: onde a atividade usar cor para classificar, separar grupos, identificar ou filtrar, reescreva obrigatoriamente usando padrão alternativo (listras, bolinhas, zigue-zague, furos, relevo). Descreva nos materiais e nas instruções como produzir e usar cada padrão.'
-      : ''
-
-    const prompt = `Você é especialista em educação inclusiva e STEAM.
-
-Analise a atividade pedagógica no PDF enviado e GERE UMA VERSÃO COMPLETA E ADAPTADA dela, incorporando todas as modificações necessárias para os seguintes perfis de acessibilidade:
-
-${adaptationDetails}
-
-REGRAS OBRIGATÓRIAS:
-1. Preserve o objetivo pedagógico original da atividade.
-2. Reescreva as instruções, adaptando todos os elementos que apresentem barreiras de acessibilidade.
-${colorblindRule ? `3. ${colorblindRule}` : ''}
-4. A atividade deve estar completa e pronta para impressão e uso em sala de aula.
-5. Ao final, inclua uma seção "Notas para o professor" explicando brevemente cada adaptação realizada.
-
-ESTRUTURA OBRIGATÓRIA DA RESPOSTA (use exatamente estes títulos):
-## Título da atividade
-## Público-alvo e duração
-## Objetivo
-## Materiais necessários
-## Desenvolvimento
-## Notas para o professor`
-
-    return GeminiService.summarizeDocument(prompt, {
-      type: 'pdf',
-      content: base64Content,
-      mimeType: 'application/pdf'
-    })
   }
 
   // Incrementa contador só após o projeto ser salvo com sucesso

@@ -28,8 +28,8 @@ function renderBulletText(text) {
 
 function parseActivityManual(text) {
   if (!text) return { competencias: '', desenvolvimento: '' }
-  const compMatch = text.match(/resumo das competências:?\s*([\s\S]*?)(?=materiais utilizados:|como montar|$)/i)
-  const devMatch = text.match(/como montar e conduzir:?\s*([\s\S]*?)$/i)
+  const compMatch = text.match(/(?:resumo das competências|resumo):?\s*([\s\S]*?)(?=materiais utilizados:|materiais:|como montar|aplicação:|$)/i)
+  const devMatch = text.match(/(?:como montar e conduzir|aplicação):?\s*([\s\S]*?)$/i)
   return {
     competencias: compMatch ? compMatch[1].trim() : '',
     desenvolvimento: devMatch ? devMatch[1].trim() : text.trim()
@@ -37,7 +37,7 @@ function parseActivityManual(text) {
 }
 
 function buildActivityPrintHTML(activity) {
-  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, accessibility, bibliography, grade, discipline, generatedAt, stages, beforeClass, afterClass, teacherTips, modality, studentActivity } = activity;
+  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, bibliography, grade, discipline, generatedAt, stages, beforeClass, afterClass, teacherTips, modality, studentActivity } = activity;
 
   const steamLetters = Object.keys(steamMatrix || {}).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
   const generatedDate = generatedAt ? formatDate(generatedAt) : new Date().toLocaleDateString("pt-BR");
@@ -446,17 +446,19 @@ function formatDate(isoString) {
   }
 }
 
+function buildDefaultSteamMakerDescription(project) {
+  const productText = project?.finalProduct
+    ? `, chegando à produção de ${project.finalProduct.toLowerCase()}`
+    : "";
+
+  return `Nesta proposta, a abordagem STEAM aparece de forma integrada na investigação do problema, na organização das informações, na criação de representações e na construção coletiva de uma solução${productText}. A cultura maker orienta o trabalho prático: os estudantes planejam, produzem, testam, ajustam e apresentam suas ideias usando materiais acessíveis, colaboração e reflexão sobre o processo.`;
+}
+
 // Constrói o HTML completo do relatório.
 function buildReportHTML(project) {
   const generatedDate = project.generatedAt ? formatDate(project.generatedAt) : "";
-  const steamBadges = (project.steam || [])
-    .map((letter) => {
-      const area = STEAM_AREAS[letter];
-      return area
-        ? `<span style="background:#f0f0f0;color:#000;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.85rem;font-weight:700;margin-right:0.4rem;border:1px solid #ccc;">${letter} · ${area.name}</span>`
-        : "";
-    })
-    .join("");
+  const steamMakerDescription =
+    project.steamMakerDescription || buildDefaultSteamMakerDescription(project);
 
   const objectivesList = (project.objectives || [])
     .map((o) => `<li>${escapeHtml(o)}</li>`)
@@ -481,23 +483,6 @@ function buildReportHTML(project) {
     .join("");
 
   const bnccList = (project.bncc || []).map(escapeHtml).join(" · ");
-
-  const steamMatrixHTML = (project.steam || [])
-    .map((letter) => {
-      const area = STEAM_AREAS[letter];
-      const matrix = project.steamMatrix?.[letter] || {};
-      if (!area) return "";
-
-      return `
-        <tr>
-          <td><strong>${letter} · ${escapeHtml(area.name)}</strong></td>
-          <td>${escapeHtml(matrix.contribution || "—")}</td>
-          <td>${escapeHtml(matrix.activity || "—")}</td>
-          <td>${escapeHtml(matrix.evidence || "—")}</td>
-        </tr>
-      `;
-    })
-    .join("");
 
   const phasesHTML = PHASES.map((phase) => {
     const data = project.phases?.[phase.id] || {};
@@ -597,7 +582,6 @@ function buildReportHTML(project) {
   <div class="meta">
     ${escapeHtml(project.theme || "")} · ${escapeHtml(project.grade || "")} · ${escapeHtml(project.duration || "")}${generatedDate ? ` · Gerado em ${escapeHtml(generatedDate)}` : ""}
   </div>
-  <div>${steamBadges}</div>
 
   ${
     project.problem
@@ -617,22 +601,8 @@ function buildReportHTML(project) {
       : ""
   }
 
-  <h2>Matriz STEAM do projeto</h2>
-  ${
-    steamMatrixHTML
-      ? `<table>
-          <thead>
-            <tr>
-              <th>Área</th>
-              <th>Contribuição</th>
-              <th>Atividade relacionada</th>
-              <th>Evidência esperada</th>
-            </tr>
-          </thead>
-          <tbody>${steamMatrixHTML}</tbody>
-        </table>`
-      : "<p>(não preenchida)</p>"
-  }
+  <h2>STEAM e Cultura Maker</h2>
+  <p>${formatMultiline(steamMakerDescription)}</p>
 
   <h2>Objetivos pedagógicos</h2>
   <ul>${objectivesList || "<li>(não preenchido)</li>"}</ul>
@@ -643,7 +613,7 @@ function buildReportHTML(project) {
   <h2>Materiais</h2>
   <ul>${materialsList || "<li>(não preenchido)</li>"}</ul>
 
-  ${activityManualHTML ? `<h2>Resumo, Materiais e Montagem</h2>${activityManualHTML}` : ""}
+  ${activityManualHTML ? `<h2>Instruções de aplicação</h2>${activityManualHTML}` : ""}
 
   <h2>Turma e alunos</h2>
   <ul>${studentsList || "<li>(nenhum aluno cadastrado)</li>"}</ul>
@@ -695,6 +665,28 @@ function buildClassroomActivityHTML(activity, projectTitle) {
     `
   }).join('')
 
+  const steamLabels = {
+    S: 'S (Ciências)',
+    T: 'T (Tecnologia)',
+    E: 'E (Engenharia)',
+    A: 'A (Artes)',
+    M: 'M (Matemática)'
+  }
+  const steamNamesPattern = /^(S\s*)?(\(?(Ciências|Ciência|Tecnologia|Engenharia|Artes|Arte|Matemática)\)?):?\s*/i
+
+  const steamIntegration = activity.steamIntegration || {}
+  const steamIntegrationHTML = Array.isArray(steamIntegration)
+    ? steamIntegration.map((item) => `<li>${escapeHtml(item)}</li>`).join('')
+    : Object.entries(steamLabels)
+        .map(([key, label]) => {
+          const value = steamIntegration[key]
+          const cleaned = String(value || '')
+            .replace(new RegExp(`^${key}\\s*\\([^)]*\\):?\\s*`, 'i'), '')
+            .replace(steamNamesPattern, '')
+          return value ? `<li><strong>${label}:</strong> ${escapeHtml(cleaned)}</li>` : ''
+        })
+        .join('')
+
   const questionsHTML = (activity.discussionQuestions || [])
     .map((q) => `<li style="margin-bottom:0.5rem;">${escapeHtml(q)}</li>`)
     .join('')
@@ -703,9 +695,9 @@ function buildClassroomActivityHTML(activity, projectTitle) {
     .map((m) => `<li>${escapeHtml(m)}</li>`)
     .join('')
 
-  const accessibilityHTML = activity.accessibility
-    ? `<div class="tips-box">${escapeHtml(activity.accessibility)}</div>`
-    : ''
+  const bibliographyHTML = (activity.bibliography || [])
+    .map((ref) => `<p class="ref">${escapeHtml(ref)}</p>`)
+    .join('')
 
   const bnccHTML = (activity.bncc || []).map(escapeHtml).join(' · ')
 
@@ -724,6 +716,7 @@ function buildClassroomActivityHTML(activity, projectTitle) {
     .objective-box { background: #f5f5f5; border-left: 4px solid #000; padding: 1rem 1.25rem; margin: 1rem 0 1.5rem; font-size: 1rem; }
     .tips-box { background: #f5f5f5; border-left: 4px solid #555; padding: 1rem 1.25rem; margin: 1rem 0; font-size: 0.95rem; }
     .assessment-box { background: #f5f5f5; border-left: 4px solid #555; padding: 1rem 1.25rem; margin: 1rem 0; font-size: 0.95rem; }
+    .ref { font-size: 0.9rem; padding-left: 1.2rem; text-indent: -1.2rem; margin: 0.4rem 0; }
     ul { padding-left: 1.5rem; }
     li { margin-bottom: 0.3rem; }
     .project-ref { font-size: 0.82rem; color: #333; font-style: italic; margin-bottom: 0.5rem; }
@@ -745,15 +738,17 @@ function buildClassroomActivityHTML(activity, projectTitle) {
 
   ${materialsHTML ? `<h2>Materiais necessários</h2><ul>${materialsHTML}</ul>` : ''}
 
-  <h2>Roteiro passo a passo</h2>
+  <h2>Passo a passo da atividade</h2>
   ${stepsHTML}
+
+  ${steamIntegrationHTML ? `<h2>Integração das disciplinas</h2><ul>${steamIntegrationHTML}</ul>` : ''}
 
   ${questionsHTML ? `<h2>Perguntas para discussão</h2><ul>${questionsHTML}</ul>` : ''}
 
   <h2>Como avaliar</h2>
   <div class="assessment-box">${escapeHtml(activity.assessment || '')}</div>
 
-  ${accessibilityHTML ? `<h2>Acessibilidade e inclusão</h2>${accessibilityHTML}` : ''}
+  ${bibliographyHTML ? `<h2>Referências</h2>${bibliographyHTML}` : ''}
 
   ${activity.tips ? `<h2>Dicas para o professor</h2><div class="tips-box">${escapeHtml(activity.tips)}</div>` : ''}
 
@@ -785,200 +780,4 @@ export function openReportWindow(project) {
   }
   newWindow.document.write(html);
   newWindow.document.close();
-}
-
-function buildAdaptationReportHTML(result, filename, selectedAdaptations) {
-  const adaptationLabels = selectedAdaptations
-    .map((a) => `<span class="badge">${escapeHtml(a.label)}</span>`)
-    .join("");
-
-  const lines = result.split("\n");
-  let activityTitle = "";
-  const bodyLines = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) { bodyLines.push("<br>"); continue; }
-
-    if (/^###\s/.test(trimmed)) {
-      bodyLines.push(`<h3>${escapeHtml(trimmed.replace(/^###\s*/, ""))}</h3>`);
-      continue;
-    }
-    if (/^##\s/.test(trimmed)) {
-      const text = trimmed.replace(/^##\s*/, "");
-      const isNotes = /notas\s+para\s+o\s+professor/i.test(text);
-      bodyLines.push(isNotes
-        ? `<h2 class="notes-heading">${escapeHtml(text)}</h2>`
-        : `<h2>${escapeHtml(text)}</h2>`
-      );
-      continue;
-    }
-    if (/^#\s/.test(trimmed)) {
-      const text = trimmed.replace(/^#\s*/, "");
-      if (!activityTitle) activityTitle = text;
-      bodyLines.push(`<h1 class="activity-title">${escapeHtml(text)}</h1>`);
-      continue;
-    }
-    if (/^\*\*(.+)\*\*/.test(trimmed)) {
-      bodyLines.push(`<p>${escapeHtml(trimmed).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`);
-      continue;
-    }
-    if (/^[-•*]\s/.test(trimmed)) {
-      bodyLines.push(`<li>${escapeHtml(trimmed.replace(/^[-•*]\s/, ""))}</li>`);
-      continue;
-    }
-    if (/^\d+\.\s/.test(trimmed)) {
-      bodyLines.push(`<li>${escapeHtml(trimmed.replace(/^\d+\.\s/, ""))}</li>`);
-      continue;
-    }
-    bodyLines.push(`<p>${escapeHtml(trimmed)}</p>`);
-  }
-
-  const bodyHTML = bodyLines
-    .join("\n")
-    .replace(/(<li>[\s\S]*?<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`);
-
-  const titleForHeader = activityTitle || (filename ? filename.replace(/\.pdf$/i, "") : "Atividade Adaptada");
-
-  return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>${escapeHtml(titleForHeader)}</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: #F5F7FB;
-      color: #1F2937;
-      line-height: 1.75;
-      margin: 0;
-      padding: 2rem 1rem;
-    }
-    .page {
-      background: #FFFFFF;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 2rem 2.5rem;
-      border-radius: 8px;
-      border: 1px solid #E5E7EB;
-    }
-    .doc-header {
-      padding-bottom: 1.25rem;
-      margin-bottom: 1.75rem;
-      border-bottom: 2px solid #E5E7EB;
-    }
-    .doc-header-label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: #8B5CF6;
-      margin-bottom: 0.4rem;
-    }
-    .doc-header h1 {
-      font-size: 1.45rem;
-      font-weight: 700;
-      color: #1F2937;
-      margin: 0 0 0.5rem;
-    }
-    .doc-meta { font-size: 0.83rem; color: #6B7280; margin: 0.2rem 0; }
-    .doc-profiles { margin-top: 0.75rem; }
-    .badge {
-      display: inline-block;
-      background: #EDE9FE;
-      color: #5B21B6;
-      border: 1px solid #C4B5FD;
-      border-radius: 20px;
-      padding: 0.2rem 0.7rem;
-      font-size: 0.78rem;
-      font-weight: 600;
-      margin-right: 0.4rem;
-      margin-bottom: 0.35rem;
-    }
-    .activity-title {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: #1F2937;
-      margin: 1.5rem 0 0.5rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid #4F46E5;
-    }
-    h2 {
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.09em;
-      color: #4F46E5;
-      margin: 2rem 0 0.6rem;
-      padding-bottom: 0.35rem;
-      border-bottom: 1px solid #E5E7EB;
-    }
-    h2.notes-heading {
-      color: #10B981;
-      border-bottom-color: #D1FAE5;
-    }
-    h3 {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #1F2937;
-      margin: 1.25rem 0 0.4rem;
-    }
-    p { margin: 0.5rem 0; color: #1F2937; }
-    ul { padding-left: 1.5rem; margin: 0.5rem 0; }
-    li { margin-bottom: 0.4rem; color: #1F2937; }
-    strong { color: #1F2937; }
-    .notes-section {
-      margin-top: 2rem;
-      padding: 1rem 1.25rem;
-      background: #F0FDF4;
-      border-left: 4px solid #10B981;
-      border-radius: 0 6px 6px 0;
-    }
-    footer {
-      margin-top: 2.5rem;
-      padding-top: 1rem;
-      border-top: 1px solid #E5E7EB;
-      color: #6B7280;
-      font-size: 0.78rem;
-      text-align: center;
-    }
-    @media print {
-      body { background: #fff; padding: 0; }
-      .page { border: none; border-radius: 0; padding: 0.5cm 1cm; }
-      h2 { page-break-after: avoid; }
-      .doc-header { page-break-after: avoid; }
-    }
-  </style>
-</head>
-<body>
-  <div class="page">
-    <div class="doc-header">
-      <div class="doc-header-label">STEAM Planner · Acessibilidade</div>
-      <h1>Atividade Adaptada</h1>
-      ${filename ? `<div class="doc-meta">Origem: ${escapeHtml(filename)}</div>` : ""}
-      <div class="doc-meta">Gerado em ${new Date().toLocaleDateString("pt-BR")}</div>
-      <div class="doc-profiles">${adaptationLabels}</div>
-    </div>
-
-    ${bodyHTML}
-
-    <footer>Gerado pelo STEAM Planner em ${new Date().toLocaleDateString("pt-BR")}</footer>
-  </div>
-  <script>window.addEventListener("load", function() { setTimeout(function() { window.print(); }, 400); });</script>
-</body>
-</html>`;
-}
-
-export function openAdaptationReportWindow(result, filename, selectedAdaptations) {
-  const html = buildAdaptationReportHTML(result, filename, selectedAdaptations);
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const newWindow = window.open(url, "_blank");
-  if (!newWindow) {
-    alert("Não foi possível abrir o relatório. Verifique se o navegador está bloqueando pop-ups.");
-    URL.revokeObjectURL(url);
-    return;
-  }
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }

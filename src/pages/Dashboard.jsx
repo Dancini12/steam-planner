@@ -57,7 +57,6 @@ export default function Dashboard({
 
   const professorName = currentUser?.name || currentUser?.email?.split("@")[0] || "Professor";
   const firstName = professorName.split(" ")[0] || "Professor";
-  const accessibilityPreset = ["baixa_visao", "grupos_colaborativos"];
   const isLightMode = themeMode === "light";
 
   const toggleThemeMode = () => {
@@ -236,7 +235,6 @@ export default function Dashboard({
         isOpen={showPedagogicalModal}
         onClose={() => setShowPedagogicalModal(false)}
         onActivityGenerated={handlePedagogicalActivityGenerated}
-        accessibilityPreset={accessibilityPreset}
       />
 
     </div>

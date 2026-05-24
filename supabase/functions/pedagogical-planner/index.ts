@@ -88,7 +88,7 @@ Diretrizes obrigatórias:
 3. Objetivos de aprendizagem mensuráveis e alinhados à série
 4. Códigos BNCC reais e corretos (ex: EF07CI01, EF08MA03, EF06LP01)
 5. Cultura Maker em todas as fases: mão na massa, prototipagem, iteração, trabalho colaborativo
-6. Cada fase com descrição detalhada e operacional de atividades concretas, em passos numerados, para que o professor saiba exatamente como conduzir a execução
+6. Cada fase com instruções simples e operacionais, no estilo maker: materiais, passo a passo, construção, teste, melhoria, socialização e integração STEAM
 7. Lista de materiais com quantidade por grupo e, quando fizer sentido, quantidade para a turma. Ex.: "2 folhas de cartolina por grupo", "4 canetas coloridas por grupo", "1 tesoura sem ponta por grupo"
 8. Acessibilidade e desenho universal: se a atividade usar cores para classificar, marcar ou separar informações, inclua também padrões não dependentes de cor, como listras, bolinhas, formas, etiquetas, texturas, furos ou marcações táteis, pensando em estudantes daltônicos ou com baixa visão
 9. Referências bibliográficas reais no formato ABNT${request.numberOfClasses ? `
@@ -118,11 +118,11 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Material 5 — quantidade por grupo e/ou turma"
   ],
   "phaseDetails": {
-    "imersao": "Descrição operacional detalhada em passos numerados: preparação, perguntas disparadoras, organização dos grupos, atividade dos alunos, registro e produto esperado.",
-    "ideacao": "Descrição operacional detalhada em passos numerados: brainstorming, critérios de escolha, esboços, divisão de tarefas e decisão coletiva.",
-    "prototipagem": "Descrição operacional detalhada em passos numerados: o que construir, sequência de montagem, uso dos materiais com quantidades, cuidados de segurança e registro maker.",
-    "teste": "Descrição operacional detalhada em passos numerados: como testar, métricas, coleta de dados, comparação, ajustes e nova tentativa.",
-    "compartilhamento": "Descrição operacional detalhada em passos numerados: preparação da apresentação, audiência, evidências, reflexão e fechamento."
+    "imersao": "Passos objetivos: preparar recurso disparador, apresentar o problema, ouvir hipóteses dos alunos, registrar ideias e combinar o desafio maker.",
+    "ideacao": "Passos objetivos: organizar grupos, levantar ideias, escolher uma solução simples, esboçar, pensar nos materiais e dividir tarefas.",
+    "prototipagem": "Passos objetivos: separar materiais, orientar a construção, acompanhar os grupos, registrar decisões e cuidar da segurança.",
+    "teste": "Passos objetivos: testar a produção, observar o que funcionou, ajustar pelo menos um ponto, testar novamente e comparar resultados.",
+    "compartilhamento": "Passos objetivos: apresentar produções, explicar onde aparecem STEAM e Cultura Maker, ouvir comentários, registrar aprendizagens e avaliar participação."
   },
   "accessibility": [
     "Orientação 1 de acessibilidade e inclusão",

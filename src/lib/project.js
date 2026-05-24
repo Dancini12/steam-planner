@@ -73,6 +73,7 @@ export function createBlankProject() {
     problem: "",
     finalProduct: "",
     steam: [],
+    steamMakerDescription: "",
     steamMatrix: {},
     guidingQuestion: "",
     objectives: [],
@@ -110,6 +111,7 @@ export function createProjectFromTemplate(template) {
   project.problem = template.problem || "";
   project.finalProduct = template.finalProduct || "";
   project.steam = template.steam ? [...template.steam] : [];
+  project.steamMakerDescription = template.steamMakerDescription || "";
   project.steamMatrix = template.steamMatrix ? clone(template.steamMatrix) : {};
   project.guidingQuestion = template.guidingQuestion || "";
   project.objectives = template.objectives ? [...template.objectives] : [];
