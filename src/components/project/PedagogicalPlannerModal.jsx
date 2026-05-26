@@ -649,6 +649,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
                 multiline
                 rows={3}
                 fullWidth
+                variant="light"
               />
             </div>
           </div>

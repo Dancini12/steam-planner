@@ -22,14 +22,13 @@ const TIP_TYPES = [
   { icon: "📋", title: "Competências BNCC", color: "#8B5CF6", desc: "Aponta quais habilidades e competências gerais da BNCC estão sendo desenvolvidas." },
   { icon: "🔧", title: "Como adaptar", color: "#F59E0B", desc: "Sugere como simplificar materiais, reduzir tempo ou aplicar com poucos recursos em escolas públicas." },
   { icon: "🎨", title: "Dica Criativa", color: "#EC4899", desc: "Propõe missões, desafios ou formatos que tornam a atividade mais envolvente e divertida." },
-  { icon: "♿", title: "Inclusão", color: "#06B6D4", desc: "Orienta como adaptar para daltonismo, baixa visão e grupos colaborativos com diferentes ritmos." },
 ];
 
 const FLOW_STEPS = [
   { num: "1", title: "Escreva o tema ou contexto", desc: "Um título simples já é suficiente — a IA interpreta e aprofunda para você." },
   { num: "2", title: "Escolha a disciplina e a série", desc: "A atividade será calibrada para a faixa etária e o currículo corretos." },
   { num: "3", title: "Selecione as competências STEAM", desc: "Escolha as áreas que quer integrar — a Cultura Maker estará sempre presente." },
-  { num: "4", title: "Personalize para sua turma", desc: "Defina materiais, acessibilidade, avaliação e qualquer pedido especial." },
+  { num: "4", title: "Personalize para sua turma", desc: "Defina materiais, avaliação e qualquer pedido especial." },
   { num: "5", title: "Gere e receba orientações pedagógicas", desc: "A IA cria a atividade e explica as escolhas com dicas visuais e práticas." },
 ];
 

@@ -64,13 +64,24 @@ function buildActivityPrintHTML(activity) {
     .map((b) => `<p class="ref">${escapeHtml(b)}</p>`)
     .join('');
 
-  // Conteúdo programático — áreas STEAM
+  // Conteúdo programático — texto dissertativo STEAM + Maker
   const steamListHTML = steamLetters.length > 0
-    ? `<ul>${steamLetters.map(l => {
-        const area = STEAM_AREAS[l];
-        const m = (steamMatrix || {})[l] || {};
-        return `<li><strong>${l} — ${escapeHtml(area?.name || steamAreaNames[l] || l)}:</strong> ${escapeHtml(m.contribution || area?.description || '')}${m.evidence ? ` <em>(evidência: ${escapeHtml(m.evidence)})</em>` : ''}</li>`;
-      }).join('')}</ul>`
+    ? (() => {
+        const parts = steamLetters.map((l, i) => {
+          const area = STEAM_AREAS[l];
+          const m = (steamMatrix || {})[l] || {};
+          const areaName = escapeHtml(area?.name || steamAreaNames[l] || l);
+          const contrib = escapeHtml(m.contribution || area?.description || '');
+          const contrib_lower = contrib.charAt(0).toLowerCase() + contrib.slice(1);
+          return `<strong>${areaName}</strong>, ${contrib_lower}`;
+        });
+        const intro = `Esta atividade mobiliza a cultura STEAM e a cultura Maker como eixos estruturantes da proposta pedagógica. `;
+        const body = parts.length > 1
+          ? parts.slice(0, -1).map((p, i) => `Em ${p}`).join('; ') + `; e em ${parts[parts.length - 1]}.`
+          : `Em ${parts[0]}.`;
+        const maker = ` A cultura Maker atravessa toda a sequência ao propor que os estudantes aprendam fazendo — investigando, construindo, testando e aperfeiçoando suas ideias com materiais acessíveis, em um processo colaborativo que valoriza o erro como parte da aprendizagem e o protagonismo como princípio formativo.`;
+        return `<p>${intro}${body}${maker}</p>`;
+      })()
     : '';
 
   // Desenvolvimento — etapas numeradas
