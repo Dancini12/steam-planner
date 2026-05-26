@@ -74,15 +74,6 @@ const PERSONALIZATION_OPTIONS = {
       { id: 'sem_eletronica', label: 'Sem eletrônica', instruction: 'Evitar materiais eletrônicos e propor alternativas analógicas ou de papelaria.' }
     ]
   },
-  accessibility: {
-    title: 'Acessibilidade',
-    type: 'multi',
-    options: [
-      { id: 'daltonismo', label: 'Alternativas para daltonismo', instruction: 'Se houver uso de cores, incluir padrões, símbolos, etiquetas, texturas, furos ou marcações táteis.' },
-      { id: 'baixa_visao', label: 'Baixa visão', instruction: 'Sugerir contraste alto, letras grandes, materiais com boa legibilidade e organização visual simples.' },
-      { id: 'grupos_colaborativos', label: 'Grupos colaborativos', instruction: 'Organizar papéis nos grupos para incluir estudantes com diferentes ritmos e necessidades.' }
-    ]
-  },
   assessment: {
     title: 'Avaliação',
     type: 'single',
@@ -96,18 +87,11 @@ const PERSONALIZATION_OPTIONS = {
 const defaultPersonalization = {
   detailLevel: 'passo_a_passo',
   materials: 'quantidade_grupo',
-  accessibility: ['daltonismo'],
   assessment: 'observacao'
 }
 
-function buildDefaultPersonalization(accessibilityPreset = []) {
-  return {
-    ...defaultPersonalization,
-    accessibility: [...new Set([
-      ...defaultPersonalization.accessibility,
-      ...accessibilityPreset
-    ])]
-  }
+function buildDefaultPersonalization() {
+  return { ...defaultPersonalization }
 }
 
 function TipCard({ icon, title, text, color }) {
@@ -204,25 +188,17 @@ function generateActivityTips(formData) {
     ? `Integra ${selected.map(c => steamNames[c] || c).join(', ')} por meio de ${selected.map(c => steamDescs[c] || c).join('; ')}.`
     : 'As áreas STEAM selecionadas criam uma experiência interdisciplinar que conecta teoria e prática.'
 
-  const accessMap = {
-    daltonismo: 'use padrões visuais (listras, bolinhas) além de cores para diferenciar elementos',
-    baixa_visao: 'instrua com fontes grandes e alto contraste nos materiais impressos',
-    grupos_colaborativos: 'defina papéis claros nos grupos (construtor, testador, registrador, apresentador)'
-  }
-  const inclText = formData.personalization.accessibility.map(id => accessMap[id]).filter(Boolean).join('; ')
-
   return [
     { icon: '⚡', title: 'Dica STEAM', color: '#4F46E5', text: steamText + ' A combinação dessas áreas cria conexões interdisciplinares que tornam o aprendizado mais significativo.' },
     { icon: '🔨', title: 'Cultura Maker', color: '#10B981', text: 'A Cultura Maker aparece quando os alunos constroem, testam e melhoram seus protótipos. O erro faz parte do processo — cada tentativa ensina mais do que qualquer explicação.' },
     { icon: '📋', title: 'Competências BNCC', color: '#8B5CF6', text: `Para o ${formData.grade || 'Ensino Fundamental'}, esta atividade desenvolve pensamento científico, criatividade, comunicação, colaboração e uso de tecnologias — competências gerais da BNCC presentes em todas as áreas do conhecimento.` },
     { icon: '🔧', title: 'Como adaptar', color: '#F59E0B', text: 'Sem laboratório? Sem problema. Papelão, recicláveis, palitos e cola são suficientes para prototipagem. Para aulas mais curtas, reduza o ciclo para 1 construção + 1 teste + 1 melhoria.' },
     { icon: '🎨', title: 'Dica Criativa', color: '#EC4899', text: 'Apresente o problema como uma missão: "vocês são engenheiros(as) responsáveis por resolver...". Isso aumenta o engajamento e dá propósito real à atividade.' },
-    { icon: '♿', title: 'Inclusão', color: '#06B6D4', text: inclText ? `Para esta turma: ${inclText}. Adaptar beneficia todos — não apenas quem tem necessidades específicas.` : 'Papéis complementares nos grupos garantem participação ativa de todos, independente do ritmo ou perfil de aprendizado.' }
+    { icon: '📚', title: 'Referências', color: '#06B6D4', text: 'As referências ficam junto ao documento da atividade para revisão, validação e impressão pelo professor.' }
   ]
 }
 
-function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessibilityPreset = [] }) {
-  const accessibilityPresetKey = accessibilityPreset.join('|')
+function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState({
     discipline: '',
@@ -230,7 +206,8 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
     theme: '',
     steamCompetencies: [],
     numberOfClasses: '',
-    personalization: buildDefaultPersonalization(accessibilityPreset),
+    modality: 'grupo',
+    personalization: buildDefaultPersonalization(),
     manualInstructions: ''
   })
   const [previewData, setPreviewData] = useState(null)
@@ -244,7 +221,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
     if (isOpen) {
       resetForm()
     }
-  }, [isOpen, accessibilityPresetKey])
+  }, [isOpen])
 
   const resetForm = () => {
     setCurrentStep(0)
@@ -254,7 +231,8 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
       theme: '',
       steamCompetencies: [],
       numberOfClasses: '',
-      personalization: buildDefaultPersonalization(accessibilityPreset),
+      modality: 'grupo',
+      personalization: buildDefaultPersonalization(),
       manualInstructions: ''
     })
     setPreviewData(null)
@@ -294,7 +272,6 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
   const buildCustomInstructions = () => {
     const instructions = []
     Object.entries(PERSONALIZATION_OPTIONS).forEach(([groupId, group]) => {
-      if (groupId === 'accessibility') return
       const selected = formData.personalization[groupId]
       const selectedIds = Array.isArray(selected) ? selected : [selected]
       group.options
@@ -310,10 +287,10 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
   }
 
   const handleNext = () => {
-    if (currentStep === 5) {
+    if (currentStep === 6) {
       generatePreviewData()
     }
-    if (currentStep < 6) {
+    if (currentStep < 7) {
       setCurrentStep(currentStep + 1)
       setError('')
     }
@@ -356,6 +333,11 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
     setError('')
   }
 
+  const handleModalityChange = (value) => {
+    setFormData(prev => ({ ...prev, modality: value }))
+    setError('')
+  }
+
   const handlePersonalizationChange = (groupId, optionId, type) => {
     setFormData(prev => {
       const current = prev.personalization[groupId]
@@ -394,8 +376,10 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
       case 4:
         return formData.numberOfClasses !== '' && parseInt(formData.numberOfClasses) > 0
       case 5:
-        return formData.personalization.accessibility.length > 0
+        return true
       case 6:
+        return true
+      case 7:
         return !!previewData
       default:
         return false
@@ -587,6 +571,45 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
       case 5:
         return (
           <div style={stepContentStyle}>
+            <h3 style={stepTitleStyle}>👥 Como será desenvolvida?</h3>
+            <p style={stepDescriptionStyle}>
+              Defina se a atividade será realizada em grupo ou individualmente pelos estudantes.
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+              {[
+                { value: 'grupo', label: 'Em grupo', icon: '👥', desc: 'Colaboração, papéis definidos e aprendizagem entre pares' },
+                { value: 'individual', label: 'Individual', icon: '👤', desc: 'Autonomia, reflexão pessoal e ritmo próprio' }
+              ].map(({ value, label, icon, desc }) => {
+                const active = formData.modality === value
+                return (
+                  <button
+                    key={value}
+                    onClick={() => handleModalityChange(value)}
+                    style={{
+                      flex: 1,
+                      padding: '1.25rem 1rem',
+                      borderRadius: '10px',
+                      border: active ? '2px solid #3B82F6' : '2px solid #E5E7EB',
+                      background: active ? '#DBEAFE' : '#FFFFFF',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      fontFamily: 'inherit',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{icon}</div>
+                    <div style={{ fontWeight: 700, fontSize: '1rem', color: active ? '#1E40AF' : '#1F2937', marginBottom: '0.35rem' }}>{label}</div>
+                    <div style={{ fontSize: '0.8rem', color: active ? '#3B82F6' : '#6B7280', lineHeight: 1.4 }}>{desc}</div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+
+      case 6:
+        return (
+          <div style={stepContentStyle}>
             <h3 style={stepTitleStyle}>⚙️ Como você quer personalizar?</h3>
             <p style={stepDescriptionStyle}>
               Escolha as opções que melhor combinam com sua turma. Se faltar algo, escreva uma orientação extra no final.
@@ -626,12 +649,13 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
                 multiline
                 rows={3}
                 fullWidth
+                variant="light"
               />
             </div>
           </div>
         )
 
-      case 6:
+      case 7:
         return (
           <div style={stepContentStyle}>
             <h3 style={stepTitleStyle}>👁️ Prévia da Atividade</h3>
@@ -698,7 +722,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
   }
 
   const renderStepTip = (step) => {
-    if (step === 6) {
+    if (step === 7) {
       const tips = generateActivityTips(formData)
       return (
         <div style={{ marginTop: '1rem' }}>
@@ -737,7 +761,15 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
         color: '#8B5CF6',
         text: `Com ${formData.numberOfClasses || '?'} aula(s) sugerimos: exploração do problema → investigação → construção → testes e ajustes → apresentação. Cada fase aprofunda o aprendizado progressivamente.`
       },
-      5: { icon: '🎨', title: 'Design Universal', color: '#06B6D4', text: 'Adaptar uma atividade para diferentes perfis beneficia toda a turma. Recursos de acessibilidade tornam o aprendizado mais inclusivo, rico e diverso para todos os alunos.' }
+      5: {
+        icon: '👥',
+        title: 'Modo de Trabalho',
+        color: '#10B981',
+        text: formData.modality === 'individual'
+          ? 'Atividades individuais fortalecem autonomia, autoavaliação e o ritmo próprio de cada aluno. A IA adaptará as etapas, desafios e a Atividade do Aluno para trabalho solo.'
+          : 'Atividades em grupo desenvolvem colaboração, comunicação e aprendizagem entre pares. A IA distribuirá papéis (construtor, testador, registrador, apresentador) entre os membros.'
+      },
+      6: { icon: '⚙️', title: 'Ajustes finais', color: '#06B6D4', text: 'Use este passo para definir nível de detalhe, materiais, avaliação e qualquer orientação específica da turma.' }
     }
 
     const tip = byStep[step]
@@ -750,6 +782,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
     { title: 'Tema', icon: '🎯' },
     { title: 'STEAM', icon: '🔬' },
     { title: 'Aulas', icon: '⏱️' },
+    { title: 'Modo', icon: '👥' },
     { title: 'Ajustes', icon: '⚙️' },
     { title: 'Prévia', icon: '👁️' }
   ]
@@ -889,7 +922,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, accessi
 
               <div style={spacerStyle} />
 
-              {currentStep < 6 ? (
+              {currentStep < 7 ? (
                 <Button
                   onClick={handleNext}
                   disabled={!validateCurrentStep()}

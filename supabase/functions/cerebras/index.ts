@@ -8,6 +8,20 @@ const corsHeaders = {
 const CEREBRAS_API_KEY = Deno.env.get('CEREBRAS_API_KEY')
 const CEREBRAS_MODEL = Deno.env.get('CEREBRAS_MODEL') || 'llama-3.3-70b'
 
+function getGenerationConfig(type?: string) {
+  const normalized = String(type || 'generic').toLowerCase().replace(/\s+/g, '')
+
+  if (normalized === 'classroomactivity') {
+    return { max_tokens: 4096, temperature: 0.4 }
+  }
+
+  if (normalized === 'bibliographyverification') {
+    return { max_tokens: 2048, temperature: 0.2 }
+  }
+
+  return { max_tokens: 1500, temperature: 0.7 }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -41,6 +55,8 @@ serve(async (req) => {
       }
     }
 
+    const generationConfig = getGenerationConfig(type)
+
     const response = await fetch('https://api.cerebras.net/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -53,8 +69,8 @@ serve(async (req) => {
           { role: 'system', content: 'Você é um assistente educacional STEAM e pedagógico.' },
           { role: 'user', content: contentPayload }
         ],
-        max_tokens: 1500,
-        temperature: 0.7,
+        max_tokens: generationConfig.max_tokens,
+        temperature: generationConfig.temperature,
       })
     })
 
@@ -68,6 +84,13 @@ serve(async (req) => {
 
     const data = await response.json()
     const content = data.choices?.[0]?.message?.content || data.completion || ''
+
+    if (!content) {
+      return new Response(
+        JSON.stringify({ error: 'Cerebras não retornou conteúdo para esta solicitação.' }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     return new Response(
       JSON.stringify({ content }),

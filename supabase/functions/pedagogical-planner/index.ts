@@ -71,6 +71,10 @@ function buildPrompt(request: PedagogicalRequest): string {
   }, {})
 
   const classesInfo = request.numberOfClasses ? `- Duração total: ${request.numberOfClasses} aulas` : ''
+  const plural = request.numberOfClasses && String(request.numberOfClasses) !== '1' ? 's' : ''
+  const classesDirective = request.numberOfClasses
+    ? `\n9. A atividade DEVE ser adequada para ser realizada em EXATAMENTE ${request.numberOfClasses} aula${plural}: ajuste a profundidade, número de fases e complexidade das atividades de forma proporcional ao tempo disponível. Seja realista sobre o que é possível fazer em ${request.numberOfClasses} aula${plural}.`
+    : ''
 
   return `Você é especialista em educação STEAM, Cultura Maker e BNCC para o sistema educacional brasileiro.
 
@@ -88,11 +92,9 @@ Diretrizes obrigatórias:
 3. Objetivos de aprendizagem mensuráveis e alinhados à série
 4. Códigos BNCC reais e corretos (ex: EF07CI01, EF08MA03, EF06LP01)
 5. Cultura Maker em todas as fases: mão na massa, prototipagem, iteração, trabalho colaborativo
-6. Cada fase com descrição detalhada e operacional de atividades concretas, em passos numerados, para que o professor saiba exatamente como conduzir a execução
+6. Cada fase com instruções simples e operacionais, no estilo maker: materiais, passo a passo, construção, teste, melhoria, socialização e integração STEAM
 7. Lista de materiais com quantidade por grupo e, quando fizer sentido, quantidade para a turma. Ex.: "2 folhas de cartolina por grupo", "4 canetas coloridas por grupo", "1 tesoura sem ponta por grupo"
-8. Acessibilidade e desenho universal: se a atividade usar cores para classificar, marcar ou separar informações, inclua também padrões não dependentes de cor, como listras, bolinhas, formas, etiquetas, texturas, furos ou marcações táteis, pensando em estudantes daltônicos ou com baixa visão
-9. Referências bibliográficas reais no formato ABNT${request.numberOfClasses ? `
-10. A atividade DEVE ser adequada para ser realizada em EXATAMENTE ${request.numberOfClasses} aula${request.numberOfClasses !== '1' ? 's' : ''}: ajuste a profundidade, número de fases e complexidade das atividades de forma proporcional ao tempo disponível. Seja realista sobre o que é possível fazer em ${request.numberOfClasses} aula${request.numberOfClasses !== '1' ? 's' : '}.` : ''}
+8. Referências bibliográficas reais no formato ABNT${classesDirective}
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -103,6 +105,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "problem": "Problema ou desafio real e concreto que mobiliza a atividade",
   "guidingQuestion": "Pergunta norteadora aberta que orienta toda a investigação?",
   "steamMatrix": ${JSON.stringify(steamMatrixTemplate, null, 2)},
+  "steamMakerDescription": "Parágrafo único dissertativo (mínimo 5 linhas) explicando como a cultura STEAM e a cultura Maker se integram nesta atividade. Mencione cada área STEAM ativa de forma fluida, explicando como aparece na prática. Inclua o papel da Cultura Maker: prototipagem, iteração, mão na massa, protagonismo e colaboração. Terceira pessoa, sem tópicos.",
   "objectives": [
     "Objetivo de aprendizagem 1 (com verbo de ação mensurável)",
     "Objetivo de aprendizagem 2",
@@ -118,16 +121,12 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Material 5 — quantidade por grupo e/ou turma"
   ],
   "phaseDetails": {
-    "imersao": "Descrição operacional detalhada em passos numerados: preparação, perguntas disparadoras, organização dos grupos, atividade dos alunos, registro e produto esperado.",
-    "ideacao": "Descrição operacional detalhada em passos numerados: brainstorming, critérios de escolha, esboços, divisão de tarefas e decisão coletiva.",
-    "prototipagem": "Descrição operacional detalhada em passos numerados: o que construir, sequência de montagem, uso dos materiais com quantidades, cuidados de segurança e registro maker.",
-    "teste": "Descrição operacional detalhada em passos numerados: como testar, métricas, coleta de dados, comparação, ajustes e nova tentativa.",
-    "compartilhamento": "Descrição operacional detalhada em passos numerados: preparação da apresentação, audiência, evidências, reflexão e fechamento."
+    "imersao": "Passos objetivos: preparar recurso disparador, apresentar o problema, ouvir hipóteses dos alunos, registrar ideias e combinar o desafio maker.",
+    "ideacao": "Passos objetivos: organizar grupos, levantar ideias, escolher uma solução simples, esboçar, pensar nos materiais e dividir tarefas.",
+    "prototipagem": "Passos objetivos: separar materiais, orientar a construção, acompanhar os grupos, registrar decisões e cuidar da segurança.",
+    "teste": "Passos objetivos: testar a produção, observar o que funcionou, ajustar pelo menos um ponto, testar novamente e comparar resultados.",
+    "compartilhamento": "Passos objetivos: apresentar produções, explicar onde aparecem STEAM e Cultura Maker, ouvir comentários, registrar aprendizagens e avaliar participação."
   },
-  "accessibility": [
-    "Orientação 1 de acessibilidade e inclusão",
-    "Orientação 2, incluindo alternativa a códigos baseados apenas em cores com padrões, símbolos, texturas ou marcações táteis"
-  ],
   "bibliography": [
     "AUTOR, A. B. Título do livro: subtítulo. Cidade: Editora, ano.",
     "AUTOR, C. D. Título do artigo. Nome da Revista, cidade, v. X, n. Y, p. ZZ-ZZ, ano."
@@ -190,7 +189,7 @@ async function generateActivity(request: PedagogicalRequest): Promise<object> {
   const parsed = JSON.parse(jsonStr)
 
   // Valida campos obrigatórios
-  const required = ['title', 'theme', 'duration', 'problem', 'guidingQuestion', 'steamMatrix', 'objectives', 'bncc', 'materials', 'phaseDetails', 'accessibility']
+  const required = ['title', 'theme', 'duration', 'problem', 'guidingQuestion', 'steamMatrix', 'objectives', 'bncc', 'materials', 'phaseDetails']
   for (const field of required) {
     if (!parsed[field]) throw new Error(`Campo obrigatório ausente: ${field}`)
   }

@@ -1,6 +1,7 @@
 import { isSupabaseConfigured, supabase } from "../../supabaseClient.js";
 import { buildProjectEmbedding, projectToSearchText } from "../similarity/projectSimilarity.js";
 import { suggestProjectContinuity } from "../project-continuity/continuityEngine.js";
+import { canUsePreferences } from "../../cookieConsent.js";
 
 const LOCAL_QUEUE_KEY = "steam-ml-behavior-queue";
 
@@ -45,6 +46,7 @@ function bumpTopList(list = [], value, amount = 1) {
 
 export async function trackBehavior(userId, eventType, metadata = {}, context = {}) {
   if (!userId || !eventType) return;
+  if (!canUsePreferences()) return;
 
   const event = {
     user_id: userId,
@@ -198,6 +200,70 @@ export async function storeContinuityRecommendations(userId, project = {}) {
   const { error } = await supabase.from("ml_recommendations").insert(recommendations);
   if (error) {
     console.warn("Recomendacoes inteligentes nao persistidas:", error.message);
+  }
+}
+
+export async function trackActivityRating(userId, projectId, rating, metadata = {}) {
+  if (!userId || !projectId) return;
+  if (!canUsePreferences()) return;
+  await trackBehavior(userId, 'activity_rated', {
+    projectId,
+    rating,
+    discipline: metadata.discipline || '',
+    grade: metadata.grade || '',
+    steam: metadata.steam || [],
+    theme: metadata.theme || '',
+  });
+}
+
+function buildPatternsFromRatings(ratings = []) {
+  const positive = ratings.filter((m) => m.rating === 'positive');
+  if (positive.length === 0) return null;
+
+  let disciplines = [];
+  let grades = [];
+  let steamAreas = [];
+
+  for (const m of positive) {
+    disciplines = bumpTopList(disciplines, m.discipline);
+    grades = bumpTopList(grades, m.grade);
+    for (const area of (m.steam || [])) {
+      steamAreas = bumpTopList(steamAreas, area);
+    }
+  }
+
+  return {
+    totalPositive: positive.length,
+    totalNegative: ratings.length - positive.length,
+    topDisciplines: disciplines.slice(0, 3).map((d) => d.value).filter(Boolean),
+    topGrades: grades.slice(0, 2).map((g) => g.value).filter(Boolean),
+    topSteamAreas: steamAreas.slice(0, 4).map((s) => s.value).filter(Boolean),
+  };
+}
+
+export async function getQualityPatterns(userId) {
+  if (!userId) return null;
+
+  const localEvents = JSON.parse(localStorage.getItem(LOCAL_QUEUE_KEY) || '[]');
+  const localRatings = localEvents
+    .filter((e) => e.event_type === 'activity_rated')
+    .map((e) => e.metadata);
+
+  if (!canUseSupabase()) return buildPatternsFromRatings(localRatings);
+
+  try {
+    const { data } = await supabase
+      .from('ml_behavior_events')
+      .select('metadata')
+      .eq('user_id', userId)
+      .eq('event_type', 'activity_rated')
+      .order('created_at', { ascending: false })
+      .limit(60);
+
+    const allRatings = [...(data || []).map((r) => r.metadata), ...localRatings];
+    return buildPatternsFromRatings(allRatings);
+  } catch {
+    return buildPatternsFromRatings(localRatings);
   }
 }
 

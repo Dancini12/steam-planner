@@ -15,6 +15,7 @@ const LONG_FORM_TYPES = new Set([
 ])
 
 const QUICK_RESPONSE_TYPES = new Set([
+  'generic',
   'review',
   'improve',
   'summary',
@@ -24,6 +25,11 @@ const QUICK_RESPONSE_TYPES = new Set([
   'revision',
   'language',
   'clarity'
+])
+
+const CEREBRAS_TEXT_TYPES = new Set([
+  'bibliographyverification',
+  'classroomactivity'
 ])
 
 function normalizeType(requestType) {
@@ -45,17 +51,17 @@ function choosePrimaryProvider(requestType, fileData) {
     return order.find((provider) => provider.name === 'gemini') || order[0]
   }
 
+  if (QUICK_RESPONSE_TYPES.has(type) || CEREBRAS_TEXT_TYPES.has(type)) {
+    const order = getProviderOrder()
+    return order.find((provider) => provider.name === 'cerebras')
+      || order.find((provider) => provider.name === 'gemini')
+      || order[0]
+  }
+
   if (LONG_FORM_TYPES.has(type)) {
     const order = getProviderOrder()
     return order.find((provider) => provider.name === 'gemini')
       || order.find((provider) => provider.name === 'cerebras')
-      || order[0]
-  }
-
-  if (QUICK_RESPONSE_TYPES.has(type)) {
-    const order = getProviderOrder()
-    return order.find((provider) => provider.name === 'cerebras')
-      || order.find((provider) => provider.name === 'gemini')
       || order[0]
   }
 

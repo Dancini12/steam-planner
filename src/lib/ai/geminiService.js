@@ -1,5 +1,19 @@
 import { supabase } from '../supabaseClient.js'
 
+function getFunctionErrorMessage(error, fallback) {
+  return error?.context?.error || error?.message || fallback
+}
+
+function requireContent(data, fallback) {
+  if (data?.error) {
+    throw new Error(data.error)
+  }
+  if (!data?.content || typeof data.content !== 'string') {
+    throw new Error(fallback)
+  }
+  return data.content
+}
+
 export class GeminiService {
   static async analyzePDF(fileData) {
     try {
@@ -15,10 +29,10 @@ export class GeminiService {
       })
 
       if (error) throw error
-      return data.content
+      return requireContent(data, 'Gemini não retornou conteúdo do PDF.')
     } catch (error) {
       console.error('Erro no Gemini service:', error)
-      throw new Error('Falha ao analisar PDF')
+      throw new Error(getFunctionErrorMessage(error, 'Falha ao analisar PDF'))
     }
   }
 
@@ -36,10 +50,10 @@ export class GeminiService {
       })
 
       if (error) throw error
-      return data.content
+      return requireContent(data, 'Gemini não retornou conteúdo da imagem.')
     } catch (error) {
       console.error('Erro no Gemini service:', error)
-      throw new Error('Falha ao analisar imagem')
+      throw new Error(getFunctionErrorMessage(error, 'Falha ao analisar imagem'))
     }
   }
 
@@ -50,10 +64,10 @@ export class GeminiService {
       })
 
       if (error) throw error
-      return data.content
+      return requireContent(data, 'Gemini não retornou texto.')
     } catch (error) {
       console.error('Erro no Gemini service:', error)
-      throw new Error('Falha ao gerar texto com Gemini')
+      throw new Error(getFunctionErrorMessage(error, 'Falha ao gerar texto com Gemini'))
     }
   }
 
@@ -64,10 +78,10 @@ export class GeminiService {
       })
 
       if (error) throw error
-      return data.content
+      return requireContent(data, 'Gemini não retornou conteúdo do documento.')
     } catch (error) {
       console.error('Erro no Gemini service:', error)
-      throw new Error('Falha ao resumir documento')
+      throw new Error(getFunctionErrorMessage(error, 'Falha ao resumir documento'))
     }
   }
 

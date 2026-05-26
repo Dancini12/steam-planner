@@ -1,11 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { STEAM_AREAS } from "../data/steamAreas.js";
 import { openActivityPrintWindow } from "../lib/exportReport.js";
 import { trackEvent } from "../lib/analytics.js";
 import { useProjects } from "../hooks/useProjects.js";
 import Button from "../components/ui/Button.jsx";
 import { suggestProjectContinuity } from "../lib/machine-learning/project-continuity/continuityEngine.js";
+import { trackActivityRating } from "../lib/machine-learning/behavior-tracking/behaviorTracker.js";
+import { buildUserLearningProfile } from "../lib/machine-learning/user-profile/profileBuilder.js";
 import BibliographyVerifier from "../components/project/BibliographyVerifier.jsx";
+
+const LOCAL_QUEUE_KEY = "steam-ml-behavior-queue";
 
 export default function ActivityViewer({ activityData, formData, projectId, currentUser, onBack }) {
   const { editProject } = useProjects(currentUser?.id);
@@ -19,11 +23,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
   const [materialsText, setMaterialsText] = useState((activityData.materials || []).join("\n"));
   const [activityManual, setActivityManual] = useState(activityData.activityManual || "");
   const [steamMatrix, setSteamMatrix] = useState({ ...(activityData.steamMatrix || {}) });
-  const [accessibilityText, setAccessibilityText] = useState(
-    Array.isArray(activityData.accessibility)
-      ? activityData.accessibility.join("\n")
-      : activityData.accessibility || ""
-  );
   const [bibliographyText, setBibliographyText] = useState((activityData.bibliography || []).join("\n"));
   const [modality, setModality] = useState(activityData.modality || 'grupo');
   const [studentActivity, setStudentActivity] = useState(activityData.studentActivity || {});
@@ -33,13 +32,35 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
   const [teacherTips, setTeacherTips] = useState(activityData.teacherTips || '');
 
   const [savedMsg, setSavedMsg] = useState("");
+  const [feedbackGiven, setFeedbackGiven] = useState(null); // 'positive' | 'negative' | null
+  const [userProfile, setUserProfile] = useState(null);
+
+  useEffect(() => {
+    try {
+      const events = JSON.parse(localStorage.getItem(LOCAL_QUEUE_KEY) || "[]");
+      if (events.length > 0) setUserProfile(buildUserLearningProfile({ events }));
+    } catch { /* silencioso */ }
+  }, []);
 
   const steamLetters = Object.keys(steamMatrix).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
 
   const continuitySuggestions = useMemo(() =>
-    suggestProjectContinuity({ title, theme, grade: formData?.grade, steam: steamLetters }),
-    [title, theme, formData?.grade, steamLetters] // eslint-disable-line react-hooks/exhaustive-deps
+    suggestProjectContinuity(
+      { title, theme, grade: formData?.grade, steam: steamLetters },
+      userProfile
+    ),
+    [title, theme, formData?.grade, steamLetters, userProfile] // eslint-disable-line react-hooks/exhaustive-deps
   );
+
+  const handleFeedback = (rating) => {
+    setFeedbackGiven(rating);
+    trackActivityRating(currentUser?.id, projectId, rating, {
+      discipline: formData?.discipline || "",
+      grade: formData?.grade || "",
+      steam: steamLetters,
+      theme,
+    }).catch(console.error);
+  };
 
   const updateMatrix = (letter, field, value) => {
     setSteamMatrix((m) => ({ ...m, [letter]: { ...(m[letter] || {}), [field]: value } }));
@@ -57,7 +78,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
       materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
       activityManual,
-      accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       steamMatrix,
       modality,
       studentActivity,
@@ -92,7 +112,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
       materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
       activityManual,
-      accessibility: accessibilityText.split("\n").map((s) => s.trim()).filter(Boolean),
       steamMatrix,
       modality,
       studentActivity,
@@ -326,24 +345,23 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
 
       {/* Manual */}
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Resumo, Materiais e Montagem</div>
-        <label style={labelStyle}>Competências solicitadas, materiais utilizados e como montar o projeto</label>
+        <div style={sectionTitleStyle}>Instruções de aplicação</div>
+        <label style={labelStyle}>Como preparar, conduzir, desenvolver STEAM/Maker e fechar a atividade</label>
         <textarea
           style={textareaStyle("180px")}
           value={activityManual}
           onChange={(e) => setActivityManual(e.target.value)}
-          placeholder="Resumo das competências: ...&#10;&#10;Materiais utilizados: ...&#10;&#10;Como montar e conduzir: ..."
+          placeholder="1. Materiais necessários&#10;- Material — quantidade e uso.&#10;&#10;2. Passo a passo da atividade&#10;Engenharia e Matemática: organize a estrutura, medidas e montagem.&#10;Ciência e Tecnologia: investigue o funcionamento e teste a solução.&#10;Teste e Arte: melhore, finalize visualmente e apresente.&#10;&#10;3. Integração STEAM e Cultura Maker&#10;Explique como a turma investigou, construiu, testou, melhorou e apresentou."
         />
       </div>
 
-      {/* Acessibilidade */}
+      {/* Referências */}
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Acessibilidade e Inclusão</div>
-        <label style={labelStyle}>Adaptações, padrões visuais/táteis e alternativas ao uso exclusivo de cores</label>
-        <textarea
-          style={textareaStyle("110px")}
-          value={accessibilityText}
-          onChange={(e) => setAccessibilityText(e.target.value)}
+        <div style={sectionTitleStyle}>Referências Bibliográficas</div>
+        <label style={labelStyle}>Referências ABNT (uma por linha)</label>
+        <textarea style={textareaStyle("120px")} value={bibliographyText} onChange={(e) => setBibliographyText(e.target.value)} />
+        <BibliographyVerifier
+          references={bibliographyText.split('\n').map((s) => s.trim()).filter(Boolean)}
         />
       </div>
 
@@ -505,16 +523,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
         </div>
       )}
 
-      {/* Referências */}
-      <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Referências Bibliográficas</div>
-        <label style={labelStyle}>Referências ABNT (uma por linha)</label>
-        <textarea style={textareaStyle("120px")} value={bibliographyText} onChange={(e) => setBibliographyText(e.target.value)} />
-        <BibliographyVerifier
-          references={bibliographyText.split('\n').map((s) => s.trim()).filter(Boolean)}
-        />
-      </div>
-
       {/* Continuidade Pedagógica */}
       <div style={{ ...sectionStyle, marginTop: "2.5rem" }}>
         <div style={sectionTitleStyle}>Próximos Passos Pedagógicos</div>
@@ -533,6 +541,44 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
             );
           })}
         </div>
+      </div>
+
+      {/* Feedback de qualidade */}
+      <div style={{ marginBottom: "2rem", padding: "1.25rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "12px" }}>
+        {feedbackGiven ? (
+          <p style={{ margin: 0, fontSize: "0.88rem", color: "#6EE7B7", textAlign: "center" }}>
+            {feedbackGiven === "positive"
+              ? "Obrigado! O sistema vai aprender com esta avaliação para melhorar as próximas atividades."
+              : "Recebido. Usaremos esse sinal para ajustar as próximas gerações."}
+          </p>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+            <p style={{ margin: 0, fontSize: "0.88rem", color: "rgba(255,255,255,0.55)" }}>
+              Esta atividade foi útil para a sua aula?
+            </p>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              {[
+                { value: "positive", label: "Sim, funcionou", icon: "👍" },
+                { value: "negative", label: "Precisa melhorar", icon: "👎" },
+              ].map(({ value, label, icon }) => (
+                <button
+                  key={value}
+                  onClick={() => handleFeedback(value)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "0.4rem",
+                    padding: "0.45rem 1rem", borderRadius: "8px", cursor: "pointer",
+                    background: "rgba(255,255,255,0.05)", fontFamily: "inherit",
+                    border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)",
+                    fontSize: "0.85rem", transition: "all 0.15s",
+                  }}
+                >
+                  <span>{icon}</span>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={footerStyle}>

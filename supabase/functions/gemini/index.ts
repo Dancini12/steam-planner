@@ -32,7 +32,11 @@ serve(async (req) => {
     let requestBody: any = {
       contents: [{
         parts: []
-      }]
+      }],
+      generationConfig: {
+        temperature: type === 'summarize' ? 0.4 : 0.7,
+        maxOutputTokens: 8192
+      }
     }
 
     // Handle text prompt
@@ -52,9 +56,15 @@ serve(async (req) => {
           }
         })
       } else if (fileData.type === 'pdf') {
-        // For PDFs, we'd need to extract text or use Gemini's document capabilities
         requestBody.contents[0].parts.push({
-          text: `Analisar o seguinte documento PDF: ${fileData.content}`
+          inline_data: {
+            mime_type: fileData.mimeType || 'application/pdf',
+            data: fileData.content
+          }
+        })
+      } else if (fileData.content) {
+        requestBody.contents[0].parts.push({
+          text: `Conteúdo do arquivo:\n${fileData.content}`
         })
       }
     }
@@ -77,7 +87,14 @@ serve(async (req) => {
     }
 
     const data = await response.json()
-    const content = data.candidates[0]?.content?.parts[0]?.text || ''
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+    if (!content) {
+      return new Response(
+        JSON.stringify({ error: 'Gemini não retornou conteúdo para esta solicitação.' }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     return new Response(
       JSON.stringify({ content }),

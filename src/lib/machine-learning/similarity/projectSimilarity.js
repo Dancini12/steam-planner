@@ -29,7 +29,6 @@ export function projectToSearchText(project = {}) {
     listText(project.steam),
     listText(project.steamMatrix),
     listText(project.activityManual),
-    listText(project.accessibility),
     listText(project.bibliography)
   ].filter(Boolean).join(" ");
 }

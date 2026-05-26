@@ -14,7 +14,6 @@
 
 import { useState, useEffect } from "react";
 import { useProjects } from "../hooks/useProjects.js";
-import { STEAM_AREAS, STEAM_KEYS } from "../data/steamAreas.js";
 import { openReportWindow, openClassroomActivityWindow } from "../lib/exportReport.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 import { trackEvent } from "../lib/analytics.js";
@@ -35,6 +34,14 @@ function formatGeneratedDate(value) {
     hour: "2-digit",
     minute: "2-digit"
   });
+}
+
+function buildDefaultSteamMakerDescription(project) {
+  const productText = project?.finalProduct
+    ? `, chegando à produção de ${project.finalProduct.toLowerCase()}`
+    : "";
+
+  return `Nesta proposta, a abordagem STEAM aparece de forma integrada na investigação do problema, na organização das informações, na criação de representações e na construção coletiva de uma solução${productText}. A cultura maker orienta o trabalho prático: os estudantes planejam, produzem, testam, ajustam e apresentam suas ideias usando materiais acessíveis, colaboração e reflexão sobre o processo.`;
 }
 
 // ------------------------------------------------------------
@@ -69,6 +76,7 @@ export default function ProjectEditor({
   const [finalProduct, setFinalProduct] = useState("");
   const [guidingQuestion, setGuidingQuestion] = useState("");
   const [steam, setSteam] = useState([]);
+  const [steamMakerDescription, setSteamMakerDescription] = useState("");
   const [objectivesText, setObjectivesText] = useState("");
   const [bnccText, setBnccText] = useState("");
   const [materialsText, setMaterialsText] = useState("");
@@ -88,6 +96,9 @@ export default function ProjectEditor({
       setFinalProduct(project.finalProduct || "");
       setGuidingQuestion(project.guidingQuestion || "");
       setSteam(project.steam || []);
+      setSteamMakerDescription(
+        project.steamMakerDescription || buildDefaultSteamMakerDescription(project)
+      );
       setObjectivesText((project.objectives || []).join("\n"));
       setBnccText((project.bncc || []).join(", "));
       setMaterialsText((project.materials || []).join("\n"));
@@ -119,6 +130,7 @@ export default function ProjectEditor({
       finalProduct,
       guidingQuestion,
       steam,
+      steamMakerDescription,
       objectives,
       bncc,
       materials
@@ -132,15 +144,6 @@ export default function ProjectEditor({
     setSavedMsg(true);
     setTimeout(() => setSavedMsg(false), 3000);
     return updates;
-  };
-
-  // Alterna seleção de uma área STEAM
-  const toggleSteamArea = (letter) => {
-    if (steam.includes(letter)) {
-      setSteam(steam.filter((l) => l !== letter));
-    } else {
-      setSteam([...steam, letter]);
-    }
   };
 
   const handleAddStudent = () => {
@@ -181,7 +184,7 @@ export default function ProjectEditor({
       const updates = handleSave();
       const fullProject = { ...project, ...updates };
       const activity = await PedagogicalPlannerService.generateClassroomActivity(fullProject);
-      openClassroomActivityWindow(activity, fullProject.title);
+      openClassroomActivityWindow({ ...activity, bibliography: fullProject.bibliography || [] }, fullProject.title);
       trackEvent(currentUser?.id, "classroom_activity_generated", { projectId });
     } catch (error) {
       alert(`Erro ao gerar atividade: ${error.message}`);
@@ -281,33 +284,6 @@ export default function ProjectEditor({
     color: "rgba(255, 255, 255, 0.5)",
     fontSize: "0.8rem",
     margin: "0.2rem 0 0"
-  };
-
-  const steamSelectorStyle = {
-    display: "flex",
-    gap: "0.5rem",
-    flexWrap: "wrap"
-  };
-
-  const steamButtonStyle = (letter, isSelected) => {
-    const area = STEAM_AREAS[letter];
-    return {
-      flex: "1 1 calc(20% - 0.5rem)",
-      minWidth: "100px",
-      padding: "0.85rem 0.5rem",
-      borderRadius: "8px",
-      cursor: "pointer",
-      background: isSelected ? area.color : "rgba(255, 255, 255, 0.04)",
-      color: isSelected ? "#0F0F2D" : "rgba(255, 255, 255, 0.4)",
-      border: isSelected
-        ? `2px solid ${area.color}`
-        : "2px solid rgba(255, 255, 255, 0.06)",
-      fontWeight: 600,
-      fontSize: "0.85rem",
-      transition: "all 0.15s ease",
-      textAlign: "center",
-      fontFamily: "inherit"
-    };
   };
 
   const phaseRowStyle = (color) => ({
@@ -453,24 +429,18 @@ export default function ProjectEditor({
         />
       </div>
 
-      {/* SEÇÃO 2 — ÁREAS STEAM */}
+      {/* SEÇÃO 2 — STEAM E CULTURA MAKER */}
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Áreas STEAM contempladas</div>
-        <div style={steamSelectorStyle}>
-          {STEAM_KEYS.map((letter) => {
-            const area = STEAM_AREAS[letter];
-            const isSelected = steam.includes(letter);
-            return (
-              <button
-                key={letter}
-                style={steamButtonStyle(letter, isSelected)}
-                onClick={() => toggleSteamArea(letter)}
-              >
-                {letter} · {area.name}
-              </button>
-            );
-          })}
-        </div>
+        <div style={sectionTitleStyle}>STEAM e Cultura Maker</div>
+        <TextField
+          label="Como o STEAM e a cultura maker aparecem no projeto"
+          value={steamMakerDescription}
+          onChange={setSteamMakerDescription}
+          multiline
+          rows={4}
+          placeholder="Explique, em um texto breve, como a proposta integra investigação, criação, construção, teste, colaboração e reflexão."
+          hint="Escreva em formato dissertativo e resumido, sem separar por Ciência, Tecnologia, Engenharia, Arte e Matemática."
+        />
       </div>
 
       {/* SEÇÃO 4 — QUESTÃO E OBJETIVOS */}
