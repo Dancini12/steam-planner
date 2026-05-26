@@ -37,7 +37,7 @@ function parseActivityManual(text) {
 }
 
 function buildActivityPrintHTML(activity) {
-  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, bibliography, grade, discipline, generatedAt, stages, beforeClass, afterClass, teacherTips, modality, studentActivity } = activity;
+  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, steamMakerDescription, bibliography, grade, discipline, generatedAt, stages, beforeClass, afterClass, teacherTips, modality, studentActivity } = activity;
 
   const steamLetters = Object.keys(steamMatrix || {}).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
   const generatedDate = generatedAt ? formatDate(generatedAt) : new Date().toLocaleDateString("pt-BR");
@@ -65,24 +65,24 @@ function buildActivityPrintHTML(activity) {
     .join('');
 
   // Conteúdo programático — texto dissertativo STEAM + Maker
-  const steamListHTML = steamLetters.length > 0
-    ? (() => {
-        const parts = steamLetters.map((l, i) => {
-          const area = STEAM_AREAS[l];
-          const m = (steamMatrix || {})[l] || {};
-          const areaName = escapeHtml(area?.name || steamAreaNames[l] || l);
-          const contrib = escapeHtml(m.contribution || area?.description || '');
-          const contrib_lower = contrib.charAt(0).toLowerCase() + contrib.slice(1);
-          return `<strong>${areaName}</strong>, ${contrib_lower}`;
-        });
-        const intro = `Esta atividade mobiliza a cultura STEAM e a cultura Maker como eixos estruturantes da proposta pedagógica. `;
-        const body = parts.length > 1
-          ? parts.slice(0, -1).map((p, i) => `Em ${p}`).join('; ') + `; e em ${parts[parts.length - 1]}.`
-          : `Em ${parts[0]}.`;
-        const maker = ` A cultura Maker atravessa toda a sequência ao propor que os estudantes aprendam fazendo — investigando, construindo, testando e aperfeiçoando suas ideias com materiais acessíveis, em um processo colaborativo que valoriza o erro como parte da aprendizagem e o protagonismo como princípio formativo.`;
-        return `<p>${intro}${body}${maker}</p>`;
-      })()
-    : '';
+  const steamListHTML = (() => {
+    if (steamMakerDescription) return `<p>${escapeHtml(steamMakerDescription)}</p>`;
+    if (steamLetters.length === 0) return '';
+    const parts = steamLetters.map((l) => {
+      const area = STEAM_AREAS[l];
+      const m = (steamMatrix || {})[l] || {};
+      const areaName = escapeHtml(area?.name || steamAreaNames[l] || l);
+      const contrib = escapeHtml(m.contribution || area?.description || '');
+      const contrib_lower = contrib.charAt(0).toLowerCase() + contrib.slice(1);
+      return `<strong>${areaName}</strong>, ${contrib_lower}`;
+    });
+    const intro = `Esta atividade mobiliza a cultura STEAM e a cultura Maker como eixos estruturantes da proposta pedagógica. `;
+    const body = parts.length > 1
+      ? parts.slice(0, -1).map((p) => `Em ${p}`).join('; ') + `; e em ${parts[parts.length - 1]}.`
+      : `Em ${parts[0]}.`;
+    const maker = ` A cultura Maker atravessa toda a sequência ao propor que os estudantes aprendam fazendo — investigando, construindo, testando e aperfeiçoando suas ideias com materiais acessíveis, em um processo colaborativo que valoriza o erro como parte da aprendizagem e o protagonismo como princípio formativo.`;
+    return `<p>${intro}${body}${maker}</p>`;
+  })();
 
   // Desenvolvimento — etapas numeradas
   const STAGE_COLORS = ['#2563EB','#7C3AED','#475569','#059669','#9333EA','#D97706','#0D9488','#DB2777'];

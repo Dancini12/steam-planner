@@ -11,6 +11,26 @@ import BibliographyVerifier from "../components/project/BibliographyVerifier.jsx
 
 const LOCAL_QUEUE_KEY = "steam-ml-behavior-queue";
 
+const STEAM_AREA_NAMES = { S: 'Ciências', T: 'Tecnologia', E: 'Engenharia', A: 'Artes', M: 'Matemática' };
+
+function buildSteamMakerText(letters, matrix) {
+  if (!letters.length) return '';
+  const parts = letters.map((l) => {
+    const m = matrix[l] || {};
+    const name = STEAM_AREA_NAMES[l] || l;
+    const contrib = (m.contribution || '').trim();
+    return contrib
+      ? `em ${name}, ${contrib.charAt(0).toLowerCase() + contrib.slice(1)}`
+      : `em ${name}`;
+  });
+  const intro = 'Esta atividade mobiliza a cultura STEAM e a cultura Maker como eixos estruturantes da proposta pedagógica. ';
+  const body = parts.length > 1
+    ? parts.slice(0, -1).join('; ') + `; e ${parts[parts.length - 1]}.`
+    : `${parts[0]}.`;
+  const maker = ' A cultura Maker atravessa toda a sequência ao propor que os estudantes aprendam fazendo — investigando, construindo, testando e aperfeiçoando suas ideias com materiais acessíveis, em um processo colaborativo que valoriza o erro como parte da aprendizagem e o protagonismo como princípio formativo.';
+  return `${intro}${body}${maker}`;
+}
+
 export default function ActivityViewer({ activityData, formData, projectId, currentUser, onBack }) {
   const { editProject } = useProjects(currentUser?.id);
   const [title, setTitle] = useState(activityData.title || "");
@@ -22,8 +42,12 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
   const [bnccText, setBnccText] = useState((activityData.bncc || []).join(", "));
   const [materialsText, setMaterialsText] = useState((activityData.materials || []).join("\n"));
   const [activityManual, setActivityManual] = useState(activityData.activityManual || "");
-  const [steamMatrix, setSteamMatrix] = useState({ ...(activityData.steamMatrix || {}) });
+  const [steamMatrix] = useState({ ...(activityData.steamMatrix || {}) });
   const [bibliographyText, setBibliographyText] = useState((activityData.bibliography || []).join("\n"));
+  const [steamMakerText, setSteamMakerText] = useState(
+    activityData.steamMakerDescription ||
+    buildSteamMakerText(Object.keys(activityData.steamMatrix || {}).filter((k) => ["S","T","E","A","M"].includes(k)), activityData.steamMatrix || {})
+  );
   const [modality, setModality] = useState(activityData.modality || 'grupo');
   const [studentActivity, setStudentActivity] = useState(activityData.studentActivity || {});
   const [stages] = useState(activityData.stages || []);
@@ -62,10 +86,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
     }).catch(console.error);
   };
 
-  const updateMatrix = (letter, field, value) => {
-    setSteamMatrix((m) => ({ ...m, [letter]: { ...(m[letter] || {}), [field]: value } }));
-  };
-
   const handleSave = () => {
     if (!projectId) return;
     editProject(projectId, {
@@ -78,7 +98,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
       materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
       activityManual,
-      steamMatrix,
+      steamMakerDescription: steamMakerText,
       modality,
       studentActivity,
       stages,
@@ -112,7 +132,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
       materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
       activityManual,
-      steamMatrix,
+      steamMakerDescription: steamMakerText,
       modality,
       studentActivity,
       stages,
@@ -294,35 +314,16 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
         </div>
       </div>
 
-      {/* Matriz STEAM */}
-      {steamLetters.length > 0 && (
-        <div style={sectionStyle}>
-          <div style={sectionTitleStyle}>Matriz STEAM</div>
-          {steamLetters.map((letter) => {
-            const area = STEAM_AREAS[letter];
-            const m = steamMatrix[letter] || {};
-            return (
-              <div key={letter} style={matrixCardStyle(area?.color || "#888")}>
-                <div style={{ fontSize: "0.85rem", fontWeight: 700, color: area?.color, marginBottom: "0.75rem" }}>
-                  {letter} · {area?.name || letter}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
-                  {[["contribution", "Contribuição"], ["activity", "Atividade"], ["evidence", "Evidência"]].map(([field, lbl]) => (
-                    <div key={field}>
-                      <label style={labelStyle}>{lbl}</label>
-                      <textarea
-                        style={textareaStyle("70px")}
-                        value={m[field] || ""}
-                        onChange={(e) => updateMatrix(letter, field, e.target.value)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {/* Matriz STEAM e Cultura Maker */}
+      <div style={sectionStyle}>
+        <div style={sectionTitleStyle}>Matriz STEAM e Cultura Maker</div>
+        <label style={labelStyle}>Texto dissertativo sobre como STEAM e Cultura Maker se integram nesta atividade</label>
+        <textarea
+          style={textareaStyle("160px")}
+          value={steamMakerText}
+          onChange={(e) => setSteamMakerText(e.target.value)}
+        />
+      </div>
 
       {/* Objetivos, BNCC, Materiais */}
       <div style={sectionStyle}>
