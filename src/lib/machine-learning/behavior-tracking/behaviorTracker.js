@@ -1,6 +1,7 @@
 import { isSupabaseConfigured, supabase } from "../../supabaseClient.js";
 import { buildProjectEmbedding, projectToSearchText } from "../similarity/projectSimilarity.js";
 import { suggestProjectContinuity } from "../project-continuity/continuityEngine.js";
+import { canUsePreferences } from "../../cookieConsent.js";
 
 const LOCAL_QUEUE_KEY = "steam-ml-behavior-queue";
 
@@ -45,6 +46,7 @@ function bumpTopList(list = [], value, amount = 1) {
 
 export async function trackBehavior(userId, eventType, metadata = {}, context = {}) {
   if (!userId || !eventType) return;
+  if (!canUsePreferences()) return;
 
   const event = {
     user_id: userId,
@@ -203,6 +205,7 @@ export async function storeContinuityRecommendations(userId, project = {}) {
 
 export async function trackActivityRating(userId, projectId, rating, metadata = {}) {
   if (!userId || !projectId) return;
+  if (!canUsePreferences()) return;
   await trackBehavior(userId, 'activity_rated', {
     projectId,
     rating,

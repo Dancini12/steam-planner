@@ -30,6 +30,8 @@ import Settings from "./pages/Settings.jsx";
 import Login from "./pages/Login.jsx";
 import { supabase } from "./lib/supabaseClient.js";
 import { getUserData, trackEvent } from "./lib/analytics.js";
+import { hasConsent } from "./lib/cookieConsent.js";
+import CookieBanner from "./components/ui/CookieBanner.jsx";
 
 // ------------------------------------------------------------
 // CONSTANTES DE NAVEGAÇÃO
@@ -63,6 +65,7 @@ export default function App() {
   const [activeActivityResult, setActiveActivityResult] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [showCookieBanner, setShowCookieBanner] = useState(() => !hasConsent());
 
   // ----------------------------------------------------------
   // APLICAR TEMA VISUAL GLOBAL AO BODY
@@ -320,6 +323,10 @@ export default function App() {
           currentUser={currentUser}
           onBack={goToDashboard}
         />
+      )}
+
+      {showCookieBanner && (
+        <CookieBanner onConsent={() => setShowCookieBanner(false)} />
       )}
     </div>
   );
