@@ -1,15 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState } from "react";
 import { STEAM_AREAS } from "../data/steamAreas.js";
 import { openActivityPrintWindow } from "../lib/exportReport.js";
 import { trackEvent } from "../lib/analytics.js";
 import { useProjects } from "../hooks/useProjects.js";
 import Button from "../components/ui/Button.jsx";
-import { suggestProjectContinuity } from "../lib/machine-learning/project-continuity/continuityEngine.js";
 import { trackActivityRating } from "../lib/machine-learning/behavior-tracking/behaviorTracker.js";
-import { buildUserLearningProfile } from "../lib/machine-learning/user-profile/profileBuilder.js";
 import BibliographyVerifier from "../components/project/BibliographyVerifier.jsx";
-
-const LOCAL_QUEUE_KEY = "steam-ml-behavior-queue";
 
 const STEAM_AREA_NAMES = { S: 'Ciências', T: 'Tecnologia', E: 'Engenharia', A: 'Artes', M: 'Matemática' };
 
@@ -57,24 +53,8 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
 
   const [savedMsg, setSavedMsg] = useState("");
   const [feedbackGiven, setFeedbackGiven] = useState(null); // 'positive' | 'negative' | null
-  const [userProfile, setUserProfile] = useState(null);
-
-  useEffect(() => {
-    try {
-      const events = JSON.parse(localStorage.getItem(LOCAL_QUEUE_KEY) || "[]");
-      if (events.length > 0) setUserProfile(buildUserLearningProfile({ events }));
-    } catch { /* silencioso */ }
-  }, []);
 
   const steamLetters = Object.keys(steamMatrix).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
-
-  const continuitySuggestions = useMemo(() =>
-    suggestProjectContinuity(
-      { title, theme, grade: formData?.grade, steam: steamLetters },
-      userProfile
-    ),
-    [title, theme, formData?.grade, steamLetters, userProfile] // eslint-disable-line react-hooks/exhaustive-deps
-  );
 
   const handleFeedback = (rating) => {
     setFeedbackGiven(rating);
@@ -523,26 +503,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
           <textarea style={textareaStyle("140px")} value={teacherTips} onChange={(e) => setTeacherTips(e.target.value)} />
         </div>
       )}
-
-      {/* Continuidade Pedagógica */}
-      <div style={{ ...sectionStyle, marginTop: "2.5rem" }}>
-        <div style={sectionTitleStyle}>Próximos Passos Pedagógicos</div>
-        <p style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.5)", margin: "0.4rem 0 1rem", lineHeight: 1.5 }}>
-          Sugestões de continuidade geradas com base nesta atividade.
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem" }}>
-          {continuitySuggestions.map((item, i) => {
-            const colors = ["#4F46E5", "#10B981", "#8B5CF6", "#F59E0B"];
-            const color = colors[i % colors.length];
-            return (
-              <div key={i} style={{ padding: "1rem", background: "rgba(255,255,255,0.04)", border: `1px solid rgba(255,255,255,0.08)`, borderLeft: `3px solid ${color}`, borderRadius: "8px" }}>
-                <div style={{ fontSize: "0.75rem", fontWeight: 700, color, marginBottom: "0.4rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>{item.title}</div>
-                <div style={{ fontSize: "0.81rem", color: "rgba(255,255,255,0.7)", lineHeight: 1.55 }}>{item.description}</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
 
       {/* Feedback de qualidade */}
       <div style={{ marginBottom: "2rem", padding: "1.25rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "12px" }}>
