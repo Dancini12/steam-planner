@@ -10,6 +10,7 @@ import {
   getContextForActivity,
   saveSourcesAsync,
 } from '../knowledge/knowledgeBaseService.js'
+import { getQualityPatterns } from '../machine-learning/behavior-tracking/behaviorTracker.js'
 
 const COMPETENCY_TO_LETTER = {
   science: 'S',
@@ -19,7 +20,7 @@ const COMPETENCY_TO_LETTER = {
   mathematics: 'M',
 }
 
-function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, modality, customInstructions, bnccSuggestions, verifiedSources = [], knowledgeContext = '' }) {
+function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, modality, customInstructions, bnccSuggestions, verifiedSources = [], knowledgeContext = '', qualityPatterns = null }) {
   const steamLetters = steamCompetencies
     .map((c) => COMPETENCY_TO_LETTER[String(c).toLowerCase()])
     .filter(Boolean)
@@ -57,6 +58,12 @@ ${modalityInfo}
 - Habilidades BNCC selecionadas do banco offline:
 ${formatBnccSuggestions(bnccSuggestions)}
 ${customInstructions?.trim() ? `\nSolicitações específicas do professor:\n${customInstructions.trim()}` : ''}
+${qualityPatterns && qualityPatterns.totalPositive > 0 ? `
+Aprendizado de atividades anteriores bem avaliadas por este professor (${qualityPatterns.totalPositive} avaliações positivas):
+${qualityPatterns.topDisciplines.length ? `- Disciplinas mais eficazes para este professor: ${qualityPatterns.topDisciplines.join(', ')}` : ''}
+${qualityPatterns.topGrades.length ? `- Séries em que as atividades funcionaram melhor: ${qualityPatterns.topGrades.join(', ')}` : ''}
+${qualityPatterns.topSteamAreas.length ? `- Áreas STEAM que geraram maior engajamento: ${qualityPatterns.topSteamAreas.join(', ')}` : ''}
+Adapte a complexidade, a linguagem e a abordagem prática para se alinhar a esses padrões que funcionaram bem para este professor.` : ''}
 
 ESTILO DE ESCRITA — aplicar em todos os campos:
 - Escreva como professor experiente: humano, natural, prático — não como artigo científico
@@ -439,8 +446,11 @@ export class PedagogicalPlannerService {
       limit: 5
     })
 
-    // ── 1. Consulta a base de conhecimento local antes de qualquer API externa ──
-    const kb = await getContextForActivity({ theme, discipline, grade, steamCompetencies })
+    // ── 1. Carrega padrões de qualidade aprendidos + base de conhecimento em paralelo ──
+    const [kb, qualityPatterns] = await Promise.all([
+      getContextForActivity({ theme, discipline, grade, steamCompetencies }),
+      getQualityPatterns(userId).catch(() => null),
+    ])
 
     // ── 2. Se KB tem >= 3 fontes confiáveis, ignora as chamadas externas (4 APIs) ──
     const externalSources = kb.skipSourceSearch
@@ -456,11 +466,12 @@ export class PedagogicalPlannerService {
       return true
     }).slice(0, 7)
 
-    // ── 3. Gera prompt com contexto local (reduz alucinações e tokens da IA) ──
+    // ── 3. Gera prompt com contexto local + padrões aprendidos ──
     const prompt = buildPrompt({
       discipline, grade, theme, steamCompetencies, numberOfClasses, modality,
       customInstructions, bnccSuggestions, verifiedSources,
       knowledgeContext: kb.contextSummary,
+      qualityPatterns,
     })
 
     const response = await AIProviderManager.request({

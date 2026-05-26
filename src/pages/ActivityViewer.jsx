@@ -1,11 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { STEAM_AREAS } from "../data/steamAreas.js";
 import { openActivityPrintWindow } from "../lib/exportReport.js";
 import { trackEvent } from "../lib/analytics.js";
 import { useProjects } from "../hooks/useProjects.js";
 import Button from "../components/ui/Button.jsx";
 import { suggestProjectContinuity } from "../lib/machine-learning/project-continuity/continuityEngine.js";
+import { trackActivityRating } from "../lib/machine-learning/behavior-tracking/behaviorTracker.js";
+import { buildUserLearningProfile } from "../lib/machine-learning/user-profile/profileBuilder.js";
 import BibliographyVerifier from "../components/project/BibliographyVerifier.jsx";
+
+const LOCAL_QUEUE_KEY = "steam-ml-behavior-queue";
 
 export default function ActivityViewer({ activityData, formData, projectId, currentUser, onBack }) {
   const { editProject } = useProjects(currentUser?.id);
@@ -28,13 +32,35 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
   const [teacherTips, setTeacherTips] = useState(activityData.teacherTips || '');
 
   const [savedMsg, setSavedMsg] = useState("");
+  const [feedbackGiven, setFeedbackGiven] = useState(null); // 'positive' | 'negative' | null
+  const [userProfile, setUserProfile] = useState(null);
+
+  useEffect(() => {
+    try {
+      const events = JSON.parse(localStorage.getItem(LOCAL_QUEUE_KEY) || "[]");
+      if (events.length > 0) setUserProfile(buildUserLearningProfile({ events }));
+    } catch { /* silencioso */ }
+  }, []);
 
   const steamLetters = Object.keys(steamMatrix).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
 
   const continuitySuggestions = useMemo(() =>
-    suggestProjectContinuity({ title, theme, grade: formData?.grade, steam: steamLetters }),
-    [title, theme, formData?.grade, steamLetters] // eslint-disable-line react-hooks/exhaustive-deps
+    suggestProjectContinuity(
+      { title, theme, grade: formData?.grade, steam: steamLetters },
+      userProfile
+    ),
+    [title, theme, formData?.grade, steamLetters, userProfile] // eslint-disable-line react-hooks/exhaustive-deps
   );
+
+  const handleFeedback = (rating) => {
+    setFeedbackGiven(rating);
+    trackActivityRating(currentUser?.id, projectId, rating, {
+      discipline: formData?.discipline || "",
+      grade: formData?.grade || "",
+      steam: steamLetters,
+      theme,
+    }).catch(console.error);
+  };
 
   const updateMatrix = (letter, field, value) => {
     setSteamMatrix((m) => ({ ...m, [letter]: { ...(m[letter] || {}), [field]: value } }));
@@ -515,6 +541,44 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
             );
           })}
         </div>
+      </div>
+
+      {/* Feedback de qualidade */}
+      <div style={{ marginBottom: "2rem", padding: "1.25rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "12px" }}>
+        {feedbackGiven ? (
+          <p style={{ margin: 0, fontSize: "0.88rem", color: "#6EE7B7", textAlign: "center" }}>
+            {feedbackGiven === "positive"
+              ? "Obrigado! O sistema vai aprender com esta avaliação para melhorar as próximas atividades."
+              : "Recebido. Usaremos esse sinal para ajustar as próximas gerações."}
+          </p>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+            <p style={{ margin: 0, fontSize: "0.88rem", color: "rgba(255,255,255,0.55)" }}>
+              Esta atividade foi útil para a sua aula?
+            </p>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              {[
+                { value: "positive", label: "Sim, funcionou", icon: "👍" },
+                { value: "negative", label: "Precisa melhorar", icon: "👎" },
+              ].map(({ value, label, icon }) => (
+                <button
+                  key={value}
+                  onClick={() => handleFeedback(value)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "0.4rem",
+                    padding: "0.45rem 1rem", borderRadius: "8px", cursor: "pointer",
+                    background: "rgba(255,255,255,0.05)", fontFamily: "inherit",
+                    border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)",
+                    fontSize: "0.85rem", transition: "all 0.15s",
+                  }}
+                >
+                  <span>{icon}</span>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={footerStyle}>
