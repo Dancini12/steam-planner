@@ -13,7 +13,6 @@ import {
 } from "./bnccSelector.js";
 import {
   getLearningExperienceStageTitles,
-  getPracticalAssemblyStepTitles,
   normalizeLearningExperience,
   validateLearningExperience
 } from "./learningExperience.js";
@@ -23,9 +22,6 @@ function buildPrompt(theme, grade, steamAreas, bnccSuggestions) {
     .map((letter) => `${letter} (${STEAM_AREAS[letter].name})`)
     .join(", ");
   const stageTitles = getLearningExperienceStageTitles()
-    .map((title) => `- ${title}`)
-    .join("\n");
-  const assemblyTitles = getPracticalAssemblyStepTitles()
     .map((title) => `- ${title}`)
     .join("\n");
 
@@ -45,14 +41,14 @@ Regras obrigatórias:
 3. Não gerar apostila, fundamentação acadêmica, matriz STEAM, Design Thinking, material do aluno, vocabulário ou anexos.
 4. Use no campo "bncc" apenas códigos da lista BNCC offline fornecida acima; não invente códigos.
 5. Materiais acessíveis, máximo 6 itens com quantidade por grupo.
-6. Desenvolvimento com exatamente estas etapas:
+6. Desenvolvimento e montagem com exatamente estas etapas:
 ${stageTitles}
-7. Dentro do desenvolvimento, inclua a subseção "COMO MONTAR A ATIVIDADE NA PRÁTICA" com exatamente estes passos:
-${assemblyTitles}
-8. Explique como usar cada material, como montar o protótipo, como ele funciona, como testar e como melhorar.
+7. Explique como preparar base, dividir materiais, construir, interagir, testar, ajustar e apresentar.
+8. Gere "readyMaterials" com cenários, fichas, cartões, tabela de teste, perguntas ou dados citados.
 9. Evite frases genéricas como "faça um protótipo", "use os materiais disponíveis" ou "teste a solução" sem explicar como.
 10. Crie 2 testes concretos: um cenário esperado e outro com imprevisto, restrição ou falha.
-11. Referências reais em formato ABNT. Se não tiver fonte específica, use a BNCC.
+11. Avaliação em mini rubrica: "criterion" e "observation".
+12. Referências reais em formato ABNT. Se não tiver fonte específica, use a BNCC. Não use reticências.
 
 Responda APENAS com JSON válido:
 
@@ -66,24 +62,27 @@ Responda APENAS com JSON válido:
   "bncc": ${JSON.stringify(getBnccCodes(bnccSuggestions))},
   "materials": ["Material 1 - quantidade por grupo", "Material 2 - quantidade por grupo"],
   "materialFunctions": ["Material 1: função prática no protótipo.", "Material 2: função prática no mecanismo, teste ou registro."],
-  "stages": [
-    { "number": 1, "title": "ETAPA 1 - Introdução rápida do desafio", "description": "Apresente o problema e a missão. Mostre uma evidência rápida. Combine o produto esperado." },
-    { "number": 2, "title": "ETAPA 2 - Investigação do problema", "description": "Os alunos observam dados ou exemplos. Levantam hipóteses. Definem critérios de sucesso." },
-    { "number": 3, "title": "ETAPA 3 - Planejamento da solução", "description": "Cada equipe esboça a ideia. Escolhe materiais. Planeja como testar." },
-    { "number": 4, "title": "ETAPA 4 - Construção do protótipo", "description": "Os alunos constroem a primeira versão. Registram decisões. Ajustam a montagem durante a execução." },
-    { "number": 5, "title": "ETAPA 5 - Teste e melhoria", "description": "Cada equipe testa o protótipo. Compara resultados. Melhora um ponto e testa novamente." },
-    { "number": 6, "title": "ETAPA 6 - Apresentação final", "description": "Cada equipe apresenta produto, teste e melhoria. A turma compara soluções. Registra próximos ajustes." }
+  "readyMaterials": [
+    "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
+    "CENÁRIO 2 - Imprevisto: restrição, falha ou mudança para comparar.",
+    "TABELA DE TESTE - Critério | Resultado antes | Falha observada | Melhoria feita | Resultado depois."
   ],
-  "assemblySteps": [
-    { "number": 1, "title": "ETAPA 1 - Preparar a base", "description": "Explique qual material vira a base, como marcar áreas, onde ficam problema, solução e registros." },
-    { "number": 2, "title": "ETAPA 2 - Construir as partes principais", "description": "Explique quais peças serão montadas, qual material forma cada parte e para que cada parte serve." },
-    { "number": 3, "title": "ETAPA 3 - Criar o mecanismo de interação", "description": "Explique como o protótipo será manipulado, movimentado, simulado ou alterado pelos alunos." },
-    { "number": 4, "title": "ETAPA 4 - Simular uma situação real", "description": "Inclua Teste 1 com cenário esperado e Teste 2 com imprevisto ou restrição para comparar resultados." },
-    { "number": 5, "title": "ETAPA 5 - Ajustar e melhorar", "description": "Explique como identificar falhas e quais melhorias concretas podem ser feitas no material, regra, medida ou apresentação." }
+  "stages": [
+    { "number": 1, "title": "ETAPA 1 - Preparar a base e dividir materiais", "description": "Divida a base em problema, solução, teste e melhoria. Separe peças móveis e registro." },
+    { "number": 2, "title": "ETAPA 2 - Construir as partes principais", "description": "Monte as peças centrais e explique a função de cada material no protótipo." },
+    { "number": 3, "title": "ETAPA 3 - Criar o mecanismo de interação", "description": "Crie cartões, fichas, abas, setas, encaixes ou simulação manipulável." },
+    { "number": 4, "title": "ETAPA 4 - Testar com situação real", "description": "Aplique dois cenários prontos. Meça resultado, compare e registre falhas." },
+    { "number": 5, "title": "ETAPA 5 - Ajustar e testar novamente", "description": "Mude uma falha concreta, repita o teste e registre o antes e depois." },
+    { "number": 6, "title": "ETAPA 6 - Apresentar produto e evidências", "description": "Apresente protótipo, cenário testado, melhoria feita e evidência observada." }
   ],
   "makerChallenge": "Construir, testar, comparar e melhorar uma solução para o problema.",
   "finalProduct": "Protótipo final com registro do teste e da melhoria feita.",
-  "assessment": ["Critério curto de investigação.", "Critério curto de construção e teste.", "Critério curto de melhoria."],
+  "assessmentRubric": [
+    { "criterion": "Protótipo", "observation": "Representa o problema e pode ser testado?" },
+    { "criterion": "Teste", "observation": "O grupo aplicou o cenário e registrou resultado?" },
+    { "criterion": "Melhoria", "observation": "O grupo ajustou o protótipo após identificar falha?" },
+    { "criterion": "Comunicação", "observation": "O grupo explicou solução, teste e melhoria?" }
+  ],
   "bibliography": ["BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018."]
 }`;
 }

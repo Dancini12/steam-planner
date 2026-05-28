@@ -15,7 +15,6 @@ import {
 import { getQualityPatterns } from '../machine-learning/behavior-tracking/behaviorTracker.js'
 import {
   getLearningExperienceStageTitles,
-  getPracticalAssemblyStepTitles,
   normalizeLearningExperience,
   validateLearningExperience
 } from '../learningExperience.js'
@@ -43,10 +42,6 @@ function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClas
   const stageTitles = getLearningExperienceStageTitles()
     .map((title) => `- ${title}`)
     .join('\n')
-  const assemblyTitles = getPracticalAssemblyStepTitles()
-    .map((title) => `- ${title}`)
-    .join('\n')
-
   return `Você é especialista em educação STEAM, Cultura Maker e BNCC para o sistema educacional brasileiro.
 
 MUDANÇA CENTRAL:
@@ -87,25 +82,18 @@ LIMITE OBRIGATÓRIO:
 - Não inclua seções extras, material do aluno, vocabulário, fundamentação, matriz STEAM, Design Thinking, anexos ou explicação sobre Cultura Maker.
 
 ESTRUTURA VISÍVEL OBRIGATÓRIA - somente estas 9 seções:
-1. Título
-2. Objetivo geral curto
+1. Experiência de Aprendizagem STEAM + Cultura Maker
+2. Objetivo geral
 3. Problema/desafio
 4. Materiais
-5. Desenvolvimento da atividade
+5. Desenvolvimento e montagem da atividade
 6. Desafio Maker
 7. Produto final
 8. Avaliação
-9. Referência do conteúdo utilizado
+9. Referências
 
-Desenvolvimento da atividade - títulos obrigatórios:
+Desenvolvimento e montagem da atividade - títulos obrigatórios:
 ${stageTitles}
-
-Dentro de "Desenvolvimento da atividade", inclua obrigatoriamente a subseção:
-COMO MONTAR A ATIVIDADE NA PRÁTICA
-Ela deve explicar como usar cada material, como organizar a base, como transformar os materiais em protótipo, como manipular/simular, como testar, como melhorar e como apresentar.
-
-Passos obrigatórios da subseção de montagem:
-${assemblyTitles}
 
 Regras de conteúdo:
 - "objective": 1 frase, até 20 palavras.
@@ -113,16 +101,17 @@ Regras de conteúdo:
 - "mission": frase curta começando com "Sua equipe deverá..." ou equivalente individual.
 - "materials": máximo 6 itens acessíveis, com quantidade por grupo.
 - "materialFunctions": explique a função prática de cada material listado, em 1 frase curta por material.
-- "stages": exatamente 6 etapas, na ordem obrigatória acima.
-- "assemblySteps": exatamente 5 etapas de montagem, na ordem obrigatória acima. Cada etapa deve explicar o que montar, com qual material, como usar, como testar ou melhorar.
+- "readyMaterials": entregue os cenários, fichas, cartões, tabela de teste, perguntas ou dados citados. Nunca cite material complementar sem gerar o conteúdo pronto.
+- "stages": exatamente 6 etapas de desenvolvimento e montagem, na ordem obrigatória acima. Cada etapa deve explicar como preparar base, dividir materiais, construir, interagir, testar, ajustar ou apresentar.
 - "makerChallenge": deve dizer claramente o que construir, como testar e o que melhorar.
 - "finalProduct": protótipo ou produto concreto final.
-- "assessment": máximo 4 critérios curtos, observáveis e ligados ao processo.
+- "assessmentRubric": mini rubrica com "criterion" e "observation", máximo 4 linhas.
 - "bibliography": use fontes verificadas abaixo quando houver. Nunca use Wikipedia. Se não houver fonte específica, inclua apenas a BNCC como referência oficial.
 - "bncc": use APENAS códigos da lista offline acima; não invente códigos.
 - Não use emojis, slogans, texto promocional ou linguagem de apostila.
 - Não escreva frases genéricas como "faça um protótipo", "use os materiais disponíveis", "teste a solução" ou "melhore o projeto" sem explicar exatamente como.
 - Crie pelo menos 2 testes concretos dentro da montagem ou do desafio maker. Ex.: Teste 1 com cenário esperado; Teste 2 com imprevisto, restrição ou falha.
+- Não use reticências. Nenhuma frase pode terminar cortada com "...".
 
 ${verifiedSources.length > 0
   ? `Fontes verificadas em bases acadêmicas reais (Crossref, OpenAlex, SciELO, Semantic Scholar):\n${verifiedSources.map((s, i) => `${i + 1}. ${s.abnt}`).join('\n')}`
@@ -147,71 +136,50 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Material 1: função prática no protótipo.",
     "Material 2: função prática no mecanismo, teste ou registro."
   ],
+  "readyMaterials": [
+    "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
+    "CENÁRIO 2 - Imprevisto: restrição, falha ou mudança para comparar.",
+    "TABELA DE TESTE - Critério | Resultado antes | Falha observada | Melhoria feita | Resultado depois."
+  ],
   "stages": [
     {
       "number": 1,
-      "title": "ETAPA 1 - Introdução rápida do desafio",
-      "description": "Apresente o problema real e a missão. Mostre uma evidência rápida. Combine o produto esperado."
-    },
-    {
-      "number": 2,
-      "title": "ETAPA 2 - Investigação do problema",
-      "description": "Os alunos observam dados, exemplos ou materiais. Levantam hipóteses. Definem critérios para a solução funcionar."
-    },
-    {
-      "number": 3,
-      "title": "ETAPA 3 - Planejamento da solução",
-      "description": "Cada equipe esboça a ideia. Escolhe materiais. Decide como testar e comparar o resultado."
-    },
-    {
-      "number": 4,
-      "title": "ETAPA 4 - Construção do protótipo",
-      "description": "Os alunos constroem a primeira versão. Registram decisões. O professor acompanha com perguntas práticas."
-    },
-    {
-      "number": 5,
-      "title": "ETAPA 5 - Teste e melhoria",
-      "description": "Cada equipe testa o protótipo. Compara resultados com os critérios. Ajusta pelo menos um ponto e testa novamente."
-    },
-    {
-      "number": 6,
-      "title": "ETAPA 6 - Apresentação final",
-      "description": "Cada equipe apresenta produto, teste e melhoria. A turma compara soluções. Feche com uma decisão de próximo ajuste."
-    }
-  ],
-  "assemblySteps": [
-    {
-      "number": 1,
-      "title": "ETAPA 1 - Preparar a base",
-      "description": "Explique qual material vira a base, como marcar áreas, onde ficam problema, solução e registros."
+      "title": "ETAPA 1 - Preparar a base e dividir materiais",
+      "description": "Divida a base em problema, solução, teste e melhoria. Separe peças móveis e registro."
     },
     {
       "number": 2,
       "title": "ETAPA 2 - Construir as partes principais",
-      "description": "Explique quais peças serão montadas, qual material forma cada parte e para que cada parte serve."
+      "description": "Monte as peças centrais e explique a função de cada material no protótipo."
     },
     {
       "number": 3,
       "title": "ETAPA 3 - Criar o mecanismo de interação",
-      "description": "Explique como o protótipo será manipulado, movimentado, simulado ou alterado pelos alunos."
+      "description": "Crie cartões, fichas, abas, setas, encaixes ou simulação manipulável."
     },
     {
       "number": 4,
-      "title": "ETAPA 4 - Simular uma situação real",
-      "description": "Inclua Teste 1 com cenário esperado e Teste 2 com imprevisto ou restrição para comparar resultados."
+      "title": "ETAPA 4 - Testar com situação real",
+      "description": "Aplique dois cenários prontos. Meça resultado, compare e registre falhas."
     },
     {
       "number": 5,
-      "title": "ETAPA 5 - Ajustar e melhorar",
-      "description": "Explique como identificar falhas e quais melhorias concretas podem ser feitas no material, regra, medida ou apresentação."
+      "title": "ETAPA 5 - Ajustar e testar novamente",
+      "description": "Mude uma falha concreta, repita o teste e registre o antes e depois."
+    },
+    {
+      "number": 6,
+      "title": "ETAPA 6 - Apresentar produto e evidências",
+      "description": "Apresente protótipo, cenário testado, melhoria feita e evidência observada."
     }
   ],
   "makerChallenge": "Construir, testar, comparar e melhorar uma solução para o problema.",
   "finalProduct": "Protótipo final com registro do teste e da melhoria feita.",
-  "assessment": [
-    "Critério curto ligado à investigação.",
-    "Critério curto ligado à construção e ao teste.",
-    "Critério curto ligado à melhoria da solução."
+  "assessmentRubric": [
+    { "criterion": "Protótipo", "observation": "Representa o problema e pode ser testado?" },
+    { "criterion": "Teste", "observation": "O grupo aplicou o cenário e registrou resultado?" },
+    { "criterion": "Melhoria", "observation": "O grupo ajustou o protótipo após identificar falha?" },
+    { "criterion": "Comunicação", "observation": "O grupo explicou solução, teste e melhoria?" }
   ],
   "bibliography": [
     "${verifiedSources[0]?.abnt || 'BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.'}"
@@ -339,10 +307,6 @@ function buildClassroomPrompt(project) {
   const stageTitles = getLearningExperienceStageTitles()
     .map((title) => `- ${title}`)
     .join('\n')
-  const assemblyTitles = getPracticalAssemblyStepTitles()
-    .map((title) => `- ${title}`)
-    .join('\n')
-
   const objectives = (project.objectives || []).map((o, i) => `${i + 1}. ${o}`).join('\n')
   const bncc = (project.bncc || []).join(', ')
   const materials = (project.materials || []).map((m) => `- ${m}`).join('\n')
@@ -374,32 +338,32 @@ ${phaseLines || '  (sem planos específicos registrados)'}
 
 TAREFA:
 Gere somente as 9 seções obrigatórias:
-1. Título
-2. Objetivo geral curto
+1. Experiência de Aprendizagem STEAM + Cultura Maker
+2. Objetivo geral
 3. Problema/desafio
 4. Materiais
-5. Desenvolvimento da atividade
+5. Desenvolvimento e montagem da atividade
 6. Desafio Maker
 7. Produto final
 8. Avaliação
-9. Referência do conteúdo utilizado
+9. Referências
 
 Regras:
 - Deve caber em no máximo 2 páginas A4.
 - Toda etapa deve ter ação prática, não explicação longa.
 - A experiência deve incluir problema real, missão, investigação, construção/prototipagem, teste, comparação e melhoria.
-- Desenvolvimento deve ter exatamente estes títulos:
+- Desenvolvimento e montagem deve ter exatamente estes títulos:
 ${stageTitles}
-- Dentro do desenvolvimento, inclua a subseção "COMO MONTAR A ATIVIDADE NA PRÁTICA" com estes passos:
-${assemblyTitles}
 - Cada etapa: máximo 3 frases curtas.
 - Materiais: máximo 6 itens acessíveis.
 - "materialFunctions" deve explicar a função de cada material no protótipo.
-- "assemblySteps" deve explicar como montar, manipular, simular, testar e melhorar. Não use frases genéricas.
+- "readyMaterials" deve entregar cenários, fichas, cartões, tabela de teste, perguntas ou dados citados.
+- "stages" deve explicar como preparar base, dividir materiais, construir, manipular, testar, ajustar e apresentar. Não use frases genéricas.
 - Inclua 2 testes concretos: um cenário esperado e um cenário com imprevisto, restrição ou falha.
-- Avaliação: máximo 4 critérios curtos.
+- Avaliação: mini rubrica com "criterion" e "observation", máximo 4 linhas.
 - Referências: máximo 3 itens. Use as referências do projeto se houver; não invente fonte.
 - Não use emojis.
+- Não use reticências. Nenhum texto pode terminar cortado com "...".
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -418,71 +382,50 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "material 1: função prática no protótipo.",
     "material 2: função prática no mecanismo, teste ou registro."
   ],
+  "readyMaterials": [
+    "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
+    "CENÁRIO 2 - Imprevisto: restrição, falha ou mudança para comparar.",
+    "TABELA DE TESTE - Critério | Resultado antes | Falha observada | Melhoria feita | Resultado depois."
+  ],
   "stages": [
     {
       "number": 1,
-      "title": "ETAPA 1 - Introdução rápida do desafio",
-      "description": "Apresente o problema e a missão. Mostre uma evidência rápida. Combine o produto esperado."
-    },
-    {
-      "number": 2,
-      "title": "ETAPA 2 - Investigação do problema",
-      "description": "Os alunos observam dados ou exemplos. Levantam hipóteses. Definem critérios de sucesso."
-    },
-    {
-      "number": 3,
-      "title": "ETAPA 3 - Planejamento da solução",
-      "description": "Cada equipe esboça a ideia. Escolhe materiais. Planeja como testar."
-    },
-    {
-      "number": 4,
-      "title": "ETAPA 4 - Construção do protótipo",
-      "description": "Os alunos constroem a primeira versão. Registram decisões. Ajustam a montagem durante a execução."
-    },
-    {
-      "number": 5,
-      "title": "ETAPA 5 - Teste e melhoria",
-      "description": "Cada equipe testa o protótipo. Compara resultados. Melhora um ponto e testa novamente."
-    },
-    {
-      "number": 6,
-      "title": "ETAPA 6 - Apresentação final",
-      "description": "Cada equipe apresenta produto, teste e melhoria. A turma compara soluções. Registra próximos ajustes."
-    }
-  ],
-  "assemblySteps": [
-    {
-      "number": 1,
-      "title": "ETAPA 1 - Preparar a base",
-      "description": "Explique qual material vira a base, como marcar áreas, onde ficam problema, solução e registros."
+      "title": "ETAPA 1 - Preparar a base e dividir materiais",
+      "description": "Divida a base em problema, solução, teste e melhoria. Separe peças móveis e registro."
     },
     {
       "number": 2,
       "title": "ETAPA 2 - Construir as partes principais",
-      "description": "Explique quais peças serão montadas, qual material forma cada parte e para que cada parte serve."
+      "description": "Monte as peças centrais e explique a função de cada material no protótipo."
     },
     {
       "number": 3,
       "title": "ETAPA 3 - Criar o mecanismo de interação",
-      "description": "Explique como o protótipo será manipulado, movimentado, simulado ou alterado pelos alunos."
+      "description": "Crie cartões, fichas, abas, setas, encaixes ou simulação manipulável."
     },
     {
       "number": 4,
-      "title": "ETAPA 4 - Simular uma situação real",
-      "description": "Inclua Teste 1 com cenário esperado e Teste 2 com imprevisto ou restrição para comparar resultados."
+      "title": "ETAPA 4 - Testar com situação real",
+      "description": "Aplique dois cenários prontos. Meça resultado, compare e registre falhas."
     },
     {
       "number": 5,
-      "title": "ETAPA 5 - Ajustar e melhorar",
-      "description": "Explique como identificar falhas e quais melhorias concretas podem ser feitas no material, regra, medida ou apresentação."
+      "title": "ETAPA 5 - Ajustar e testar novamente",
+      "description": "Mude uma falha concreta, repita o teste e registre o antes e depois."
+    },
+    {
+      "number": 6,
+      "title": "ETAPA 6 - Apresentar produto e evidências",
+      "description": "Apresente protótipo, cenário testado, melhoria feita e evidência observada."
     }
   ],
   "makerChallenge": "Construir, testar, comparar e melhorar uma solução para o problema.",
   "finalProduct": "Protótipo final com registro do teste e da melhoria feita.",
-  "assessment": [
-    "Critério curto de investigação.",
-    "Critério curto de construção e teste.",
-    "Critério curto de melhoria."
+  "assessmentRubric": [
+    { "criterion": "Protótipo", "observation": "Representa o problema e pode ser testado?" },
+    { "criterion": "Teste", "observation": "O grupo aplicou o cenário e registrou resultado?" },
+    { "criterion": "Melhoria", "observation": "O grupo ajustou o protótipo após identificar falha?" },
+    { "criterion": "Comunicação", "observation": "O grupo explicou solução, teste e melhoria?" }
   ],
   "bibliography": ${JSON.stringify(project.bibliography?.length ? project.bibliography.slice(0, 3) : ['BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.'])},
   "bncc": ${JSON.stringify(project.bncc || [])}

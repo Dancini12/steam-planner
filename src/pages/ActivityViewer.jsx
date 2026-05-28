@@ -36,8 +36,8 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
   const [mission, setMission] = useState(initialActivity.mission || "");
   const [materialsText, setMaterialsText] = useState((initialActivity.materials || []).join("\n"));
   const [materialFunctionsText, setMaterialFunctionsText] = useState((initialActivity.materialFunctions || []).join("\n"));
+  const [readyMaterialsText, setReadyMaterialsText] = useState((initialActivity.readyMaterials || []).join("\n"));
   const [stages, setStages] = useState(initialActivity.stages || []);
-  const [assemblySteps, setAssemblySteps] = useState(initialActivity.assemblySteps || []);
   const [makerChallenge, setMakerChallenge] = useState(initialActivity.makerChallenge || "");
   const [finalProduct, setFinalProduct] = useState(initialActivity.finalProduct || "");
   const [assessmentText, setAssessmentText] = useState((initialActivity.assessment || []).join("\n"));
@@ -58,9 +58,11 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       mission,
       materials: splitLines(materialsText),
       materialFunctions: splitLines(materialFunctionsText),
+      readyMaterials: splitLines(readyMaterialsText),
       stages,
       developmentStages: stages,
-      assemblySteps,
+      developmentAssemblySteps: stages,
+      assemblySteps: stages,
       makerChallenge,
       guidingQuestion: makerChallenge,
       finalProduct,
@@ -78,14 +80,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
     setStages((prev) =>
       prev.map((stage, stageIndex) =>
         stageIndex === index ? { ...stage, description: value } : stage
-      )
-    );
-  };
-
-  const handleAssemblyStepChange = (index, value) => {
-    setAssemblySteps((prev) =>
-      prev.map((step, stepIndex) =>
-        stepIndex === index ? { ...step, description: value } : step
       )
     );
   };
@@ -222,7 +216,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       </div>
 
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>1. Título</div>
+        <div style={sectionTitleStyle}>1. Experiência de aprendizagem STEAM + Cultura Maker</div>
         <div style={twoColStyle}>
           <div>
             <label style={labelStyle}>Título</label>
@@ -244,7 +238,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       </div>
 
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>2. Objetivo geral curto</div>
+        <div style={sectionTitleStyle}>2. Objetivo geral</div>
         <textarea
           style={textareaStyle("70px")}
           value={objective}
@@ -287,10 +281,16 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
           value={materialFunctionsText}
           onChange={(event) => setMaterialFunctionsText(event.target.value)}
         />
+        <label style={{ ...labelStyle, marginTop: "0.75rem" }}>Materiais prontos para teste</label>
+        <textarea
+          style={textareaStyle("125px")}
+          value={readyMaterialsText}
+          onChange={(event) => setReadyMaterialsText(event.target.value)}
+        />
       </div>
 
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>5. Desenvolvimento da atividade</div>
+        <div style={sectionTitleStyle}>5. Desenvolvimento e montagem da atividade</div>
         {stages.map((stage, index) => (
           <div key={stage.number || index} style={cardStyle}>
             <label style={{ ...labelStyle, color: "#6EE7B7" }}>{stage.title}</label>
@@ -298,20 +298,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
               style={textareaStyle("92px")}
               value={stage.description || ""}
               onChange={(event) => handleStageChange(index, event.target.value)}
-            />
-          </div>
-        ))}
-
-        <div style={{ ...sectionTitleStyle, marginTop: "1.25rem", color: "#6EE7B7", borderBottom: "1px solid rgba(110,231,183,0.2)" }}>
-          COMO MONTAR A ATIVIDADE NA PRÁTICA
-        </div>
-        {assemblySteps.map((step, index) => (
-          <div key={step.number || index} style={cardStyle}>
-            <label style={{ ...labelStyle, color: "#FBBF24" }}>{step.title}</label>
-            <textarea
-              style={textareaStyle("115px")}
-              value={step.description || ""}
-              onChange={(event) => handleAssemblyStepChange(index, event.target.value)}
             />
           </div>
         ))}
@@ -345,7 +331,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       </div>
 
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>9. Referência do conteúdo utilizado</div>
+        <div style={sectionTitleStyle}>9. Referências</div>
         <textarea
           style={textareaStyle("115px")}
           value={bibliographyText}

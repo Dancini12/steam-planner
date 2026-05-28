@@ -45,6 +45,7 @@ function stripDecorativeMarkers(text) {
   return text
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
     .replace(/[\uFE0F\u200D]/g, "")
+    .replace(/\.{3,}|…/g, ".")
     .replace(/[•●▪]/g, "-")
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n[ \t]+/g, "\n")
@@ -329,22 +330,45 @@ function renderExperienceStages(stages) {
     .join("");
 }
 
-function renderAssemblyPractice(experience) {
+function renderMaterialsForExperience(experience) {
+  const materials = normalizeTextItems(experience.materials || []);
   const materialFunctions = normalizeTextItems(experience.materialFunctions || []);
-  const assemblySteps = experience.assemblySteps || [];
+  const readyMaterials = normalizeTextItems(experience.readyMaterials || []);
 
-  if (!materialFunctions.length && !assemblySteps.length) return "";
+  const materialLines = materials.map((material, index) => {
+    const functionText = materialFunctions[index] || "";
+    const materialName = material.split(/\s[-–—]\s/)[0].trim().toLowerCase();
+    const cleanFunction = functionText.replace(new RegExp(`^${materialName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*:\\s*`, "i"), "");
+    return cleanFunction ? `${material} - uso: ${cleanFunction}` : material;
+  });
 
-  return `<div class="assembly-practice">
-    <h3>COMO MONTAR A ATIVIDADE NA PRÁTICA</h3>
-    ${materialFunctions.length ? `<div class="material-functions"><strong>Função dos materiais:</strong>${renderSimpleList(materialFunctions)}</div>` : ""}
-    <div class="assembly-steps">${renderExperienceStages(assemblySteps)}</div>
-  </div>`;
+  return `
+    ${renderSimpleList(materialLines)}
+    ${readyMaterials.length ? `<div class="ready-materials"><strong>Materiais prontos:</strong>${renderSimpleList(readyMaterials)}</div>` : ""}
+  `;
+}
+
+function renderAssessmentRubric(experience) {
+  const rubric = Array.isArray(experience.assessmentRubric) && experience.assessmentRubric.length
+    ? experience.assessmentRubric
+    : normalizeTextItems(experience.assessment || []).map((item) => {
+        const [criterion, ...rest] = item.split("|");
+        return {
+          criterion: (criterion || "Critério").trim(),
+          observation: (rest.join("|") || item).trim()
+        };
+      });
+
+  if (!rubric.length) return renderBlankLines(2);
+
+  return `<table class="rubric-table">
+    <thead><tr><th>Critério</th><th>O que observar</th></tr></thead>
+    <tbody>${rubric.map((item) => `<tr><td>${cleanHtml(item.criterion || "Critério")}</td><td>${cleanHtml(item.observation || item.description || "")}</td></tr>`).join("")}</tbody>
+  </table>`;
 }
 
 function buildActivityPrintHTML(activity) {
   const experience = normalizeLearningExperience(activity);
-  const assessmentItems = normalizeTextItems(experience.assessment || []);
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -352,15 +376,15 @@ function buildActivityPrintHTML(activity) {
   <meta charset="UTF-8">
   <title>${cleanHtml(experience.title || 'Experiência STEAM Maker')}</title>
   <style>
-    @page { size: A4; margin: 1.15cm 1.25cm; }
+    @page { size: A4; margin: 0.85cm 0.95cm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 9.6pt;
-      line-height: 1.34;
+      font-size: 8.8pt;
+      line-height: 1.23;
       color: #000;
       background: #fff;
-      padding: 1.15cm 1.25cm;
+      padding: 0.85cm 0.95cm;
       max-width: 21cm;
       margin: 0 auto;
     }
@@ -369,7 +393,7 @@ function buildActivityPrintHTML(activity) {
       grid-template-columns: 0.55cm 1fr;
       gap: 0.32cm;
       align-items: start;
-      margin-bottom: 0.34cm;
+      margin-bottom: 0.22cm;
       border-bottom: 2px solid #111;
       padding-bottom: 0.22cm;
     }
@@ -385,34 +409,34 @@ function buildActivityPrintHTML(activity) {
       margin-right: 0.16cm;
       flex: 0 0 auto;
     }
-    .doc-type { font-size: 8.2pt; font-weight: 700; text-transform: uppercase; color: #555; margin-bottom: 0.08cm; letter-spacing: 0.02cm; }
-    .header h1 { font-size: 16pt; font-weight: 700; line-height: 1.12; }
-    .section { margin-top: 0.26cm; page-break-inside: avoid; }
-    .section-heading { display: flex; align-items: center; border-bottom: 1px solid #777; padding-bottom: 0.08cm; margin-bottom: 0.13cm; }
+    .doc-type { font-size: 7.8pt; font-weight: 700; text-transform: uppercase; color: #555; margin-bottom: 0.06cm; letter-spacing: 0.01cm; }
+    .header h1 { font-size: 14pt; font-weight: 700; line-height: 1.08; }
+    .section { margin-top: 0.18cm; page-break-inside: avoid; }
+    .section-heading { display: flex; align-items: center; border-bottom: 1px solid #777; padding-bottom: 0.06cm; margin-bottom: 0.09cm; }
     .section-title {
-      font-size: 9.6pt;
+      font-size: 9pt;
       font-weight: 700;
     }
-    h3 { font-size: 9pt; font-weight: 700; margin-bottom: 0.06cm; }
-    p { text-align: left; margin-bottom: 0.11cm; }
-    ul, ol { padding-left: 0.55cm; margin-bottom: 0.08cm; }
-    li { margin-bottom: 0.05cm; text-align: left; }
+    h3 { font-size: 8.4pt; font-weight: 700; margin-bottom: 0.04cm; }
+    p { text-align: left; margin-bottom: 0.08cm; }
+    ul, ol { padding-left: 0.42cm; margin-bottom: 0.05cm; }
+    li { margin-bottom: 0.03cm; text-align: left; }
     .mission { border-left: 2px solid #111; padding-left: 0.22cm; margin-top: 0.1cm; }
-    .stages { display: grid; grid-template-columns: 1fr 1fr; gap: 0.15cm 0.32cm; }
+    .stages { display: grid; grid-template-columns: 1fr 1fr; gap: 0.1cm 0.24cm; }
     .stage { page-break-inside: avoid; }
-    .assembly-practice { margin-top: 0.22cm; border-top: 1px solid #999; padding-top: 0.14cm; }
-    .assembly-practice > h3 { font-size: 9.2pt; letter-spacing: 0.01cm; margin-bottom: 0.1cm; }
-    .material-functions ul { margin-top: 0.08cm; }
-    .assembly-steps { display: grid; grid-template-columns: 1fr; gap: 0.08cm; }
-    .assembly-steps .stage { border-left: 2px solid #999; padding-left: 0.2cm; }
+    .ready-materials { margin-top: 0.08cm; border-left: 2px solid #777; padding-left: 0.18cm; }
+    .ready-materials strong { display: block; margin-bottom: 0.04cm; }
+    .rubric-table { width: 100%; border-collapse: collapse; font-size: 8.3pt; }
+    .rubric-table th, .rubric-table td { border: 1px solid #999; padding: 0.06cm 0.1cm; text-align: left; vertical-align: top; }
+    .rubric-table th { background: #eee; font-weight: 700; }
     .ref { padding-left: 0.8cm; text-indent: -0.8cm; font-size: 8.8pt; line-height: 1.25; }
-    body.tight { font-size: 8.8pt; line-height: 1.25; padding: 0.9cm 1.05cm; }
-    body.tight .header h1 { font-size: 14pt; }
-    body.tight .section { margin-top: 0.18cm; }
-    body.tight .stages { gap: 0.1cm 0.25cm; }
-    body.tight .assembly-steps { gap: 0.05cm; }
-    body.ultra-tight { font-size: 8.2pt; line-height: 1.18; }
-    body.ultra-tight .section { margin-top: 0.14cm; }
+    body.tight { font-size: 8.1pt; line-height: 1.16; padding: 0.65cm 0.78cm; }
+    body.tight .header h1 { font-size: 12.5pt; }
+    body.tight .section { margin-top: 0.12cm; }
+    body.tight .stages { gap: 0.06cm 0.18cm; }
+    body.ultra-tight { font-size: 7.5pt; line-height: 1.1; padding: 0.5cm 0.65cm; }
+    body.ultra-tight .section { margin-top: 0.08cm; }
+    body.ultra-tight .header { margin-bottom: 0.12cm; padding-bottom: 0.12cm; }
     @media print { body { padding: 0; } .section, .stage { page-break-inside: avoid; } .section-title { page-break-after: avoid; } }
   </style>
 </head>
@@ -427,7 +451,7 @@ function buildActivityPrintHTML(activity) {
   </div>
 
   <div class="section">
-    <div class="section-heading"><span class="section-number">2</span><div class="section-title">Objetivo geral curto</div></div>
+    <div class="section-heading"><span class="section-number">2</span><div class="section-title">Objetivo geral</div></div>
     <p>${formatCleanMultiline(experience.objective)}</p>
   </div>
 
@@ -439,13 +463,12 @@ function buildActivityPrintHTML(activity) {
 
   <div class="section">
     <div class="section-heading"><span class="section-number">4</span><div class="section-title">Materiais</div></div>
-    ${renderSimpleList(experience.materials)}
+    ${renderMaterialsForExperience(experience)}
   </div>
 
   <div class="section">
-    <div class="section-heading"><span class="section-number">5</span><div class="section-title">Desenvolvimento da atividade</div></div>
+    <div class="section-heading"><span class="section-number">5</span><div class="section-title">Desenvolvimento e montagem da atividade</div></div>
     <div class="stages">${renderExperienceStages(experience.stages)}</div>
-    ${renderAssemblyPractice(experience)}
   </div>
 
   <div class="section">
@@ -460,11 +483,11 @@ function buildActivityPrintHTML(activity) {
 
   <div class="section">
     <div class="section-heading"><span class="section-number">8</span><div class="section-title">Avaliação</div></div>
-    ${renderSimpleList(assessmentItems)}
+    ${renderAssessmentRubric(experience)}
   </div>
 
   <div class="section">
-    <div class="section-heading"><span class="section-number">9</span><div class="section-title">Referência do conteúdo utilizado</div></div>
+    <div class="section-heading"><span class="section-number">9</span><div class="section-title">Referências</div></div>
     ${renderReferenceList(experience.bibliography)}
   </div>
 

@@ -33,35 +33,30 @@ const COMPETENCY_TO_LETTER: Record<string, string> = {
 }
 
 const STAGE_TITLES = [
-  'ETAPA 1 - Introdução rápida do desafio',
-  'ETAPA 2 - Investigação do problema',
-  'ETAPA 3 - Planejamento da solução',
-  'ETAPA 4 - Construção do protótipo',
-  'ETAPA 5 - Teste e melhoria',
-  'ETAPA 6 - Apresentação final',
+  'ETAPA 1 - Preparar a base e dividir materiais',
+  'ETAPA 2 - Construir as partes principais',
+  'ETAPA 3 - Criar o mecanismo de interação',
+  'ETAPA 4 - Testar com situação real',
+  'ETAPA 5 - Ajustar e testar novamente',
+  'ETAPA 6 - Apresentar produto e evidências',
 ]
 
 const DEFAULT_STAGE_DESCRIPTIONS = [
-  'Apresente o problema real em uma frase. Mostre uma evidência curta e explique a missão da equipe.',
-  'Os alunos observam dados, objetos ou exemplos do cotidiano. Registram hipóteses e critérios para a solução funcionar.',
-  'Cada equipe esboça uma solução simples. Define materiais, papéis e como vai medir se o protótipo funcionou.',
-  'Os alunos montam a primeira versão física, visual, digital ou estrutural. O professor circula e faz perguntas de decisão.',
-  'As equipes testam, comparam resultados e anotam falhas. Ajustam pelo menos um ponto e testam novamente.',
-  'Cada equipe apresenta produto, teste realizado, melhoria feita e próximo ajuste possível.',
+  'O professor entrega a missão e os materiais. A equipe usa a base mais rígida, divide áreas de problema, solução, teste e melhoria, e separa peças móveis.',
+  'Os alunos montam as partes principais do protótipo. Cada peça deve ter função visível: entrada de dados, decisão, fluxo, medida, comparação ou registro.',
+  'A equipe cria a interação com cartões, fichas, abas, setas, encaixes, escala, planilha ou simulação simples. O protótipo precisa ser manipulado durante o teste.',
+  'Aplique o Cenário 1 e registre o resultado. Depois aplique o Cenário 2 ou 3 para comparar, observar falhas e medir se a solução funciona.',
+  'A equipe identifica uma falha, muda material, regra, posição, medida ou comunicação visual e repete o teste. Registre o antes e o depois.',
+  'Cada equipe apresenta o protótipo, o cenário testado, a falha encontrada, a melhoria feita e a evidência de que o ajuste funcionou.',
 ]
 
-const ASSEMBLY_STEP_TITLES = [
-  'ETAPA 1 - Preparar a base',
-  'ETAPA 2 - Construir as partes principais',
-  'ETAPA 3 - Criar o mecanismo de interação',
-  'ETAPA 4 - Simular uma situação real',
-  'ETAPA 5 - Ajustar e melhorar',
-]
+const ASSEMBLY_STEP_TITLES = STAGE_TITLES
 
 const DEFAULT_ASSESSMENT = [
-  'A solução responde ao problema real.',
-  'O protótipo foi construído, testado e melhorado.',
-  'A equipe usou registros para justificar ajustes.',
+  'Protótipo | Representa o problema e pode ser testado?',
+  'Teste | O grupo aplicou o cenário e registrou resultado?',
+  'Melhoria | O grupo ajustou o protótipo após identificar falha?',
+  'Comunicação | O grupo explicou solução, teste e melhoria?',
 ]
 
 const DEFAULT_MATERIALS = [
@@ -76,15 +71,24 @@ const FALLBACK_REFERENCE = 'BRASIL. Ministério da Educação. Base Nacional Com
 
 function cleanText(value: unknown): string {
   if (value == null) return ''
-  return String(value).replace(/\s+/g, ' ').trim()
+  return String(value).replace(/\.{3,}|…/g, '.').replace(/\s+/g, ' ').trim()
+}
+
+function finishSentence(value: unknown): string {
+  const text = cleanText(value)
+  if (!text) return ''
+  if (/[.!?:;)]$/.test(text)) return text
+  return `${text}.`
 }
 
 function limitText(value: unknown, maxChars: number): string {
   const text = cleanText(value)
   if (text.length <= maxChars) return text
   const slice = text.slice(0, maxChars + 1)
+  const sentenceBreak = Math.max(slice.lastIndexOf('.'), slice.lastIndexOf('?'), slice.lastIndexOf('!'), slice.lastIndexOf(';'))
   const wordBreak = slice.lastIndexOf(' ')
-  return `${slice.slice(0, wordBreak > 0 ? wordBreak : maxChars).trim()}...`
+  const cutAt = sentenceBreak > maxChars * 0.55 ? sentenceBreak + 1 : wordBreak
+  return finishSentence(slice.slice(0, cutAt > 0 ? cutAt : maxChars))
 }
 
 function toTextArray(value: unknown): string[] {
@@ -93,7 +97,7 @@ function toTextArray(value: unknown): string[] {
       if (typeof item === 'string') return cleanText(item)
       if (item && typeof item === 'object') {
         const objectItem = item as Record<string, unknown>
-        return cleanText(objectItem.text || objectItem.description || objectItem.criterion || '')
+        return cleanText(objectItem.text || objectItem.description || objectItem.criterion || objectItem.abnt || '')
       }
       return ''
     }).filter(Boolean)
@@ -125,6 +129,30 @@ function buildDefaultMaterialFunctions(materials: string[]): string[] {
   })
 }
 
+function isBudgetTheme(theme: string): boolean {
+  return /or[cç]amento|financeir|renda|despesa|dinheiro|fam[ií]lia/.test(cleanText(theme).toLowerCase())
+}
+
+function buildDefaultReadyMaterials(theme: string): string[] {
+  const cleanTheme = cleanText(theme || 'problema investigado').toLowerCase()
+
+  if (isBudgetTheme(theme)) {
+    return [
+      'CENÁRIO 1 - Saldo positivo: renda R$ 3.500; aluguel R$ 900; alimentação R$ 800; transporte R$ 350; energia/água R$ 280; lazer R$ 200. Pergunta: quanto sobra?',
+      'CENÁRIO 2 - Imprevisto: renda R$ 3.000; despesas fixas R$ 2.400; gasto médico R$ 600. Pergunta: ficou positivo ou negativo? O que ajustar?',
+      'CENÁRIO 3 - Decisão: renda R$ 4.000; despesas R$ 3.200; celular R$ 1.200. Pergunta: comprar agora, parcelar ou adiar? Justifique.',
+      'TABELA DE TESTE - Critério | Resultado antes | Falha observada | Melhoria feita | Resultado depois.',
+    ]
+  }
+
+  return [
+    `CENÁRIO 1 - Funcionamento esperado: aplique o protótipo em uma situação comum de ${cleanTheme}. Registre resultado, medida ou decisão obtida.`,
+    `CENÁRIO 2 - Imprevisto: retire um recurso, aumente a demanda ou crie uma restrição ligada a ${cleanTheme}. Compare com o primeiro teste.`,
+    'CENÁRIO 3 - Decisão de melhoria: escolha uma falha observada, aplique uma mudança e teste novamente para verificar se houve avanço.',
+    'TABELA DE TESTE - Critério | Resultado antes | Falha observada | Melhoria feita | Resultado depois.',
+  ]
+}
+
 function materialNamesForText(materials: string[]): string {
   const names = materials.map(getMaterialName).filter(Boolean).slice(0, 4)
   if (!names.length) return 'os materiais listados'
@@ -137,12 +165,42 @@ function buildDefaultAssemblyDescriptions(theme: string, materials: string[]): s
   const materialText = materialNamesForText(materials)
 
   return [
-    'Escolha o material mais rígido, como cartolina ou papelão, para formar a base. Marque nela o espaço do problema, a área da solução e o local onde os testes serão registrados.',
-    `Monte as partes principais usando ${materialText}. Separe a estrutura fixa, as peças móveis e a área de registro; cada parte deve mostrar uma decisão da solução.`,
-    'Crie uma forma de interação: cartões que mudam de lugar, abas que abrem, setas que indicam fluxo, peças que deslizam ou uma simulação digital simples. O protótipo deve permitir manipular a solução, não apenas observá-la.',
-    `Teste o protótipo com um cenário real sobre ${cleanTheme}. A equipe deve executar pelo menos dois testes: um caso esperado e uma situação-problema com restrição, falha ou imprevisto.`,
-    'Compare o resultado com os critérios definidos. Identifique uma falha visível, ajuste material, posição, medida, regra ou comunicação visual e repita o teste para verificar a melhoria.',
+    `Use cartolina, papelão ou folha como base. Divida em áreas: problema, solução, teste e melhoria; separe ${materialText} antes da montagem.`,
+    `Monte as partes principais com ${materialText}. Defina a função de cada peça: entrada de dados, fluxo, decisão, medida, comparação ou registro.`,
+    'Crie a interação com cartões, fichas, abas, setas, encaixes, escala, planilha ou simulação simples. O protótipo deve mudar quando o aluno aplica um cenário.',
+    `Aplique os cenários prontos sobre ${cleanTheme}. Registre resultado, falha e comparação entre o teste esperado e o teste com imprevisto.`,
+    'Ajuste uma falha concreta no material, regra, posição, medida ou comunicação visual. Repita o teste e registre o que melhorou.',
+    'Apresente o protótipo final, o cenário usado, a falha encontrada, a melhoria feita e a evidência observada no novo teste.',
   ]
+}
+
+function parseRubricItem(item: unknown): Record<string, string> | null {
+  if (item && typeof item === 'object') {
+    const objectItem = item as Record<string, unknown>
+    const criterion = cleanText(objectItem.criterion || objectItem.criteria || objectItem.title || objectItem.name || '')
+    const observation = cleanText(objectItem.observation || objectItem.observe || objectItem.description || objectItem.text || '')
+    if (criterion || observation) {
+      return {
+        criterion: criterion || 'Critério',
+        observation: finishSentence(observation || 'Observar evidências do processo.'),
+      }
+    }
+  }
+
+  const text = cleanText(item)
+  if (!text) return null
+  const pipeParts = text.split('|')
+  if (pipeParts.length > 1) {
+    return { criterion: cleanText(pipeParts[0]), observation: finishSentence(pipeParts.slice(1).join('|')) }
+  }
+  const colonParts = text.split(':')
+  if (colonParts.length > 1) {
+    return { criterion: cleanText(colonParts[0]), observation: finishSentence(colonParts.slice(1).join(':')) }
+  }
+  return {
+    criterion: text.split(/\s+/).slice(0, 3).join(' '),
+    observation: finishSentence(text),
+  }
 }
 
 function isGenericAssemblyText(text: unknown): boolean {
@@ -161,19 +219,34 @@ function isGenericAssemblyText(text: unknown): boolean {
   ].some((phrase) => cleaned === phrase || cleaned.includes(`${phrase}.`))
 }
 
-function normalizeStages(stages: unknown): Record<string, unknown>[] {
-  const source = Array.isArray(stages) ? stages : []
+function normalizeStages(raw: Record<string, unknown>, materials: string[], theme: string): Record<string, unknown>[] {
+  const source = Array.isArray(raw.developmentAssemblySteps)
+    ? raw.developmentAssemblySteps
+    : Array.isArray(raw.assemblySteps)
+      ? raw.assemblySteps
+      : Array.isArray(raw.developmentStages)
+        ? raw.developmentStages
+        : Array.isArray(raw.stages)
+          ? raw.stages
+          : Array.isArray(raw.steps)
+            ? raw.steps
+            : []
+  const defaultDescriptions = buildDefaultAssemblyDescriptions(theme, materials)
+
   return STAGE_TITLES.map((title, index) => {
     const raw = source[index]
     const stage = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {}
-    const description = typeof raw === 'string'
+    const rawDescription = typeof raw === 'string'
       ? raw
       : cleanText(stage.description || stage.action || stage.text || stage.procedure || '')
+    const description = isGenericAssemblyText(rawDescription)
+      ? defaultDescriptions[index]
+      : rawDescription
 
     return {
       number: index + 1,
       title,
-      description: limitText(description || DEFAULT_STAGE_DESCRIPTIONS[index], 280),
+      description: limitText(description || DEFAULT_STAGE_DESCRIPTIONS[index], 220),
     }
   })
 }
@@ -206,9 +279,37 @@ function normalizeAssemblySteps(raw: Record<string, unknown>, materials: string[
   })
 }
 
+function normalizeReadyMaterials(raw: Record<string, unknown>, theme: string): string[] {
+  const source = raw.readyMaterials || raw.printableMaterials || raw.scenarios || raw.testScenarios
+  const items = toTextArray(source)
+  const selected = (items.length ? items : buildDefaultReadyMaterials(theme)).slice(0, 4)
+  return selected.map((item) => limitText(item, 220))
+}
+
+function normalizeAssessmentRubric(raw: Record<string, unknown>): Record<string, string>[] {
+  const source = Array.isArray(raw.assessmentRubric) && raw.assessmentRubric.length
+    ? raw.assessmentRubric
+    : raw.assessment
+  const items = Array.isArray(source)
+    ? source.map(parseRubricItem).filter(Boolean) as Record<string, string>[]
+    : toTextArray(source).map(parseRubricItem).filter(Boolean) as Record<string, string>[]
+  const fallback = DEFAULT_ASSESSMENT.map(parseRubricItem).filter(Boolean) as Record<string, string>[]
+
+  return (items.length ? items : fallback).slice(0, 4).map((item) => ({
+    criterion: limitText(item.criterion, 28),
+    observation: limitText(item.observation, 110),
+  }))
+}
+
+function normalizeReferences(value: unknown): string[] {
+  const references = toTextArray(value)
+    .map(cleanText)
+    .filter((item) => item && !/wikipedia/i.test(item))
+  return (references.length ? references : [FALLBACK_REFERENCE]).slice(0, 3).map(finishSentence)
+}
+
 function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalRequest): Record<string, unknown> {
   const theme = cleanText(raw.theme || request.theme)
-  const stages = normalizeStages(raw.stages || raw.steps)
   const objective = limitText(raw.objective || toTextArray(raw.objectives)[0] || 'Investigar um problema real, construir uma solução, testar resultados e propor melhoria.', 170)
   const problem = limitText(raw.problem || `Como criar uma solução prática para um problema real relacionado a ${theme.toLowerCase()}?`, 340)
   const mission = limitText(raw.mission || `Sua equipe deverá investigar ${theme}, construir uma solução simples, testar e melhorar o resultado.`, 180)
@@ -216,12 +317,16 @@ function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalReq
   const finalProduct = limitText(raw.finalProduct || `Protótipo físico, visual ou digital sobre ${theme.toLowerCase()}, com registro do teste e da melhoria feita.`, 220)
   const materials = toTextArray(raw.materials).length ? toTextArray(raw.materials) : DEFAULT_MATERIALS
   const normalizedMaterials = materials.slice(0, 6).map((item) => limitText(item, 90))
+  const stages = normalizeStages(raw, normalizedMaterials, theme)
+  const assemblySteps = stages
   const sourceMaterialFunctions = toTextArray(raw.materialFunctions)
   const materialFunctions = (sourceMaterialFunctions.length >= normalizedMaterials.length ? sourceMaterialFunctions : buildDefaultMaterialFunctions(normalizedMaterials))
     .slice(0, normalizedMaterials.length || 6)
-    .map((item) => limitText(item, 145))
-  const assemblySteps = normalizeAssemblySteps(raw, normalizedMaterials, theme)
-  const activityManual = `${stages.map((stage) => `${stage.title}\n${stage.description}`).join('\n\n')}\n\nCOMO MONTAR A ATIVIDADE NA PRÁTICA\n${assemblySteps.map((step) => `${step.title}\n${step.description}`).join('\n\n')}`
+    .map((item) => limitText(item, 120))
+  const readyMaterials = normalizeReadyMaterials(raw, theme)
+  const assessmentRubric = normalizeAssessmentRubric(raw)
+  const assessment = assessmentRubric.map((item) => `${item.criterion} | ${item.observation}`)
+  const activityManual = `DESENVOLVIMENTO E MONTAGEM DA ATIVIDADE\n${stages.map((stage) => `${stage.title}\n${stage.description}`).join('\n\n')}`
 
   return {
     ...raw,
@@ -235,22 +340,21 @@ function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalReq
     guidingQuestion: makerChallenge,
     materials: normalizedMaterials,
     materialFunctions,
+    readyMaterials,
     stages,
     developmentStages: stages,
+    developmentAssemblySteps: stages,
     assemblySteps,
     practicalAssembly: {
-      title: 'COMO MONTAR A ATIVIDADE NA PRÁTICA',
+      title: 'DESENVOLVIMENTO E MONTAGEM DA ATIVIDADE',
       steps: assemblySteps,
     },
     activityManual,
     makerChallenge,
     finalProduct,
-    assessment: (toTextArray(raw.assessment).length ? toTextArray(raw.assessment) : DEFAULT_ASSESSMENT)
-      .slice(0, 4)
-      .map((item) => limitText(item, 110)),
-    bibliography: (toTextArray(raw.bibliography).length ? toTextArray(raw.bibliography) : [FALLBACK_REFERENCE])
-      .slice(0, 3)
-      .map((item) => limitText(item, 190)),
+    assessmentRubric,
+    assessment,
+    bibliography: normalizeReferences(raw.bibliography || raw.references),
     priorKnowledge: [],
     vocabulary: [],
     safetyNotes: [],
@@ -270,6 +374,8 @@ function validateLearningExperience(activity: Record<string, unknown>) {
     activity.finalProduct,
     activity.activityManual,
     ...(Array.isArray(activity.materialFunctions) ? activity.materialFunctions : []),
+    ...(Array.isArray(activity.readyMaterials) ? activity.readyMaterials : []),
+    ...(Array.isArray(activity.assessmentRubric) ? activity.assessmentRubric.map((item) => `${cleanText((item as Record<string, unknown>).criterion || '')} ${cleanText((item as Record<string, unknown>).observation || '')}`) : []),
     ...(Array.isArray(activity.assemblySteps) ? activity.assemblySteps.map((step) => cleanText((step as Record<string, unknown>).description || '')) : []),
   ].join(' ').toLowerCase()
 
@@ -280,17 +386,19 @@ function validateLearningExperience(activity: Record<string, unknown>) {
   if (!activity.mission) missing.push('mission')
   if (!Array.isArray(activity.materials) || activity.materials.length === 0) missing.push('materials')
   if (!Array.isArray(activity.materialFunctions) || activity.materialFunctions.length === 0) missing.push('materialFunctions')
+  if (!Array.isArray(activity.readyMaterials) || activity.readyMaterials.length === 0) missing.push('readyMaterials')
   if (!Array.isArray(activity.stages) || activity.stages.length !== 6) missing.push('stages')
-  if (!Array.isArray(activity.assemblySteps) || activity.assemblySteps.length !== 5) missing.push('assemblySteps')
+  if (!Array.isArray(activity.assemblySteps) || activity.assemblySteps.length !== 6) missing.push('assemblySteps')
   if (!/investig/.test(text)) missing.push('investigation')
   if (!/constru|mont|cria|prototip/.test(text)) missing.push('prototype')
   if (!/test/.test(text)) missing.push('test')
   if (!/melhor|ajust|redesign|modific/.test(text)) missing.push('improvement')
   if (!/base/.test(text)) missing.push('base')
   if (!/simula|cen[aá]rio|situa[cç][aã]o real/.test(text)) missing.push('simulation')
+  if (/\.{3,}|…/.test(text)) missing.push('ellipsis')
   if (!activity.makerChallenge) missing.push('makerChallenge')
   if (!activity.finalProduct) missing.push('finalProduct')
-  if (!Array.isArray(activity.assessment) || activity.assessment.length === 0) missing.push('assessment')
+  if ((!Array.isArray(activity.assessmentRubric) || activity.assessmentRubric.length === 0) && (!Array.isArray(activity.assessment) || activity.assessment.length === 0)) missing.push('assessment')
   if (!Array.isArray(activity.bibliography) || activity.bibliography.length === 0) missing.push('bibliography')
   if (missing.length) throw new Error(`Experiência STEAM + Maker incompleta: ${missing.join(', ')}`)
 }
@@ -330,8 +438,6 @@ function buildPrompt(request: PedagogicalRequest): string {
 
   const classesInfo = request.numberOfClasses ? `- Duração total: ${request.numberOfClasses} aulas` : ''
   const stageTitles = STAGE_TITLES.map((title) => `- ${title}`).join('\n')
-  const assemblyTitles = ASSEMBLY_STEP_TITLES.map((title) => `- ${title}`).join('\n')
-
   return `Você é especialista em educação STEAM, Cultura Maker e BNCC para o sistema educacional brasileiro.
 
 Gere uma EXPERIÊNCIA DE APRENDIZAGEM STEAM + CULTURA MAKER, não uma apostila, artigo ou plano tradicional.
@@ -353,25 +459,18 @@ LIMITE:
 - Priorize ação, construção, investigação, teste e melhoria.
 
 ESTRUTURA VISÍVEL OBRIGATÓRIA - somente estas 9 seções:
-1. Título
-2. Objetivo geral curto
+1. Experiência de Aprendizagem STEAM + Cultura Maker
+2. Objetivo geral
 3. Problema/desafio
 4. Materiais
-5. Desenvolvimento da atividade
+5. Desenvolvimento e montagem da atividade
 6. Desafio Maker
 7. Produto final
 8. Avaliação
-9. Referência do conteúdo utilizado
+9. Referências
 
-Desenvolvimento obrigatório:
+Desenvolvimento e montagem obrigatório:
 ${stageTitles}
-
-Dentro do desenvolvimento, inclua obrigatoriamente:
-COMO MONTAR A ATIVIDADE NA PRÁTICA
-Essa subseção deve explicar como usar cada material, como montar a base, como transformar os materiais em protótipo, como manipular/simular, como testar, como melhorar e como apresentar.
-
-Passos obrigatórios da montagem:
-${assemblyTitles}
 
 Regras:
 - "objective": 1 frase, até 20 palavras.
@@ -379,15 +478,16 @@ Regras:
 - "mission": frase curta começando com "Sua equipe deverá..." quando for grupo.
 - "materials": máximo 6 itens acessíveis, com quantidade por grupo.
 - "materialFunctions": função prática de cada material listado.
-- "stages": exatamente 6 etapas, na ordem acima, cada uma com até 3 frases curtas.
-- "assemblySteps": exatamente 5 etapas de montagem, na ordem acima. Explique o que montar, como montar, qual material usar em cada parte, como funciona, como testar e como melhorar.
+- "readyMaterials": gere os cenários, fichas, cartões, tabela de teste ou perguntas citadas. Nunca cite material complementar sem entregar o conteúdo pronto.
+- "stages": exatamente 6 etapas de desenvolvimento e montagem, na ordem acima. Explique como preparar base, dividir materiais, construir, interagir, testar, ajustar e apresentar.
 - "makerChallenge": deve indicar o que construir, como testar e o que melhorar.
 - "finalProduct": produto ou protótipo concreto.
-- "assessment": máximo 4 critérios curtos e observáveis.
+- "assessmentRubric": mini rubrica com "criterion" e "observation", máximo 4 linhas.
 - "bibliography": use referência real. Se não tiver fonte específica, use a BNCC.
 - Não use emojis, matriz STEAM, Design Thinking, fundamentação, material do aluno, vocabulário ou anexos.
 - Evite frases genéricas como "faça um protótipo", "use os materiais disponíveis", "teste a solução" ou "melhore o projeto" sem explicar exatamente como.
 - Crie pelo menos 2 testes concretos dentro da montagem ou do desafio maker.
+- Não use reticências. Nenhum campo pode terminar com texto cortado.
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -407,27 +507,26 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Material 1: função prática no protótipo.",
     "Material 2: função prática no mecanismo, teste ou registro."
   ],
-  "stages": [
-    { "number": 1, "title": "ETAPA 1 - Introdução rápida do desafio", "description": "Apresente o problema e a missão. Mostre uma evidência rápida. Combine o produto esperado." },
-    { "number": 2, "title": "ETAPA 2 - Investigação do problema", "description": "Os alunos observam dados ou exemplos. Levantam hipóteses. Definem critérios de sucesso." },
-    { "number": 3, "title": "ETAPA 3 - Planejamento da solução", "description": "Cada equipe esboça a ideia. Escolhe materiais. Planeja como testar." },
-    { "number": 4, "title": "ETAPA 4 - Construção do protótipo", "description": "Os alunos constroem a primeira versão. Registram decisões. Ajustam a montagem durante a execução." },
-    { "number": 5, "title": "ETAPA 5 - Teste e melhoria", "description": "Cada equipe testa o protótipo. Compara resultados. Melhora um ponto e testa novamente." },
-    { "number": 6, "title": "ETAPA 6 - Apresentação final", "description": "Cada equipe apresenta produto, teste e melhoria. A turma compara soluções. Registra próximos ajustes." }
+  "readyMaterials": [
+    "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
+    "CENÁRIO 2 - Imprevisto: restrição, falha ou mudança para comparar.",
+    "TABELA DE TESTE - Critério | Resultado antes | Falha observada | Melhoria feita | Resultado depois."
   ],
-  "assemblySteps": [
-    { "number": 1, "title": "ETAPA 1 - Preparar a base", "description": "Explique qual material vira a base, como marcar áreas, onde ficam problema, solução e registros." },
-    { "number": 2, "title": "ETAPA 2 - Construir as partes principais", "description": "Explique quais peças serão montadas, qual material forma cada parte e para que cada parte serve." },
-    { "number": 3, "title": "ETAPA 3 - Criar o mecanismo de interação", "description": "Explique como o protótipo será manipulado, movimentado, simulado ou alterado pelos alunos." },
-    { "number": 4, "title": "ETAPA 4 - Simular uma situação real", "description": "Inclua Teste 1 com cenário esperado e Teste 2 com imprevisto ou restrição para comparar resultados." },
-    { "number": 5, "title": "ETAPA 5 - Ajustar e melhorar", "description": "Explique como identificar falhas e quais melhorias concretas podem ser feitas no material, regra, medida ou apresentação." }
+  "stages": [
+    { "number": 1, "title": "ETAPA 1 - Preparar a base e dividir materiais", "description": "Divida a base em problema, solução, teste e melhoria. Separe peças móveis e registro." },
+    { "number": 2, "title": "ETAPA 2 - Construir as partes principais", "description": "Monte as peças centrais e explique a função de cada material no protótipo." },
+    { "number": 3, "title": "ETAPA 3 - Criar o mecanismo de interação", "description": "Crie cartões, fichas, abas, setas, encaixes ou simulação manipulável." },
+    { "number": 4, "title": "ETAPA 4 - Testar com situação real", "description": "Aplique dois cenários prontos. Meça resultado, compare e registre falhas." },
+    { "number": 5, "title": "ETAPA 5 - Ajustar e testar novamente", "description": "Mude uma falha concreta, repita o teste e registre o antes e depois." },
+    { "number": 6, "title": "ETAPA 6 - Apresentar produto e evidências", "description": "Apresente protótipo, cenário testado, melhoria feita e evidência observada." }
   ],
   "makerChallenge": "Construir, testar, comparar e melhorar uma solução para o problema.",
   "finalProduct": "Protótipo final com registro do teste e da melhoria feita.",
-  "assessment": [
-    "Critério curto de investigação.",
-    "Critério curto de construção e teste.",
-    "Critério curto de melhoria."
+  "assessmentRubric": [
+    { "criterion": "Protótipo", "observation": "Representa o problema e pode ser testado?" },
+    { "criterion": "Teste", "observation": "O grupo aplicou o cenário e registrou resultado?" },
+    { "criterion": "Melhoria", "observation": "O grupo ajustou o protótipo após identificar falha?" },
+    { "criterion": "Comunicação", "observation": "O grupo explicou solução, teste e melhoria?" }
   ],
   "bibliography": [
     "${FALLBACK_REFERENCE}"

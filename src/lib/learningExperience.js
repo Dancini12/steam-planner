@@ -1,34 +1,28 @@
 const STAGE_TITLES = [
-  "ETAPA 1 - Introdução rápida do desafio",
-  "ETAPA 2 - Investigação do problema",
-  "ETAPA 3 - Planejamento da solução",
-  "ETAPA 4 - Construção do protótipo",
-  "ETAPA 5 - Teste e melhoria",
-  "ETAPA 6 - Apresentação final"
+  "ETAPA 1 - Preparar a base e dividir materiais",
+  "ETAPA 2 - Construir as partes principais",
+  "ETAPA 3 - Criar o mecanismo de interação",
+  "ETAPA 4 - Testar com situação real",
+  "ETAPA 5 - Ajustar e testar novamente",
+  "ETAPA 6 - Apresentar produto e evidências"
 ];
 
 const DEFAULT_STAGE_DESCRIPTIONS = [
-  "Apresente o problema real em uma frase. Mostre uma evidência curta e explique a missão da equipe.",
-  "Os alunos observam dados, objetos ou exemplos do cotidiano. Registram hipóteses e critérios para a solução funcionar.",
-  "Cada equipe esboça uma solução simples. Define materiais, papéis e como vai medir se o protótipo funcionou.",
-  "Os alunos montam a primeira versão física, visual, digital ou estrutural. O professor circula e faz perguntas de decisão.",
-  "As equipes testam, comparam resultados e anotam falhas. Ajustam pelo menos um ponto e testam novamente.",
-  "Cada equipe apresenta produto, teste realizado, melhoria feita e próximo ajuste possível."
+  "O professor entrega a missão e os materiais. A equipe usa a base mais rígida, divide áreas de problema, solução, teste e melhoria, e separa peças móveis.",
+  "Os alunos montam as partes principais do protótipo. Cada peça deve ter função visível: entrada de dados, decisão, fluxo, medida, comparação ou registro.",
+  "A equipe cria a interação com cartões, fichas, abas, setas, encaixes, escala, planilha ou simulação simples. O protótipo precisa ser manipulado durante o teste.",
+  "Aplique o Cenário 1 e registre o resultado. Depois aplique o Cenário 2 ou 3 para comparar, observar falhas e medir se a solução funciona.",
+  "A equipe identifica uma falha, muda material, regra, posição, medida ou comunicação visual e repete o teste. Registre o antes e o depois.",
+  "Cada equipe apresenta o protótipo, o cenário testado, a falha encontrada, a melhoria feita e a evidência de que o ajuste funcionou."
 ];
 
-const ASSEMBLY_STEP_TITLES = [
-  "ETAPA 1 - Preparar a base",
-  "ETAPA 2 - Construir as partes principais",
-  "ETAPA 3 - Criar o mecanismo de interação",
-  "ETAPA 4 - Simular uma situação real",
-  "ETAPA 5 - Ajustar e melhorar"
-];
+const ASSEMBLY_STEP_TITLES = STAGE_TITLES;
 
 const DEFAULT_ASSESSMENT = [
-  "A solução responde ao problema real.",
-  "O protótipo foi construído, testado e melhorado.",
-  "A equipe usou registros para justificar ajustes.",
-  "A apresentação mostra evidências do teste."
+  "Protótipo | Representa o problema e pode ser testado?",
+  "Teste | O grupo aplicou o cenário e registrou resultado?",
+  "Melhoria | O grupo ajustou o protótipo após identificar falha?",
+  "Comunicação | O grupo explicou solução, teste e melhoria?"
 ];
 
 const FALLBACK_REFERENCE =
@@ -40,28 +34,27 @@ const LIMITS = {
   problem: 360,
   mission: 190,
   material: 90,
-  stage: 300,
-  stageTight: 220,
-  materialFunction: 145,
-  assemblyStep: 420,
-  assemblyStepTight: 300,
-  makerChallenge: 320,
-  finalProduct: 220,
-  assessment: 110,
-  reference: 190,
-  maxChars: 5600
+  stage: 240,
+  stageTight: 170,
+  materialFunction: 120,
+  readyMaterial: 230,
+  readyMaterialTight: 180,
+  makerChallenge: 230,
+  finalProduct: 170,
+  assessment: 120,
+  maxChars: 4300
 };
 
 export const LEARNING_EXPERIENCE_SECTIONS = [
-  "Título",
-  "Objetivo geral curto",
+  "Experiência de aprendizagem STEAM + Cultura Maker",
+  "Objetivo geral",
   "Problema/desafio",
   "Materiais",
-  "Desenvolvimento da atividade",
+  "Desenvolvimento e montagem da atividade",
   "Desafio Maker",
   "Produto final",
   "Avaliação",
-  "Referência do conteúdo utilizado"
+  "Referências"
 ];
 
 export function getLearningExperienceStageTitles() {
@@ -77,10 +70,18 @@ function cleanText(value) {
   return String(value)
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
     .replace(/[\uFE0F\u200D]/g, "")
+    .replace(/\.{3,}|…/g, ".")
     .replace(/[ \t]+/g, " ")
     .replace(/\s+\n/g, "\n")
     .replace(/\n\s+/g, "\n")
     .trim();
+}
+
+function finishSentence(text) {
+  const cleaned = cleanText(text);
+  if (!cleaned) return "";
+  if (/[.!?:;)]$/.test(cleaned)) return cleaned;
+  return `${cleaned}.`;
 }
 
 function limitText(value, maxChars) {
@@ -97,7 +98,7 @@ function limitText(value, maxChars) {
   const wordBreak = slice.lastIndexOf(" ");
   const cutAt = sentenceBreak > maxChars * 0.55 ? sentenceBreak + 1 : wordBreak;
 
-  return `${slice.slice(0, cutAt > 0 ? cutAt : maxChars).trim()}...`;
+  return finishSentence(slice.slice(0, cutAt > 0 ? cutAt : maxChars));
 }
 
 function toTextArray(value) {
@@ -108,6 +109,7 @@ function toTextArray(value) {
         if (item?.text) return item.text;
         if (item?.description) return item.description;
         if (item?.criterion) return item.criterion;
+        if (item?.abnt) return item.abnt;
         return "";
       })
       .map(cleanText)
@@ -181,6 +183,32 @@ function buildDefaultMaterialFunctions(materials) {
   });
 }
 
+function isBudgetTheme(theme) {
+  return /or[cç]amento|financeir|renda|despesa|dinheiro|fam[ií]lia/.test(
+    cleanText(theme).toLowerCase()
+  );
+}
+
+function buildDefaultReadyMaterials(theme) {
+  const cleanTheme = cleanText(theme || "problema investigado").toLowerCase();
+
+  if (isBudgetTheme(theme)) {
+    return [
+      "CENÁRIO 1 - Saldo positivo: renda R$ 3.500; aluguel R$ 900; alimentação R$ 800; transporte R$ 350; energia/água R$ 280; lazer R$ 200. Pergunta: quanto sobra?",
+      "CENÁRIO 2 - Imprevisto: renda R$ 3.000; despesas fixas R$ 2.400; gasto médico R$ 600. Pergunta: ficou positivo ou negativo? O que ajustar?",
+      "CENÁRIO 3 - Decisão: renda R$ 4.000; despesas R$ 3.200; celular R$ 1.200. Pergunta: comprar agora, parcelar ou adiar? Justifique.",
+      "TABELA DE TESTE - Critério | Resultado antes | Falha observada | Melhoria feita | Resultado depois."
+    ];
+  }
+
+  return [
+    `CENÁRIO 1 - Funcionamento esperado: aplique o protótipo em uma situação comum de ${cleanTheme}. Registre resultado, medida ou decisão obtida.`,
+    `CENÁRIO 2 - Imprevisto: retire um recurso, aumente a demanda ou crie uma restrição ligada a ${cleanTheme}. Compare com o primeiro teste.`,
+    "CENÁRIO 3 - Decisão de melhoria: escolha uma falha observada, aplique uma mudança e teste novamente para verificar se houve avanço.",
+    "TABELA DE TESTE - Critério | Resultado antes | Falha observada | Melhoria feita | Resultado depois."
+  ];
+}
+
 function materialNamesForText(materials) {
   const names = materials.map(getMaterialName).filter(Boolean).slice(0, 4);
   if (!names.length) return "os materiais listados";
@@ -193,12 +221,48 @@ function buildDefaultAssemblyDescriptions(theme, materials) {
   const materialText = materialNamesForText(materials);
 
   return [
-    `Escolha o material mais rígido, como cartolina ou papelão, para formar a base. Marque nela o espaço do problema, a área da solução e o local onde os testes serão registrados.`,
-    `Monte as partes principais usando ${materialText}. Separe a estrutura fixa, as peças móveis e a área de registro; cada parte deve mostrar uma decisão da solução.`,
-    `Crie uma forma de interação: cartões que mudam de lugar, abas que abrem, setas que indicam fluxo, peças que deslizam ou uma simulação digital simples. O protótipo deve permitir manipular a solução, não apenas observá-la.`,
-    `Teste o protótipo com um cenário real sobre ${cleanTheme}. A equipe deve executar pelo menos dois testes: um caso esperado e uma situação-problema com restrição, falha ou imprevisto.`,
-    `Compare o resultado com os critérios definidos. Identifique uma falha visível, ajuste material, posição, medida, regra ou comunicação visual e repita o teste para verificar a melhoria.`
+    `Use cartolina, papelão ou folha como base. Divida em áreas: problema, solução, teste e melhoria; separe ${materialText} antes da montagem.`,
+    `Monte as partes principais com ${materialText}. Defina a função de cada peça: entrada de dados, fluxo, decisão, medida, comparação ou registro.`,
+    "Crie a interação com cartões, fichas, abas, setas, encaixes, escala, planilha ou simulação simples. O protótipo deve mudar quando o aluno aplica um cenário.",
+    `Aplique os cenários prontos sobre ${cleanTheme}. Registre resultado, falha e comparação entre o teste esperado e o teste com imprevisto.`,
+    "Ajuste uma falha concreta no material, regra, posição, medida ou comunicação visual. Repita o teste e registre o que melhorou.",
+    "Apresente o protótipo final, o cenário usado, a falha encontrada, a melhoria feita e a evidência observada no novo teste."
   ];
+}
+
+function parseRubricItem(item) {
+  if (!item) return null;
+  if (typeof item === "object") {
+    const criterion = cleanText(item.criterion || item.criteria || item.title || item.name);
+    const observation = cleanText(item.observation || item.observe || item.description || item.text);
+    if (criterion || observation) {
+      return {
+        criterion: criterion || "Critério",
+        observation: finishSentence(observation || "Observar evidências do processo.")
+      };
+    }
+  }
+
+  const text = cleanText(item);
+  if (!text) return null;
+  const [criterion, ...rest] = text.split("|");
+  if (rest.length) {
+    return {
+      criterion: cleanText(criterion),
+      observation: finishSentence(rest.join("|"))
+    };
+  }
+  const [beforeColon, ...afterColon] = text.split(":");
+  if (afterColon.length) {
+    return {
+      criterion: cleanText(beforeColon),
+      observation: finishSentence(afterColon.join(":"))
+    };
+  }
+  return {
+    criterion: text.split(/\s+/).slice(0, 3).join(" "),
+    observation: finishSentence(text)
+  };
 }
 
 function isGenericAssemblyText(text) {
@@ -217,8 +281,19 @@ function isGenericAssemblyText(text) {
   ].some((phrase) => cleaned === phrase || cleaned.includes(`${phrase}.`));
 }
 
-function normalizeStages(stages, compact = false) {
-  const candidates = Array.isArray(stages) ? stages : [];
+function normalizeStages(activity, materials, theme, compact = false) {
+  const candidates = Array.isArray(activity.developmentAssemblySteps)
+    ? activity.developmentAssemblySteps
+    : Array.isArray(activity.assemblySteps)
+      ? activity.assemblySteps
+      : Array.isArray(activity.developmentStages)
+        ? activity.developmentStages
+        : Array.isArray(activity.stages)
+          ? activity.stages
+          : Array.isArray(activity.steps)
+            ? activity.steps
+            : [];
+  const defaultDescriptions = buildDefaultAssemblyDescriptions(theme, materials);
   const maxChars = compact ? LIMITS.stageTight : LIMITS.stage;
 
   return STAGE_TITLES.map((requiredTitle, index) => {
@@ -227,11 +302,14 @@ function normalizeStages(stages, compact = false) {
       typeof stage === "string"
         ? stage
         : getFirstText(stage.description, stage.action, stage.text, stage.procedure);
+    const description = isGenericAssemblyText(rawDescription)
+      ? defaultDescriptions[index]
+      : rawDescription;
 
     return {
       number: index + 1,
       title: requiredTitle,
-      description: limitText(rawDescription || DEFAULT_STAGE_DESCRIPTIONS[index], maxChars)
+      description: limitText(description || DEFAULT_STAGE_DESCRIPTIONS[index], maxChars)
     };
   });
 }
@@ -245,7 +323,7 @@ function normalizeAssemblySteps(activity, materials, theme, compact = false) {
         ? activity.assemblyGuide
         : [];
   const defaultDescriptions = buildDefaultAssemblyDescriptions(theme, materials);
-  const maxChars = compact ? LIMITS.assemblyStepTight : LIMITS.assemblyStep;
+  const maxChars = compact ? LIMITS.stageTight : LIMITS.stage;
 
   return ASSEMBLY_STEP_TITLES.map((requiredTitle, index) => {
     const step = candidates[index] || {};
@@ -265,15 +343,44 @@ function normalizeAssemblySteps(activity, materials, theme, compact = false) {
   });
 }
 
-function buildActivityManual(stages, assemblySteps) {
+function normalizeReadyMaterials(activity, theme, compact = false) {
+  const source = activity.readyMaterials || activity.printableMaterials || activity.scenarios || activity.testScenarios;
+  const fallback = buildDefaultReadyMaterials(theme);
+  const maxItems = 4;
+  const maxChars = compact ? LIMITS.readyMaterialTight : LIMITS.readyMaterial;
+  return compactArray(source, maxItems, maxChars, fallback);
+}
+
+function normalizeAssessmentRubric(activity, compact = false) {
+  const source = Array.isArray(activity.assessmentRubric) && activity.assessmentRubric.length
+    ? activity.assessmentRubric
+    : activity.assessment;
+  const fallback = DEFAULT_ASSESSMENT.map(parseRubricItem).filter(Boolean);
+  const items = Array.isArray(source)
+    ? source.map(parseRubricItem).filter(Boolean)
+    : toTextArray(source).map(parseRubricItem).filter(Boolean);
+  const rubric = (items.length ? items : fallback).slice(0, 4);
+
+  return rubric.map((item) => ({
+    criterion: limitText(item.criterion, 28),
+    observation: limitText(item.observation, compact ? 90 : LIMITS.assessment)
+  }));
+}
+
+function normalizeReferences(value, compact = false) {
+  const references = toTextArray(value)
+    .map(cleanText)
+    .filter((item) => item && !/wikipedia/i.test(item));
+  const selected = (references.length ? references : [FALLBACK_REFERENCE]).slice(0, compact ? 2 : 3);
+  return selected.map((item) => finishSentence(item));
+}
+
+function buildActivityManual(stages) {
   const stageText = stages
     .map((stage) => `${stage.title}\n${stage.description}`)
     .join("\n\n");
-  const assemblyText = assemblySteps
-    .map((step) => `${step.title}\n${step.description}`)
-    .join("\n\n");
 
-  return `${stageText}\n\nCOMO MONTAR A ATIVIDADE NA PRÁTICA\n${assemblyText}`;
+  return `DESENVOLVIMENTO E MONTAGEM DA ATIVIDADE\n${stageText}`;
 }
 
 function estimateContentChars(activity) {
@@ -286,8 +393,10 @@ function estimateContentChars(activity) {
     activity.finalProduct,
     ...(activity.materials || []),
     ...(activity.assessment || []),
+    ...(activity.readyMaterials || []),
     ...(activity.bibliography || []),
     ...(activity.materialFunctions || []),
+    ...(activity.assessmentRubric || []).map((item) => `${item.criterion} ${item.observation}`),
     ...(activity.stages || []).map((stage) => `${stage.title} ${stage.description}`),
     ...(activity.assemblySteps || []).map((step) => `${step.title} ${step.description}`)
   ];
@@ -333,9 +442,8 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
     "Cronômetro ou celular do professor para teste"
   ]);
 
-  const sourceStages = activity.developmentStages || activity.stages || activity.steps || [];
-  let stages = normalizeStages(sourceStages);
-  let assemblySteps = normalizeAssemblySteps(activity, materials, theme);
+  let stages = normalizeStages(activity, materials, theme);
+  let assemblySteps = stages;
   const sourceMaterialFunctions = toTextArray(activity.materialFunctions);
   const materialFunctions = compactArray(
     sourceMaterialFunctions.length >= materials.length ? sourceMaterialFunctions : [],
@@ -343,6 +451,7 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
     LIMITS.materialFunction,
     buildDefaultMaterialFunctions(materials)
   );
+  let readyMaterials = normalizeReadyMaterials(activity, theme);
 
   const makerChallenge = limitText(
     getFirstText(activity.makerChallenge, activity.investigativeChallenge, activity.guidingQuestion) ||
@@ -355,13 +464,9 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
     LIMITS.finalProduct
   );
 
-  const assessment = compactArray(activity.assessment, 4, LIMITS.assessment, DEFAULT_ASSESSMENT);
-  const bibliography = compactArray(
-    activity.bibliography || activity.references,
-    3,
-    LIMITS.reference,
-    [FALLBACK_REFERENCE]
-  );
+  let assessmentRubric = normalizeAssessmentRubric(activity);
+  let assessment = assessmentRubric.map((item) => `${item.criterion} | ${item.observation}`);
+  let bibliography = normalizeReferences(activity.bibliography || activity.references);
 
   let normalized = {
     ...activity,
@@ -374,19 +479,22 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
     guidingQuestion: makerChallenge,
     materials,
     materialFunctions,
+    readyMaterials,
     stages,
     developmentStages: stages,
+    developmentAssemblySteps: stages,
     assemblySteps,
     practicalAssembly: {
-      title: "COMO MONTAR A ATIVIDADE NA PRÁTICA",
+      title: "DESENVOLVIMENTO E MONTAGEM DA ATIVIDADE",
       steps: assemblySteps
     },
     makerChallenge,
     finalProduct,
+    assessmentRubric,
     assessment,
     bibliography,
     summary: buildSummary({ problem, mission, finalProduct }),
-    activityManual: buildActivityManual(stages, assemblySteps),
+    activityManual: buildActivityManual(stages),
     priorKnowledge: [],
     vocabulary: [],
     safetyNotes: [],
@@ -397,25 +505,32 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
 
   const originalChars = estimateContentChars(normalized);
   if (originalChars > LIMITS.maxChars) {
-    stages = normalizeStages(sourceStages, true);
-    assemblySteps = normalizeAssemblySteps(activity, materials, theme, true);
+    stages = normalizeStages(activity, materials, theme, true);
+    assemblySteps = stages;
+    readyMaterials = normalizeReadyMaterials(activity, theme, true);
+    assessmentRubric = normalizeAssessmentRubric(activity, true);
+    assessment = assessmentRubric.map((item) => `${item.criterion} | ${item.observation}`);
+    bibliography = normalizeReferences(activity.bibliography || activity.references, true);
     normalized = {
       ...normalized,
       problem: limitText(problem, 280),
       mission: limitText(mission, 150),
       stages,
       developmentStages: stages,
+      developmentAssemblySteps: stages,
       materialFunctions: materialFunctions.map((item) => limitText(item, 110)),
+      readyMaterials,
       assemblySteps,
       practicalAssembly: {
-        title: "COMO MONTAR A ATIVIDADE NA PRÁTICA",
+        title: "DESENVOLVIMENTO E MONTAGEM DA ATIVIDADE",
         steps: assemblySteps
       },
       makerChallenge: limitText(makerChallenge, 250),
       finalProduct: limitText(finalProduct, 180),
-      assessment: assessment.slice(0, 3).map((item) => limitText(item, 90)),
-      bibliography: bibliography.slice(0, 2).map((item) => limitText(item, 160)),
-      activityManual: buildActivityManual(stages, assemblySteps),
+      assessmentRubric,
+      assessment,
+      bibliography,
+      activityManual: buildActivityManual(stages),
       compactedForTwoPages: true,
       validatedForTwoPages: true
     };
@@ -436,6 +551,8 @@ export function validateLearningExperience(activity) {
     activity.finalProduct,
     activity.activityManual,
     ...(activity.materialFunctions || []),
+    ...(activity.readyMaterials || []),
+    ...(activity.assessmentRubric || []).map((item) => `${item.criterion || ""} ${item.observation || ""}`),
     ...(activity.stages || []).map((stage) => stage.description || "")
       .concat((activity.assemblySteps || []).map((step) => step.description || ""))
   ]
@@ -449,17 +566,19 @@ export function validateLearningExperience(activity) {
   if (!activity.mission) missing.push("missão");
   if (!(activity.materials || []).length) missing.push("materiais");
   if (!(activity.materialFunctions || []).length) missing.push("função dos materiais");
-  if ((activity.stages || []).length !== 6) missing.push("6 etapas obrigatórias");
-  if ((activity.assemblySteps || []).length !== 5) missing.push("como montar na prática");
+  if (!(activity.readyMaterials || []).length) missing.push("materiais prontos");
+  if ((activity.stages || []).length !== 6) missing.push("6 etapas de desenvolvimento e montagem");
+  if ((activity.assemblySteps || []).length !== 6) missing.push("passo a passo de montagem");
   if (!/investig/.test(text)) missing.push("investigação");
   if (!/constru|mont|cria|prototip/.test(text)) missing.push("construção/prototipagem");
   if (!/test/.test(text)) missing.push("teste prático");
   if (!/melhor|ajust|redesign|modific/.test(text)) missing.push("melhoria/redesign");
   if (!/base/.test(text)) missing.push("preparo da base");
   if (!/simula|cen[aá]rio|situa[cç][aã]o real/.test(text)) missing.push("simulação real");
+  if (/\.{3,}|…/.test(text)) missing.push("texto truncado com reticências");
   if (!activity.makerChallenge) missing.push("desafio maker");
   if (!activity.finalProduct) missing.push("produto final");
-  if (!(activity.assessment || []).length) missing.push("avaliação");
+  if (!(activity.assessmentRubric || []).length && !(activity.assessment || []).length) missing.push("avaliação");
   if (!(activity.bibliography || []).length) missing.push("referência");
 
   return {
