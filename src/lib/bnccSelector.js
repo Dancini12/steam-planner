@@ -132,6 +132,21 @@ export function formatBnccSuggestions(habilidades = []) {
     .join("\n");
 }
 
+export function normalizeBnccCode(value = "") {
+  const text = String(value || "").trim().toUpperCase();
+  const match = text.match(/\b[A-Z]{2}\d{2}[A-Z]{2}\d{2}\b/);
+  if (match) return match[0];
+  return text.split(/[—-]/)[0].trim();
+}
+
+export function normalizeBnccCodes(values = []) {
+  return unique(
+    values
+      .map(normalizeBnccCode)
+      .filter(Boolean)
+  );
+}
+
 export function getBnccCodes(habilidades = []) {
   return habilidades.map((habilidade) => habilidade.codigo);
 }

@@ -72,6 +72,8 @@ export function createBlankProject() {
     duration: "",
     problem: "",
     finalProduct: "",
+    mission: "",
+    objective: "",
     steam: [],
     steamMakerDescription: "",
     steamMatrix: {},
@@ -80,6 +82,15 @@ export function createBlankProject() {
     bncc: [],
     materials: [],
     activityManual: "",
+    stages: [],
+    makerChallenge: "",
+    assessment: [],
+    summary: "",
+    priorKnowledge: [],
+    vocabulary: [],
+    safetyNotes: [],
+    activityScaling: {},
+    assemblyGuide: [],
     students: [],
     phases: createEmptyPhases(),
     generatedAt: null,
@@ -109,6 +120,8 @@ export function createProjectFromTemplate(template) {
   project.duration = template.duration || "";
   project.problem = template.problem || "";
   project.finalProduct = template.finalProduct || "";
+  project.mission = template.mission || "";
+  project.objective = template.objective || template.objectives?.[0] || "";
   project.steam = template.steam ? [...template.steam] : [];
   project.steamMakerDescription = template.steamMakerDescription || "";
   project.steamMatrix = template.steamMatrix ? clone(template.steamMatrix) : {};
@@ -117,6 +130,15 @@ export function createProjectFromTemplate(template) {
   project.bncc = template.bncc ? [...template.bncc] : [];
   project.materials = template.materials ? [...template.materials] : [];
   project.activityManual = template.activityManual || "";
+  project.stages = template.stages ? clone(template.stages) : [];
+  project.makerChallenge = template.makerChallenge || template.guidingQuestion || "";
+  project.assessment = template.assessment ? clone(template.assessment) : [];
+  project.summary = template.summary || "";
+  project.priorKnowledge = template.priorKnowledge ? clone(template.priorKnowledge) : [];
+  project.vocabulary = template.vocabulary ? clone(template.vocabulary) : [];
+  project.safetyNotes = template.safetyNotes ? clone(template.safetyNotes) : [];
+  project.activityScaling = template.activityScaling ? clone(template.activityScaling) : {};
+  project.assemblyGuide = template.assemblyGuide ? clone(template.assemblyGuide) : [];
   project.students = template.students ? clone(template.students) : [];
   project.bibliography = template.bibliography ? [...template.bibliography] : [];
   project.generatedAt = template.generatedAt || null;

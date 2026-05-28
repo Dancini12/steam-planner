@@ -1,60 +1,82 @@
 import { useState } from "react";
-import { STEAM_AREAS } from "../data/steamAreas.js";
 import { openActivityPrintWindow } from "../lib/exportReport.js";
 import { trackEvent } from "../lib/analytics.js";
 import { useProjects } from "../hooks/useProjects.js";
+import { normalizeBnccCodes } from "../lib/bnccSelector.js";
+import { normalizeLearningExperience } from "../lib/learningExperience.js";
 import Button from "../components/ui/Button.jsx";
 import { trackActivityRating } from "../lib/machine-learning/behavior-tracking/behaviorTracker.js";
 import BibliographyVerifier from "../components/project/BibliographyVerifier.jsx";
 
-const STEAM_AREA_NAMES = { S: 'Ciências', T: 'Tecnologia', E: 'Engenharia', A: 'Artes', M: 'Matemática' };
+function splitLines(text) {
+  return String(text || "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
 
-function buildSteamMakerText(letters, matrix) {
-  if (!letters.length) return '';
-  const parts = letters.map((l) => {
-    const m = matrix[l] || {};
-    const name = STEAM_AREA_NAMES[l] || l;
-    const contrib = (m.contribution || '').trim();
-    return contrib
-      ? `em ${name}, ${contrib.charAt(0).toLowerCase() + contrib.slice(1)}`
-      : `em ${name}`;
-  });
-  const intro = 'Esta atividade mobiliza a cultura STEAM e a cultura Maker como eixos estruturantes da proposta pedagógica. ';
-  const body = parts.length > 1
-    ? parts.slice(0, -1).join('; ') + `; e ${parts[parts.length - 1]}.`
-    : `${parts[0]}.`;
-  const maker = ' A cultura Maker atravessa toda a sequência ao propor que os estudantes aprendam fazendo — investigando, construindo, testando e aperfeiçoando suas ideias com materiais acessíveis, em um processo colaborativo que valoriza o erro como parte da aprendizagem e o protagonismo como princípio formativo.';
-  return `${intro}${body}${maker}`;
+function getSteamLetters(activity) {
+  return Object.keys(activity.steamMatrix || {}).filter((key) =>
+    ["S", "T", "E", "A", "M"].includes(key)
+  );
 }
 
 export default function ActivityViewer({ activityData, formData, projectId, currentUser, onBack }) {
+  const initialActivity = normalizeLearningExperience(activityData || {}, {
+    theme: activityData?.theme || formData?.theme,
+    grade: activityData?.grade || formData?.grade,
+    discipline: activityData?.discipline || formData?.discipline
+  });
+
   const { editProject } = useProjects(currentUser?.id);
-  const [title, setTitle] = useState(activityData.title || "");
-  const [theme, setTheme] = useState(activityData.theme || "");
-  const [duration, setDuration] = useState(activityData.duration || "");
-  const [problem, setProblem] = useState(activityData.problem || "");
-  const [guidingQuestion, setGuidingQuestion] = useState(activityData.guidingQuestion || "");
-  const [objectivesText, setObjectivesText] = useState((activityData.objectives || []).join("\n"));
-  const [bnccText, setBnccText] = useState((activityData.bncc || []).join(", "));
-  const [materialsText, setMaterialsText] = useState((activityData.materials || []).join("\n"));
-  const [activityManual, setActivityManual] = useState(activityData.activityManual || "");
-  const [steamMatrix] = useState({ ...(activityData.steamMatrix || {}) });
-  const [bibliographyText, setBibliographyText] = useState((activityData.bibliography || []).join("\n"));
-  const [steamMakerText, setSteamMakerText] = useState(
-    activityData.steamMakerDescription ||
-    buildSteamMakerText(Object.keys(activityData.steamMatrix || {}).filter((k) => ["S","T","E","A","M"].includes(k)), activityData.steamMatrix || {})
-  );
-  const [modality, setModality] = useState(activityData.modality || 'grupo');
-  const [studentActivity, setStudentActivity] = useState(activityData.studentActivity || {});
-  const [stages] = useState(activityData.stages || []);
-  const [beforeClass, setBeforeClass] = useState(activityData.beforeClass || '');
-  const [afterClass, setAfterClass] = useState(activityData.afterClass || '');
-  const [teacherTips, setTeacherTips] = useState(activityData.teacherTips || '');
-
+  const [title, setTitle] = useState(initialActivity.title || "");
+  const [duration, setDuration] = useState(initialActivity.duration || "");
+  const [objective, setObjective] = useState(initialActivity.objective || "");
+  const [problem, setProblem] = useState(initialActivity.problem || "");
+  const [mission, setMission] = useState(initialActivity.mission || "");
+  const [materialsText, setMaterialsText] = useState((initialActivity.materials || []).join("\n"));
+  const [stages, setStages] = useState(initialActivity.stages || []);
+  const [makerChallenge, setMakerChallenge] = useState(initialActivity.makerChallenge || "");
+  const [finalProduct, setFinalProduct] = useState(initialActivity.finalProduct || "");
+  const [assessmentText, setAssessmentText] = useState((initialActivity.assessment || []).join("\n"));
+  const [bibliographyText, setBibliographyText] = useState((initialActivity.bibliography || []).join("\n"));
   const [savedMsg, setSavedMsg] = useState("");
-  const [feedbackGiven, setFeedbackGiven] = useState(null); // 'positive' | 'negative' | null
+  const [feedbackGiven, setFeedbackGiven] = useState(null);
 
-  const steamLetters = Object.keys(steamMatrix).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
+  const steamLetters = getSteamLetters(initialActivity);
+
+  const buildCurrentActivity = () => normalizeLearningExperience(
+    {
+      ...initialActivity,
+      title,
+      duration,
+      objective,
+      objectives: [objective],
+      problem,
+      mission,
+      materials: splitLines(materialsText),
+      stages,
+      developmentStages: stages,
+      makerChallenge,
+      guidingQuestion: makerChallenge,
+      finalProduct,
+      assessment: splitLines(assessmentText),
+      bibliography: splitLines(bibliographyText)
+    },
+    {
+      theme: initialActivity.theme || formData?.theme,
+      grade: initialActivity.grade || formData?.grade,
+      discipline: initialActivity.discipline || formData?.discipline
+    }
+  );
+
+  const handleStageChange = (index, value) => {
+    setStages((prev) =>
+      prev.map((stage, stageIndex) =>
+        stageIndex === index ? { ...stage, description: value } : stage
+      )
+    );
+  };
 
   const handleFeedback = (rating) => {
     setFeedbackGiven(rating);
@@ -62,72 +84,46 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       discipline: formData?.discipline || "",
       grade: formData?.grade || "",
       steam: steamLetters,
-      theme,
+      theme: initialActivity.theme || "",
     }).catch(console.error);
   };
 
   const handleSave = () => {
     if (!projectId) return;
+    const currentActivity = buildCurrentActivity();
+
     editProject(projectId, {
-      title,
-      theme,
-      duration,
-      problem,
-      guidingQuestion,
-      objectives: objectivesText.split("\n").map((s) => s.trim()).filter(Boolean),
-      bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
-      materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
-      activityManual,
-      steamMakerDescription: steamMakerText,
-      modality,
-      studentActivity,
-      stages,
-      beforeClass,
-      afterClass,
-      teacherTips,
-      bibliography: bibliographyText.split("\n").map((s) => s.trim()).filter(Boolean)
+      ...currentActivity,
+      bncc: normalizeBnccCodes(currentActivity.bncc || []),
+      generatedAt: activityData.generatedAt || currentActivity.generatedAt || null
     });
+
     setSavedMsg("Alterações salvas.");
     setTimeout(() => setSavedMsg(""), 3000);
   };
 
   const handlePrint = () => {
+    const currentActivity = buildCurrentActivity();
+
     trackEvent(currentUser?.id, "activity_printed", {
       projectId,
-      title,
-      theme,
+      title: currentActivity.title,
+      theme: currentActivity.theme,
       grade: formData?.grade || "",
       discipline: formData?.discipline || "",
       steam: steamLetters,
-      bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean)
+      bncc: normalizeBnccCodes(currentActivity.bncc || [])
     }).catch(console.error);
 
     openActivityPrintWindow({
-      title,
-      theme,
-      duration,
-      problem,
-      guidingQuestion,
-      objectives: objectivesText.split("\n").map((s) => s.trim()).filter(Boolean),
-      bncc: bnccText.split(/[,;]/).map((s) => s.trim()).filter(Boolean),
-      materials: materialsText.split("\n").map((s) => s.trim()).filter(Boolean),
-      activityManual,
-      steamMakerDescription: steamMakerText,
-      modality,
-      studentActivity,
-      stages,
-      beforeClass,
-      afterClass,
-      teacherTips,
-      bibliography: bibliographyText.split("\n").map((s) => s.trim()).filter(Boolean),
+      ...currentActivity,
       generatedAt: activityData.generatedAt || null,
-      grade: formData?.grade || "",
-      discipline: formData?.discipline || ""
+      grade: formData?.grade || initialActivity.grade || "",
+      discipline: formData?.discipline || initialActivity.discipline || ""
     });
   };
 
   const containerStyle = { maxWidth: "860px", margin: "0 auto", padding: "2rem 1.5rem" };
-
   const headerStyle = {
     display: "flex",
     justifyContent: "space-between",
@@ -135,7 +131,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
     marginBottom: "2rem",
     gap: "1rem"
   };
-
   const backButtonStyle = {
     background: "transparent",
     border: "none",
@@ -145,20 +140,17 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
     padding: "0.5rem 0",
     fontFamily: "inherit"
   };
-
-  const sectionStyle = { marginBottom: "2rem" };
-
+  const sectionStyle = { marginBottom: "1.75rem" };
   const sectionTitleStyle = {
     fontSize: "0.7rem",
     textTransform: "uppercase",
     letterSpacing: "0.08em",
     color: "rgba(255, 255, 255, 0.45)",
     fontWeight: 600,
-    marginBottom: "1rem",
-    paddingBottom: "0.5rem",
+    marginBottom: "0.85rem",
+    paddingBottom: "0.45rem",
     borderBottom: "1px solid rgba(255, 255, 255, 0.06)"
   };
-
   const labelStyle = {
     fontSize: "0.7rem",
     textTransform: "uppercase",
@@ -168,7 +160,6 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
     marginBottom: "0.4rem",
     display: "block"
   };
-
   const inputStyle = {
     width: "100%",
     padding: "0.75rem 1rem",
@@ -181,25 +172,20 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
     outline: "none",
     boxSizing: "border-box"
   };
-
   const textareaStyle = (height = "90px") => ({
     ...inputStyle,
     height,
     resize: "vertical",
-    lineHeight: 1.6
+    lineHeight: 1.55
   });
-
   const twoColStyle = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" };
-
-  const matrixCardStyle = (color) => ({
+  const cardStyle = {
     background: "rgba(255, 255, 255, 0.03)",
-    border: "1px solid rgba(255, 255, 255, 0.06)",
-    borderLeft: `3px solid ${color}`,
+    border: "1px solid rgba(255, 255, 255, 0.07)",
     borderRadius: "8px",
-    padding: "1rem",
+    padding: "0.9rem",
     marginBottom: "0.75rem"
-  });
-
+  };
   const footerStyle = {
     display: "flex",
     justifyContent: "space-between",
@@ -223,289 +209,120 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
         </div>
       </div>
 
-      {/* Identificação */}
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Identificação</div>
-        <div style={{ marginBottom: "0.75rem" }}>
-          <label style={labelStyle}>Título</label>
-          <input
-            style={{ ...inputStyle, fontSize: "1.1rem", fontWeight: 600 }}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </div>
+        <div style={sectionTitleStyle}>1. Título</div>
         <div style={twoColStyle}>
           <div>
-            <label style={labelStyle}>Subtítulo / Tema</label>
-            <input style={inputStyle} value={theme} onChange={(e) => setTheme(e.target.value)} />
+            <label style={labelStyle}>Título</label>
+            <input
+              style={{ ...inputStyle, fontSize: "1.1rem", fontWeight: 600 }}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+            />
           </div>
           <div>
             <label style={labelStyle}>Duração</label>
-            <input style={inputStyle} value={duration} onChange={(e) => setDuration(e.target.value)} />
-          </div>
-        </div>
-        <div style={{ marginTop: "0.75rem" }}>
-          <label style={labelStyle}>Modalidade</label>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            {[
-              { value: 'grupo', label: 'Em grupo', icon: '👥' },
-              { value: 'individual', label: 'Individual', icon: '👤' },
-            ].map(({ value, label, icon }) => {
-              const active = modality === value;
-              return (
-                <button
-                  key={value}
-                  onClick={() => setModality(value)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.4rem",
-                    padding: "0.55rem 1.1rem",
-                    borderRadius: "8px",
-                    border: active ? "1px solid rgba(110,231,183,0.6)" : "1px solid rgba(255,255,255,0.08)",
-                    background: active ? "rgba(110,231,183,0.1)" : "rgba(255,255,255,0.04)",
-                    color: active ? "#6EE7B7" : "rgba(255,255,255,0.5)",
-                    fontSize: "0.88rem",
-                    fontWeight: active ? 600 : 400,
-                    fontFamily: "inherit",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  <span>{icon}</span>
-                  <span>{label}</span>
-                </button>
-              );
-            })}
+            <input
+              style={inputStyle}
+              value={duration}
+              onChange={(event) => setDuration(event.target.value)}
+            />
           </div>
         </div>
       </div>
 
-      {/* Problema e Questão Norteadora */}
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Problema e Questão Norteadora</div>
-        <div style={{ marginBottom: "0.75rem" }}>
-          <label style={labelStyle}>Problema ou desafio central</label>
-          <textarea style={textareaStyle("80px")} value={problem} onChange={(e) => setProblem(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Questão norteadora</label>
-          <textarea style={textareaStyle("60px")} value={guidingQuestion} onChange={(e) => setGuidingQuestion(e.target.value)} />
-        </div>
-      </div>
-
-      {/* Matriz STEAM e Cultura Maker */}
-      <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Matriz STEAM e Cultura Maker</div>
-        <label style={labelStyle}>Texto dissertativo sobre como STEAM e Cultura Maker se integram nesta atividade</label>
+        <div style={sectionTitleStyle}>2. Objetivo geral curto</div>
         <textarea
-          style={textareaStyle("160px")}
-          value={steamMakerText}
-          onChange={(e) => setSteamMakerText(e.target.value)}
+          style={textareaStyle("70px")}
+          value={objective}
+          onChange={(event) => setObjective(event.target.value)}
         />
       </div>
 
-      {/* Objetivos, BNCC, Materiais */}
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Objetivos e Conteúdo</div>
-        <div style={{ marginBottom: "0.75rem" }}>
-          <label style={labelStyle}>Objetivos de aprendizagem (um por linha)</label>
-          <textarea style={textareaStyle("120px")} value={objectivesText} onChange={(e) => setObjectivesText(e.target.value)} />
-        </div>
+        <div style={sectionTitleStyle}>3. Problema/desafio</div>
         <div style={twoColStyle}>
           <div>
-            <label style={labelStyle}>Habilidades BNCC (separadas por vírgula)</label>
-            <input style={inputStyle} value={bnccText} onChange={(e) => setBnccText(e.target.value)} />
+            <label style={labelStyle}>Problema real</label>
+            <textarea
+              style={textareaStyle("110px")}
+              value={problem}
+              onChange={(event) => setProblem(event.target.value)}
+            />
           </div>
           <div>
-            <label style={labelStyle}>Materiais (um por linha)</label>
-            <textarea style={textareaStyle("80px")} value={materialsText} onChange={(e) => setMaterialsText(e.target.value)} />
+            <label style={labelStyle}>Missão</label>
+            <textarea
+              style={textareaStyle("110px")}
+              value={mission}
+              onChange={(event) => setMission(event.target.value)}
+            />
           </div>
         </div>
       </div>
 
-      {/* Manual */}
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Instruções de aplicação</div>
-        <label style={labelStyle}>Como preparar, conduzir, desenvolver STEAM/Maker e fechar a atividade</label>
+        <div style={sectionTitleStyle}>4. Materiais</div>
         <textarea
-          style={textareaStyle("180px")}
-          value={activityManual}
-          onChange={(e) => setActivityManual(e.target.value)}
-          placeholder="1. Materiais necessários&#10;- Material — quantidade e uso.&#10;&#10;2. Passo a passo da atividade&#10;Engenharia e Matemática: organize a estrutura, medidas e montagem.&#10;Ciência e Tecnologia: investigue o funcionamento e teste a solução.&#10;Teste e Arte: melhore, finalize visualmente e apresente.&#10;&#10;3. Integração STEAM e Cultura Maker&#10;Explique como a turma investigou, construiu, testou, melhorou e apresentou."
+          style={textareaStyle("120px")}
+          value={materialsText}
+          onChange={(event) => setMaterialsText(event.target.value)}
         />
       </div>
 
-      {/* Referências */}
       <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>Referências Bibliográficas</div>
-        <label style={labelStyle}>Referências ABNT (uma por linha)</label>
-        <textarea style={textareaStyle("120px")} value={bibliographyText} onChange={(e) => setBibliographyText(e.target.value)} />
-        <BibliographyVerifier
-          references={bibliographyText.split('\n').map((s) => s.trim()).filter(Boolean)}
+        <div style={sectionTitleStyle}>5. Desenvolvimento da atividade</div>
+        {stages.map((stage, index) => (
+          <div key={stage.number || index} style={cardStyle}>
+            <label style={{ ...labelStyle, color: "#6EE7B7" }}>{stage.title}</label>
+            <textarea
+              style={textareaStyle("92px")}
+              value={stage.description || ""}
+              onChange={(event) => handleStageChange(index, event.target.value)}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div style={sectionStyle}>
+        <div style={sectionTitleStyle}>6. Desafio Maker</div>
+        <textarea
+          style={textareaStyle("95px")}
+          value={makerChallenge}
+          onChange={(event) => setMakerChallenge(event.target.value)}
         />
       </div>
 
-      {/* Atividade do Aluno */}
-      {(studentActivity?.textBase || studentActivity?.questions?.length > 0) && (
-        <div style={sectionStyle}>
-          <div style={{ ...sectionTitleStyle, color: "#6EE7B7", borderBottom: "1px solid rgba(110,231,183,0.2)" }}>
-            Atividade do Aluno
-          </div>
-          <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.4)", marginBottom: "1.2rem" }}>
-            Material para uso direto pelo estudante — texto-base, situação-problema, perguntas e desafio prático.
-          </p>
+      <div style={sectionStyle}>
+        <div style={sectionTitleStyle}>7. Produto final</div>
+        <textarea
+          style={textareaStyle("85px")}
+          value={finalProduct}
+          onChange={(event) => setFinalProduct(event.target.value)}
+        />
+      </div>
 
-          {/* Texto-base */}
-          {studentActivity.textBase && (
-            <div style={{ marginBottom: "1rem" }}>
-              <label style={labelStyle}>Texto-base / Reportagem</label>
-              <textarea
-                style={textareaStyle("160px")}
-                value={studentActivity.textBase}
-                onChange={(e) => setStudentActivity((prev) => ({ ...prev, textBase: e.target.value }))}
-              />
-              {studentActivity.sourceInfo && (
-                <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.35)", marginTop: "0.3rem", fontStyle: "italic" }}>
-                  <input
-                    style={{ ...inputStyle, fontSize: "0.8rem", color: "rgba(255,255,255,0.5)", padding: "0.4rem 0.75rem" }}
-                    value={studentActivity.sourceInfo}
-                    onChange={(e) => setStudentActivity((prev) => ({ ...prev, sourceInfo: e.target.value }))}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+      <div style={sectionStyle}>
+        <div style={sectionTitleStyle}>8. Avaliação</div>
+        <textarea
+          style={textareaStyle("120px")}
+          value={assessmentText}
+          onChange={(event) => setAssessmentText(event.target.value)}
+        />
+      </div>
 
-          {/* Situação-problema + Desafio */}
-          <div style={twoColStyle}>
-            {studentActivity.situationProblem && (
-              <div>
-                <label style={labelStyle}>Situação-problema</label>
-                <textarea
-                  style={textareaStyle("90px")}
-                  value={studentActivity.situationProblem}
-                  onChange={(e) => setStudentActivity((prev) => ({ ...prev, situationProblem: e.target.value }))}
-                />
-              </div>
-            )}
-            {studentActivity.investigativeChallenge && (
-              <div>
-                <label style={labelStyle}>Desafio investigativo</label>
-                <textarea
-                  style={textareaStyle("90px")}
-                  value={studentActivity.investigativeChallenge}
-                  onChange={(e) => setStudentActivity((prev) => ({ ...prev, investigativeChallenge: e.target.value }))}
-                />
-              </div>
-            )}
-          </div>
+      <div style={sectionStyle}>
+        <div style={sectionTitleStyle}>9. Referência do conteúdo utilizado</div>
+        <textarea
+          style={textareaStyle("115px")}
+          value={bibliographyText}
+          onChange={(event) => setBibliographyText(event.target.value)}
+        />
+        <BibliographyVerifier references={splitLines(bibliographyText)} />
+      </div>
 
-          {/* Perguntas */}
-          {studentActivity.questions?.length > 0 && (
-            <div style={{ marginTop: "0.75rem" }}>
-              <label style={labelStyle}>Perguntas ({studentActivity.questions.length})</label>
-              {studentActivity.questions.map((q, qi) => (
-                <div key={qi} style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start", marginBottom: "0.4rem" }}>
-                  <span style={{ fontSize: "0.78rem", color: "#6EE7B7", fontWeight: 700, minWidth: "1.2rem", paddingTop: "0.85rem" }}>{qi + 1}.</span>
-                  <input
-                    style={inputStyle}
-                    value={q}
-                    onChange={(e) => {
-                      const next = [...studentActivity.questions];
-                      next[qi] = e.target.value;
-                      setStudentActivity((prev) => ({ ...prev, questions: next }));
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Atividade prática */}
-          {studentActivity.practicalActivity && (
-            <div style={{ marginTop: "0.75rem" }}>
-              <label style={labelStyle}>Atividade prática / Desafio Maker</label>
-              <textarea
-                style={textareaStyle("120px")}
-                value={studentActivity.practicalActivity}
-                onChange={(e) => setStudentActivity((prev) => ({ ...prev, practicalActivity: e.target.value }))}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Antes da Aula */}
-      {(beforeClass || activityData.beforeClass) && (
-        <div style={sectionStyle}>
-          <div style={sectionTitleStyle}>Preparação — Antes da Aula</div>
-          <label style={labelStyle}>O que preparar antes da aula</label>
-          <textarea style={textareaStyle("120px")} value={beforeClass} onChange={(e) => setBeforeClass(e.target.value)} />
-        </div>
-      )}
-
-      {/* Roteiro Pedagógico — Etapas */}
-      {stages.length > 0 && (
-        <div style={sectionStyle}>
-          <div style={sectionTitleStyle}>Roteiro Pedagógico — {stages.length} Etapas</div>
-          {stages.map((stage, i) => (
-            <div key={i} style={{ ...matrixCardStyle("#4F46E5"), marginBottom: "1rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.3rem" }}>
-                <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#4F46E5" }}>
-                  Etapa {stage.number || i + 1} — {stage.title || ""}
-                </div>
-                {stage.duration && (
-                  <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.45)", fontStyle: "italic" }}>⏱ {stage.duration}</div>
-                )}
-              </div>
-              {stage.objective && (
-                <div style={{ fontSize: "0.82rem", color: "#6EE7B7", marginBottom: "0.4rem" }}>{stage.objective}</div>
-              )}
-              {stage.description && (
-                <p style={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.8)", lineHeight: 1.55, marginBottom: "0.5rem" }}>{stage.description}</p>
-              )}
-              {stage.teacherScript && (
-                <div style={{ background: "rgba(79,70,229,0.08)", border: "1px solid rgba(79,70,229,0.2)", borderRadius: "6px", padding: "0.5rem 0.75rem", marginBottom: "0.4rem" }}>
-                  <div style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "#4F46E5", fontWeight: 600, marginBottom: "0.25rem" }}>Roteiro do professor</div>
-                  <p style={{ fontSize: "0.84rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}>{stage.teacherScript}</p>
-                </div>
-              )}
-              {stage.questions?.length > 0 && (
-                <div>
-                  <div style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "rgba(255,255,255,0.4)", fontWeight: 600, marginBottom: "0.25rem" }}>Perguntas norteadoras</div>
-                  <ul style={{ paddingLeft: "1.2rem", margin: 0 }}>
-                    {stage.questions.map((q, qi) => (
-                      <li key={qi} style={{ fontSize: "0.84rem", color: "rgba(255,255,255,0.7)", marginBottom: "0.2rem" }}>{q}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Após a Aula */}
-      {(afterClass || activityData.afterClass) && (
-        <div style={sectionStyle}>
-          <div style={sectionTitleStyle}>Encerramento — Após a Aula</div>
-          <label style={labelStyle}>Reflexão, avaliação formativa e próximos passos</label>
-          <textarea style={textareaStyle("120px")} value={afterClass} onChange={(e) => setAfterClass(e.target.value)} />
-        </div>
-      )}
-
-      {/* Dicas para o Professor */}
-      {(teacherTips || activityData.teacherTips) && (
-        <div style={sectionStyle}>
-          <div style={sectionTitleStyle}>Dicas para o Professor</div>
-          <label style={labelStyle}>Orientações práticas e sugestões pedagógicas</label>
-          <textarea style={textareaStyle("140px")} value={teacherTips} onChange={(e) => setTeacherTips(e.target.value)} />
-        </div>
-      )}
-
-      {/* Feedback de qualidade */}
-      <div style={{ marginBottom: "2rem", padding: "1.25rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "12px" }}>
+      <div style={{ marginBottom: "2rem", padding: "1.25rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "8px" }}>
         {feedbackGiven ? (
           <p style={{ margin: 0, fontSize: "0.88rem", color: "#6EE7B7", textAlign: "center" }}>
             {feedbackGiven === "positive"
@@ -526,11 +343,18 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
                   key={value}
                   onClick={() => handleFeedback(value)}
                   style={{
-                    display: "flex", alignItems: "center", gap: "0.4rem",
-                    padding: "0.45rem 1rem", borderRadius: "8px", cursor: "pointer",
-                    background: "rgba(255,255,255,0.05)", fontFamily: "inherit",
-                    border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)",
-                    fontSize: "0.85rem", transition: "all 0.15s",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    padding: "0.45rem 1rem",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    background: "rgba(255,255,255,0.05)",
+                    fontFamily: "inherit",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    color: "rgba(255,255,255,0.7)",
+                    fontSize: "0.85rem",
+                    transition: "all 0.15s"
                   }}
                 >
                   <span>{icon}</span>

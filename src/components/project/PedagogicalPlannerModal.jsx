@@ -60,9 +60,9 @@ const PERSONALIZATION_OPTIONS = {
     title: 'Nível de detalhamento',
     type: 'single',
     options: [
-      { id: 'passo_a_passo', label: 'Passo a passo detalhado', instruction: 'Detalhar a execução em passos numerados, com ações claras para professor e alunos.' },
-      { id: 'resumo_pratico', label: 'Resumo prático', instruction: 'Manter a atividade objetiva, com instruções diretas e sem excesso de texto.' },
-      { id: 'roteiro_completo', label: 'Roteiro completo', instruction: 'Criar um roteiro completo, com preparação, condução, fechamento e possíveis intervenções.' }
+      { id: 'resumo_pratico', label: 'Resumo prático', instruction: 'Manter a experiência objetiva, com instruções diretas e sem excesso de texto.' },
+      { id: 'passo_a_passo', label: 'Etapas curtas', instruction: 'Organizar a execução em 6 etapas curtas, com foco em ação, construção, teste e melhoria.' },
+      { id: 'roteiro_completo', label: 'Oficina compacta', instruction: 'Incluir todos os elementos obrigatórios da oficina sem criar seções extras ou fundamentação longa.' }
     ]
   },
   materials: {
@@ -85,7 +85,7 @@ const PERSONALIZATION_OPTIONS = {
 }
 
 const defaultPersonalization = {
-  detailLevel: 'passo_a_passo',
+  detailLevel: 'resumo_pratico',
   materials: 'quantidade_grupo',
   assessment: 'observacao'
 }

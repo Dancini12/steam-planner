@@ -14,6 +14,8 @@
 
 import { PHASES } from "../data/phases.js";
 import { STEAM_AREAS } from "../data/steamAreas.js";
+import { normalizeBnccCodes } from "./bnccSelector.js";
+import { normalizeLearningExperience } from "./learningExperience.js";
 
 function renderBulletText(text) {
   if (!text) return ''
@@ -92,21 +94,144 @@ function renderReferenceList(references) {
   return html || renderBlankLines(2);
 }
 
-function renderBnccTable(bncc) {
-  const rows = (bncc || [])
-    .map((item) => stripDecorativeMarkers(item))
-    .filter(Boolean)
-    .map((item) => {
-      const sep = item.indexOf(" — ");
-      const code = sep > -1 ? item.slice(0, sep).trim() : item.trim();
-      const desc = sep > -1 ? item.slice(sep + 3).trim() : "";
-      return `<tr><td>${escapeHtml(code)}</td><td>${escapeHtml(desc)}</td></tr>`;
-    })
-    .join("");
+function renderBnccCodes(bncc) {
+  const codes = normalizeBnccCodes(bncc || []);
+  return codes.length ? `<p><strong>Habilidades BNCC:</strong> ${escapeHtml(codes.join(", "))}</p>` : "";
+}
 
-  return rows
-    ? `<table class="academic-table"><thead><tr><th>Código</th><th>Habilidade mobilizada</th></tr></thead><tbody>${rows}</tbody></table>`
-    : "";
+function normalizeTextItems(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripDecorativeMarkers(item)).filter(Boolean);
+  }
+  return splitTextItems(value);
+}
+
+function normalizeVocabulary(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === "string") {
+        const [term, ...definitionParts] = stripDecorativeMarkers(item).split(":");
+        return {
+          term: (term || "").trim(),
+          definition: definitionParts.join(":").trim()
+        };
+      }
+
+      return {
+        term: stripDecorativeMarkers(item?.term || item?.word || ""),
+        definition: stripDecorativeMarkers(item?.definition || item?.meaning || "")
+      };
+    })
+    .filter((item) => item.term || item.definition);
+}
+
+function getActivitySummary(activity) {
+  if (activity.summary) return stripDecorativeMarkers(activity.summary);
+  const title = stripDecorativeMarkers(activity.title || "atividade prática");
+  const problem = stripDecorativeMarkers(activity.problem || "");
+  const guidingQuestion = stripDecorativeMarkers(activity.guidingQuestion || "");
+
+  if (problem || guidingQuestion) {
+    return `${problem || guidingQuestion} A proposta organiza uma investigação prática em que os estudantes planejam, constroem, testam e aprimoram uma solução, registrando evidências do processo e socializando as conclusões.`;
+  }
+
+  return `Nesta atividade prática, os estudantes investigam o tema ${title.toLowerCase()}, constroem uma solução com materiais acessíveis, testam o resultado e propõem melhorias a partir das evidências observadas.`;
+}
+
+function renderOverviewTable({ grade, duration, modality, discipline, steamLetters, bncc }) {
+  const steamNames = steamLetters
+    .map((letter) => STEAM_AREAS[letter]?.name || STEAM_AREA_NAMES[letter] || letter)
+    .join(", ");
+  const rows = [
+    ["Nível de escolaridade", grade || "A definir"],
+    ["Tempo necessário", duration || "A definir"],
+    ["Tamanho do grupo", modality === "individual" ? "Individual" : "2 a 4 estudantes"],
+    ["Área / disciplina", [discipline, steamNames].filter(Boolean).join(" + ") || "STEAM e Cultura Maker"],
+    ["Códigos BNCC", normalizeBnccCodes(bncc || []).join(", ") || "A definir"]
+  ];
+
+  return `<table class="overview-table"><tbody>${rows
+    .map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`)
+    .join("")}</tbody></table>`;
+}
+
+function renderVocabulary(value) {
+  const vocabulary = normalizeVocabulary(value);
+  if (!vocabulary.length) return "";
+
+  return `<dl class="vocabulary-list">${vocabulary
+    .map((item) => `<div><dt>${cleanHtml(item.term)}</dt><dd>${cleanHtml(item.definition)}</dd></div>`)
+    .join("")}</dl>`;
+}
+
+function renderScaling(value) {
+  if (!value) return "";
+  if (typeof value === "string" || Array.isArray(value)) {
+    return renderSimpleList(normalizeTextItems(value));
+  }
+
+  const items = [
+    value.support ? `<li><strong>Para apoiar:</strong> ${cleanHtml(value.support)}</li>` : "",
+    value.challenge ? `<li><strong>Para ampliar:</strong> ${cleanHtml(value.challenge)}</li>` : "",
+    value.lowerGrades ? `<li><strong>Adaptação inicial:</strong> ${cleanHtml(value.lowerGrades)}</li>` : "",
+    value.higherGrades ? `<li><strong>Adaptação avançada:</strong> ${cleanHtml(value.higherGrades)}</li>` : ""
+  ].filter(Boolean);
+
+  return items.length ? `<ul>${items.join("")}</ul>` : "";
+}
+
+function getDiagramClass(step) {
+  const type = stripDecorativeMarkers(step?.diagramType || "").toLowerCase();
+  const title = stripDecorativeMarkers(step?.title || "").toLowerCase();
+  const text = `${type} ${title}`;
+  if (/circuit|energia|eletric|sensor|led/.test(text)) return "circuit";
+  if (/medid|dados|régua|regua|escala|calibr/.test(text)) return "measure";
+  if (/teste|lançamento|lancamento|voo|simula|experimento/.test(text)) return "test";
+  return "prototype";
+}
+
+function renderAssemblyGuide(assemblyGuide) {
+  const steps = Array.isArray(assemblyGuide)
+    ? assemblyGuide
+    : normalizeTextItems(assemblyGuide).map((instruction, index) => ({
+        title: `Etapa ${index + 1}`,
+        instruction
+      }));
+
+  const normalized = steps
+    .map((step, index) => {
+      if (typeof step === "string") {
+        return { title: `Etapa ${index + 1}`, instruction: step };
+      }
+      return step || {};
+    })
+    .filter((step) => step.title || step.instruction || step.caption);
+
+  if (!normalized.length) return "";
+
+  return `<div class="assembly-grid">${normalized.slice(0, 4).map((step, index) => {
+    const labels = normalizeTextItems(step.labels || []).slice(0, 3);
+    const title = stripDecorativeMarkers(step.title || `Etapa ${index + 1}`);
+    const instruction = stripDecorativeMarkers(step.instruction || step.description || "");
+    const caption = stripDecorativeMarkers(step.caption || `Figura ${index + 1}. ${title}.`);
+    const diagramClass = getDiagramClass(step);
+
+    return `<figure class="assembly-figure">
+      <div class="diagram ${diagramClass}">
+        <span class="diagram-number">${index + 1}</span>
+        <span class="shape main"></span>
+        <span class="shape side-a"></span>
+        <span class="shape side-b"></span>
+        <span class="shape base"></span>
+        <span class="connector connector-a"></span>
+        <span class="connector connector-b"></span>
+      </div>
+      <figcaption><strong>${cleanHtml(caption)}</strong></figcaption>
+      ${instruction ? `<p>${formatCleanMultiline(instruction)}</p>` : ""}
+      ${labels.length ? `<p class="figure-labels">${labels.map(cleanHtml).join(" | ")}</p>` : ""}
+    </figure>`;
+  }).join("")}</div>`;
 }
 
 function buildSteamInterfaceText({ steamLetters, steamMatrix, steamMakerDescription }) {
@@ -176,7 +301,6 @@ function renderStudentMaterial(studentActivity, title) {
     .join("");
 
   return `<div class="subsection student-material">
-    <h3>Material do aluno</h3>
     <div class="student-id">
       <span>Nome: <span class="line"></span></span>
       <span>Data: <span class="short-line"></span></span>
@@ -192,163 +316,148 @@ function renderStudentMaterial(studentActivity, title) {
   </div>`;
 }
 
+function renderExperienceStages(stages) {
+  return (stages || [])
+    .map((stage, index) => {
+      const title = stripDecorativeMarkers(stage?.title || `ETAPA ${index + 1}`);
+      const description = stripDecorativeMarkers(stage?.description || "");
+      return `<div class="stage">
+        <h3>${escapeHtml(title)}</h3>
+        <p>${formatCleanMultiline(description)}</p>
+      </div>`;
+    })
+    .join("");
+}
+
 function buildActivityPrintHTML(activity) {
-  const { title, theme, duration, problem, guidingQuestion, objectives, bncc, materials, activityManual, steamMatrix, steamMakerDescription, bibliography, grade, discipline, stages, beforeClass, afterClass, teacherTips, modality, studentActivity } = activity;
-
-  const steamLetters = Object.keys(steamMatrix || {}).filter((k) => ["S", "T", "E", "A", "M"].includes(k));
-  const { competencias, desenvolvimento } = parseActivityManual(activityManual);
-  const areaText = [discipline, grade].filter(Boolean).join(" - ");
-  const themeText = [title, theme].filter(Boolean).join(" - ");
-  const objectiveItems = (objectives || []).map(stripDecorativeMarkers).filter(Boolean);
-  const generalObjective = objectiveItems[0] || "Promover uma experiência de aprendizagem ativa, investigativa e interdisciplinar, articulando STEAM, Cultura Maker e resolução de problemas.";
-  const specificObjectives = objectiveItems.slice(1);
-  const steamInterfaceText = buildSteamInterfaceText({ steamLetters, steamMatrix, steamMakerDescription });
-  const steamMatrixHTML = renderSteamMatrixList(steamLetters, steamMatrix);
-  const bnccHTML = renderBnccTable(bncc);
-  const stagesHTML = renderActivityStages(stages);
-  const studentMaterialHTML = renderStudentMaterial(studentActivity, title);
-  const beforeClassItems = splitTextItems(beforeClass);
-  const afterClassItems = splitTextItems(afterClass);
-  const teacherTipsItems = splitTextItems(teacherTips);
-  const activityManualHTML = stagesHTML ? "" : renderParagraph(desenvolvimento || competencias || activityManual);
-
-  const modalityText = modality === 'individual'
-    ? 'A atividade será desenvolvida individualmente, com registro pessoal das hipóteses, decisões, testes e conclusões.'
-    : 'A atividade será desenvolvida em grupos, com divisão de papéis, colaboração e socialização das soluções construídas.';
-
-  const metodologiaText = steamLetters.length > 0
-    ? `A metodologia combina aprendizagem ativa, Cultura Maker e integração STEAM nas áreas de ${steamLetters.map(l => STEAM_AREAS[l]?.name || STEAM_AREA_NAMES[l] || l).join(', ')}. Os estudantes investigam o problema, constroem uma solução, testam possibilidades, registram evidências e revisam o produto a partir dos resultados obtidos.`
-    : 'A metodologia combina aprendizagem ativa, Cultura Maker e resolução de problemas. Os estudantes investigam, constroem, testam, registram evidências e revisam suas soluções.';
-
-  const assessmentItems = [
-    "Participação e colaboração durante a investigação e a construção.",
-    "Clareza dos registros, hipóteses, testes e justificativas apresentados.",
-    "Capacidade de revisar o protótipo ou produto a partir das evidências coletadas.",
-    "Socialização das descobertas e argumentação sobre as escolhas realizadas."
-  ];
+  const experience = normalizeLearningExperience(activity);
+  const assessmentItems = normalizeTextItems(experience.assessment || []);
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Plano de Aula - ${cleanHtml(title || 'Atividade Pedagógica')}</title>
+  <title>${cleanHtml(experience.title || 'Experiência STEAM Maker')}</title>
   <style>
-    @page { size: A4; margin: 2.5cm 2cm; }
+    @page { size: A4; margin: 1.15cm 1.25cm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 11pt;
-      line-height: 1.58;
+      font-size: 9.6pt;
+      line-height: 1.34;
       color: #000;
       background: #fff;
-      padding: 2.5cm 2cm;
+      padding: 1.15cm 1.25cm;
       max-width: 21cm;
       margin: 0 auto;
     }
-    .header { text-align: center; margin-bottom: 0.75cm; }
-    .header h1 { font-size: 16pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0; }
-    .ident { width: 100%; border-collapse: collapse; margin-bottom: 0.75cm; font-size: 10.5pt; }
-    .ident td { border: 1px solid #cfcfcf; padding: 0.18cm 0.28cm; vertical-align: top; }
-    .ident .label { width: 22%; font-weight: 700; background: #f6f6f6; }
-    .blank-field { display: block; min-height: 0.45cm; border-bottom: 1px solid #999; }
-    .section { margin-top: 0.55cm; page-break-inside: avoid; }
-    .section-title {
-      font-size: 11pt;
-      font-weight: 700;
-      text-transform: uppercase;
-      border-bottom: 1px solid #000;
-      padding-bottom: 0.12cm;
-      margin-bottom: 0.3cm;
+    .header {
+      display: grid;
+      grid-template-columns: 0.55cm 1fr;
+      gap: 0.32cm;
+      align-items: start;
+      margin-bottom: 0.34cm;
+      border-bottom: 2px solid #111;
+      padding-bottom: 0.22cm;
     }
-    h3 { font-size: 10.5pt; font-weight: 700; margin: 0.28cm 0 0.16cm; }
-    p { text-align: justify; margin-bottom: 0.22cm; }
-    ul, ol { padding-left: 1cm; margin-bottom: 0.24cm; }
-    li { margin-bottom: 0.1cm; text-align: justify; }
-    .subsection { margin-top: 0.3cm; }
-    .muted, .source { color: #555; font-size: 9.5pt; font-style: italic; }
-    .step { border-left: 2px solid #555; padding-left: 0.35cm; margin-bottom: 0.3cm; page-break-inside: avoid; }
-    .academic-table { width: 100%; border-collapse: collapse; margin-top: 0.2cm; font-size: 9.5pt; }
-    .academic-table th, .academic-table td { border: 1px solid #d3d3d3; padding: 0.14cm 0.22cm; vertical-align: top; text-align: left; }
-    .academic-table th { background: #f6f6f6; font-weight: 700; }
-    .blank-line { border-bottom: 1px solid #bbb; height: 0.58cm; margin-bottom: 0.16cm; }
-    .ref { padding-left: 1.25cm; text-indent: -1.25cm; font-size: 10pt; line-height: 1.45; }
-    .student-material { border-top: 1px solid #d3d3d3; padding-top: 0.25cm; }
-    .student-id { display: flex; flex-wrap: wrap; gap: 0.5cm; margin-bottom: 0.25cm; font-size: 10pt; }
-    .line, .short-line { display: inline-block; border-bottom: 1px solid #000; vertical-align: bottom; }
-    .line { width: 7cm; }
-    .short-line { width: 2.6cm; }
-    @media print { body { padding: 0; } .section { page-break-inside: avoid; } .section-title { page-break-after: avoid; } }
+    .section-number {
+      width: 0.48cm;
+      height: 0.48cm;
+      border: 1.5px solid #111;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 8pt;
+      margin-right: 0.16cm;
+      flex: 0 0 auto;
+    }
+    .doc-type { font-size: 8.2pt; font-weight: 700; text-transform: uppercase; color: #555; margin-bottom: 0.08cm; letter-spacing: 0.02cm; }
+    .header h1 { font-size: 16pt; font-weight: 700; line-height: 1.12; }
+    .section { margin-top: 0.26cm; page-break-inside: avoid; }
+    .section-heading { display: flex; align-items: center; border-bottom: 1px solid #777; padding-bottom: 0.08cm; margin-bottom: 0.13cm; }
+    .section-title {
+      font-size: 9.6pt;
+      font-weight: 700;
+    }
+    h3 { font-size: 9pt; font-weight: 700; margin-bottom: 0.06cm; }
+    p { text-align: left; margin-bottom: 0.11cm; }
+    ul, ol { padding-left: 0.55cm; margin-bottom: 0.08cm; }
+    li { margin-bottom: 0.05cm; text-align: left; }
+    .mission { border-left: 2px solid #111; padding-left: 0.22cm; margin-top: 0.1cm; }
+    .stages { display: grid; grid-template-columns: 1fr 1fr; gap: 0.15cm 0.32cm; }
+    .stage { page-break-inside: avoid; }
+    .ref { padding-left: 0.8cm; text-indent: -0.8cm; font-size: 8.8pt; line-height: 1.25; }
+    body.tight { font-size: 8.8pt; line-height: 1.25; padding: 0.9cm 1.05cm; }
+    body.tight .header h1 { font-size: 14pt; }
+    body.tight .section { margin-top: 0.18cm; }
+    body.tight .stages { gap: 0.1cm 0.25cm; }
+    body.ultra-tight { font-size: 8.2pt; line-height: 1.18; }
+    body.ultra-tight .section { margin-top: 0.14cm; }
+    @media print { body { padding: 0; } .section, .stage { page-break-inside: avoid; } .section-title { page-break-after: avoid; } }
   </style>
 </head>
 <body>
 
   <div class="header">
-    <h1>PLANO DE AULA</h1>
-  </div>
-
-  <table class="ident">
-    <tr><td class="label">Instituição</td><td><span class="blank-field">&nbsp;</span></td></tr>
-    <tr><td class="label">Área</td><td>${areaText ? cleanHtml(areaText) : '<span class="blank-field">&nbsp;</span>'}</td></tr>
-    <tr><td class="label">Professor</td><td><span class="blank-field">&nbsp;</span></td></tr>
-    <tr><td class="label">Tema</td><td>${themeText ? cleanHtml(themeText) : '<span class="blank-field">&nbsp;</span>'}</td></tr>
-    <tr><td class="label">Horário</td><td><span class="blank-field">&nbsp;</span></td></tr>
-    <tr><td class="label">Data</td><td><span class="blank-field">&nbsp;</span></td></tr>
-    <tr><td class="label">Local</td><td><span class="blank-field">&nbsp;</span></td></tr>
-  </table>
-
-  <div class="section">
-    <div class="section-title">1. OBJETIVOS</div>
-    <p><strong>Objetivo geral:</strong> ${escapeHtml(generalObjective)}</p>
-    <p><strong>Objetivos específicos:</strong></p>
-    ${renderSimpleList(specificObjectives, 2)}
-  </div>
-
-  <div class="section">
-    <div class="section-title">2. METODOLOGIA</div>
-    <p>${metodologiaText}</p>
-    <p>${modalityText}${duration ? ` Tempo previsto: ${cleanHtml(duration)}.` : ""}</p>
-    ${beforeClassItems.length ? `<p><strong>Preparação prévia:</strong></p>${renderSimpleList(beforeClassItems)}` : ""}
-  </div>
-
-  <div class="section">
-    <div class="section-title">3. INTERFACE</div>
-    ${problem ? `<p><strong>Problema:</strong> ${formatCleanMultiline(problem)}</p>` : ""}
-    ${guidingQuestion ? `<p><strong>Questão norteadora:</strong> ${formatCleanMultiline(guidingQuestion)}</p>` : ""}
-    <p>${escapeHtml(steamInterfaceText)}</p>
-    ${steamMatrixHTML}
-    ${bnccHTML ? `<div class="subsection"><h3>Habilidades relacionadas</h3>${bnccHTML}</div>` : ""}
-  </div>
-
-  <div class="section">
-    <div class="section-title">4. ATIVIDADES PROPOSTAS</div>
-    <div class="subsection">
-      <h3>Desenvolvimento da aula</h3>
-      ${stagesHTML || activityManualHTML || renderBlankLines(2)}
+    <span class="section-number">1</span>
+    <div>
+      <div class="doc-type">Experiência de Aprendizagem STEAM + Cultura Maker</div>
+      <h1>${cleanHtml(experience.title || 'Atividade Pedagógica')}</h1>
     </div>
-    ${teacherTipsItems.length ? `<div class="subsection"><h3>Condução do professor</h3>${renderSimpleList(teacherTipsItems)}</div>` : ""}
-    ${!studentMaterialHTML && studentActivity?.practicalActivity ? `<div class="subsection"><h3>Atividade prática</h3>${renderParagraph(studentActivity.practicalActivity)}</div>` : ""}
-    ${!studentMaterialHTML && studentActivity?.investigativeChallenge ? `<div class="subsection"><h3>Desafio maker</h3>${renderParagraph(studentActivity.investigativeChallenge)}</div>` : ""}
-    ${studentMaterialHTML}
   </div>
 
   <div class="section">
-    <div class="section-title">5. AVALIAÇÃO</div>
-    <p>A avaliação será processual e formativa, considerando o percurso de investigação, a participação dos estudantes e a qualidade das decisões tomadas durante a construção e a revisão da solução.</p>
+    <div class="section-heading"><span class="section-number">2</span><div class="section-title">Objetivo geral curto</div></div>
+    <p>${formatCleanMultiline(experience.objective)}</p>
+  </div>
+
+  <div class="section">
+    <div class="section-heading"><span class="section-number">3</span><div class="section-title">Problema/desafio</div></div>
+    <p>${formatCleanMultiline(experience.problem)}</p>
+    ${experience.mission ? `<p class="mission"><strong>Missão:</strong> ${formatCleanMultiline(experience.mission)}</p>` : ""}
+  </div>
+
+  <div class="section">
+    <div class="section-heading"><span class="section-number">4</span><div class="section-title">Materiais</div></div>
+    ${renderSimpleList(experience.materials)}
+  </div>
+
+  <div class="section">
+    <div class="section-heading"><span class="section-number">5</span><div class="section-title">Desenvolvimento da atividade</div></div>
+    <div class="stages">${renderExperienceStages(experience.stages)}</div>
+  </div>
+
+  <div class="section">
+    <div class="section-heading"><span class="section-number">6</span><div class="section-title">Desafio Maker</div></div>
+    <p>${formatCleanMultiline(experience.makerChallenge)}</p>
+  </div>
+
+  <div class="section">
+    <div class="section-heading"><span class="section-number">7</span><div class="section-title">Produto final</div></div>
+    <p>${formatCleanMultiline(experience.finalProduct)}</p>
+  </div>
+
+  <div class="section">
+    <div class="section-heading"><span class="section-number">8</span><div class="section-title">Avaliação</div></div>
     ${renderSimpleList(assessmentItems)}
-    ${afterClassItems.length ? `<p><strong>Encaminhamentos após a aula:</strong></p>${renderSimpleList(afterClassItems)}` : ""}
   </div>
 
   <div class="section">
-    <div class="section-title">6. RECURSOS DIDÁTICOS</div>
-    ${renderSimpleList(materials, 2)}
+    <div class="section-heading"><span class="section-number">9</span><div class="section-title">Referência do conteúdo utilizado</div></div>
+    ${renderReferenceList(experience.bibliography)}
   </div>
 
-  <div class="section">
-    <div class="section-title">7. REFERÊNCIAS</div>
-    ${renderReferenceList(bibliography)}
-  </div>
-
-  <script>window.addEventListener('load', function() { setTimeout(function() { window.print(); }, 400); });</script>
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        var twoPages = 1122 * 2;
+        if (document.body.scrollHeight > twoPages) document.body.classList.add('tight');
+        if (document.body.scrollHeight > twoPages) document.body.classList.add('ultra-tight');
+        window.print();
+      }, 400);
+    });
+  </script>
 </body>
 </html>`;
 }
@@ -423,7 +532,7 @@ function buildReportHTML(project) {
     )
     .join("");
 
-  const bnccList = (project.bncc || []).map(escapeHtml).join(" · ");
+  const bnccList = normalizeBnccCodes(project.bncc || []).map(escapeHtml).join(" · ");
 
   const phasesHTML = PHASES.map((phase) => {
     const data = project.phases?.[phase.id] || {};
@@ -591,161 +700,53 @@ function formatMultiline(text) {
 // ------------------------------------------------------------
 
 function buildClassroomActivityHTML(activity, projectTitle) {
-  const steamLabels = {
-    S: 'S (Ciências)',
-    T: 'T (Tecnologia)',
-    E: 'E (Engenharia)',
-    A: 'A (Artes)',
-    M: 'M (Matemática)'
+  if (activity?.stages || activity?.makerChallenge || activity?.mission) {
+    return buildActivityPrintHTML({
+      ...activity,
+      title: activity.title || activity.activityTitle || projectTitle || "Experiência STEAM Maker",
+      theme: activity.theme || projectTitle || "",
+      bibliography: activity.bibliography || []
+    });
   }
-  const steamNamesPattern = /^(S\s*)?(\(?(Ciências|Ciência|Tecnologia|Engenharia|Artes|Arte|Matemática)\)?):?\s*/i
 
-  const activityTitle = activity.activityTitle || projectTitle || 'Atividade Pedagógica'
-  const targetAudience = stripDecorativeMarkers(activity.targetAudience || '')
-  const objective = stripDecorativeMarkers(activity.objective || 'Promover uma atividade prática com investigação, construção, teste e socialização de soluções.')
-  const areaText = targetAudience || ''
-  const themeText = projectTitle && projectTitle !== activityTitle
-    ? `${activityTitle} - ${projectTitle}`
-    : activityTitle
-  const specificObjectives = [
-    "Investigar o problema proposto a partir de evidências e conhecimentos prévios.",
-    "Planejar e construir uma solução prática com materiais acessíveis.",
-    "Testar, revisar e justificar as escolhas realizadas durante a atividade.",
-    "Socializar resultados de forma clara e colaborativa."
-  ]
+  const steamIntegration = activity.steamIntegration || {};
+  const steamText = Array.isArray(steamIntegration)
+    ? steamIntegration.join(" ")
+    : Object.values(steamIntegration).filter(Boolean).join(" ");
 
-  const stepsHTML = (activity.steps || []).map((step, i) => {
-    const time = stripDecorativeMarkers(step.time || '')
-    const actor = stripDecorativeMarkers(step.actor || '')
-    const title = stripDecorativeMarkers(step.title || `Etapa ${i + 1}`)
-    const description = stripDecorativeMarkers(step.description || '')
-    return `<div class="step">
-      <p><strong>Etapa ${i + 1}: ${escapeHtml(title)}</strong>${time ? ` <span class="muted">(${escapeHtml(time)})</span>` : ''}</p>
-      ${actor ? `<p><strong>Condução:</strong> ${escapeHtml(actor)}</p>` : ''}
-      ${description ? `<p>${formatCleanMultiline(description)}</p>` : ''}
-    </div>`
-  }).join('')
+  const stages = (activity.steps || []).map((step, index) => ({
+    number: index + 1,
+    title: step.title || `Etapa ${index + 1}`,
+    duration: step.time || "",
+    objective: step.actor ? `Condução: ${step.actor}` : "",
+    description: step.description || ""
+  }));
 
-  const steamIntegration = activity.steamIntegration || {}
-  const steamIntegrationHTML = Array.isArray(steamIntegration)
-    ? steamIntegration.map(stripDecorativeMarkers).filter(Boolean).map((item) => `<li>${escapeHtml(item)}</li>`).join('')
-    : Object.entries(steamLabels)
-        .map(([key, label]) => {
-          const value = steamIntegration[key]
-          const cleaned = String(value || '')
-            .replace(new RegExp(`^${key}\\s*\\([^)]*\\):?\\s*`, 'i'), '')
-            .replace(steamNamesPattern, '')
-          return value ? `<li><strong>${escapeHtml(label)}:</strong> ${escapeHtml(stripDecorativeMarkers(cleaned))}</li>` : ''
-        })
-        .join('')
-
-  const questionsHTML = (activity.discussionQuestions || [])
-    .map(stripDecorativeMarkers)
-    .filter(Boolean)
-    .map((q) => `<li>${escapeHtml(q)}</li>`)
-    .join('')
-
-  const tipsItems = splitTextItems(activity.tips)
-  const bnccHTML = renderBnccTable(activity.bncc || [])
-  const assessment = stripDecorativeMarkers(activity.assessment || 'Observe participação, colaboração, qualidade dos registros, capacidade de testar e melhorar a solução, além da clareza na socialização final.')
-
-  return `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Plano de Aula - ${cleanHtml(activityTitle)}</title>
-  <style>
-    @page { size: A4; margin: 2.5cm 2cm; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; line-height: 1.58; color: #000; background: #fff; padding: 2.5cm 2cm; max-width: 21cm; margin: 0 auto; }
-    .header { text-align: center; margin-bottom: 0.75cm; }
-    .header h1 { font-size: 16pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0; }
-    .ident { width: 100%; border-collapse: collapse; margin-bottom: 0.75cm; font-size: 10.5pt; }
-    .ident td { border: 1px solid #cfcfcf; padding: 0.18cm 0.28cm; vertical-align: top; }
-    .ident .label { width: 22%; font-weight: 700; background: #f6f6f6; }
-    .blank-field { display: block; min-height: 0.45cm; border-bottom: 1px solid #999; }
-    .section { margin-top: 0.55cm; page-break-inside: avoid; }
-    .section-title { font-size: 11pt; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 0.12cm; margin-bottom: 0.3cm; }
-    h3 { font-size: 10.5pt; font-weight: 700; margin: 0.28cm 0 0.16cm; }
-    p { text-align: justify; margin-bottom: 0.22cm; }
-    ul, ol { padding-left: 1cm; margin-bottom: 0.24cm; }
-    li { margin-bottom: 0.1cm; text-align: justify; }
-    .subsection { margin-top: 0.3cm; }
-    .muted { color: #555; font-size: 9.5pt; font-style: italic; }
-    .step { border-left: 2px solid #555; padding-left: 0.35cm; margin-bottom: 0.3cm; page-break-inside: avoid; }
-    .academic-table { width: 100%; border-collapse: collapse; margin-top: 0.2cm; font-size: 9.5pt; }
-    .academic-table th, .academic-table td { border: 1px solid #d3d3d3; padding: 0.14cm 0.22cm; vertical-align: top; text-align: left; }
-    .academic-table th { background: #f6f6f6; font-weight: 700; }
-    .blank-line { border-bottom: 1px solid #bbb; height: 0.58cm; margin-bottom: 0.16cm; }
-    .ref { padding-left: 1.25cm; text-indent: -1.25cm; font-size: 10pt; line-height: 1.45; }
-    @media print { body { padding: 0; } .section { page-break-inside: avoid; } .section-title { page-break-after: avoid; } }
-  </style>
-</head>
-<body>
-  <div class="header"><h1>PLANO DE AULA</h1></div>
-
-  <table class="ident">
-    <tr><td class="label">Instituição</td><td><span class="blank-field">&nbsp;</span></td></tr>
-    <tr><td class="label">Área</td><td>${areaText ? cleanHtml(areaText) : '<span class="blank-field">&nbsp;</span>'}</td></tr>
-    <tr><td class="label">Professor</td><td><span class="blank-field">&nbsp;</span></td></tr>
-    <tr><td class="label">Tema</td><td>${cleanHtml(themeText)}</td></tr>
-    <tr><td class="label">Horário</td><td><span class="blank-field">&nbsp;</span></td></tr>
-    <tr><td class="label">Data</td><td><span class="blank-field">&nbsp;</span></td></tr>
-    <tr><td class="label">Local</td><td><span class="blank-field">&nbsp;</span></td></tr>
-  </table>
-
-  <div class="section">
-    <div class="section-title">1. OBJETIVOS</div>
-    <p><strong>Objetivo geral:</strong> ${escapeHtml(objective)}</p>
-    <p><strong>Objetivos específicos:</strong></p>
-    ${renderSimpleList(specificObjectives)}
-  </div>
-
-  <div class="section">
-    <div class="section-title">2. METODOLOGIA</div>
-    <p>A atividade será conduzida por aprendizagem ativa, investigação orientada e Cultura Maker. Os estudantes analisam o problema, constroem ou simulam uma solução, testam o resultado, registram evidências e socializam as conclusões.</p>
-    ${activity.duration ? `<p><strong>Tempo previsto:</strong> ${cleanHtml(activity.duration)}</p>` : ""}
-  </div>
-
-  <div class="section">
-    <div class="section-title">3. INTERFACE</div>
-    <p>A proposta articula conceitos da área de estudo com práticas STEAM, resolução de problemas, criatividade e protagonismo estudantil.</p>
-    ${steamIntegrationHTML ? `<ul>${steamIntegrationHTML}</ul>` : ""}
-    ${bnccHTML ? `<div class="subsection"><h3>Habilidades relacionadas</h3>${bnccHTML}</div>` : ""}
-  </div>
-
-  <div class="section">
-    <div class="section-title">4. ATIVIDADES PROPOSTAS</div>
-    <div class="subsection">
-      <h3>Desenvolvimento da aula</h3>
-      ${stepsHTML || renderBlankLines(2)}
-    </div>
-    <div class="subsection">
-      <h3>Atividade prática e desafio maker</h3>
-      <p>Os estudantes deverão produzir uma resposta prática ao problema proposto, testando alternativas, justificando escolhas e apresentando melhorias possíveis.</p>
-    </div>
-    ${questionsHTML ? `<div class="subsection"><h3>Questões para discussão</h3><ol>${questionsHTML}</ol></div>` : ""}
-    ${tipsItems.length ? `<div class="subsection"><h3>Condução do professor</h3>${renderSimpleList(tipsItems)}</div>` : ""}
-  </div>
-
-  <div class="section">
-    <div class="section-title">5. AVALIAÇÃO</div>
-    <p>${escapeHtml(assessment)}</p>
-  </div>
-
-  <div class="section">
-    <div class="section-title">6. RECURSOS DIDÁTICOS</div>
-    ${renderSimpleList(activity.materials, 2)}
-  </div>
-
-  <div class="section">
-    <div class="section-title">7. REFERÊNCIAS</div>
-    ${renderReferenceList(activity.bibliography)}
-  </div>
-</body>
-</html>
-  `
+  return buildActivityPrintHTML({
+    title: activity.activityTitle || projectTitle || "Atividade Pedagógica",
+    theme: projectTitle && projectTitle !== activity.activityTitle ? projectTitle : "",
+    duration: activity.duration || "",
+    grade: activity.targetAudience || "",
+    objectives: [
+      activity.objective || "Desenvolver uma solução prática por meio de investigação, construção, teste e socialização.",
+      "Investigar o problema proposto a partir de evidências.",
+      "Construir e testar uma solução com materiais acessíveis.",
+      "Registrar resultados e propor melhorias."
+    ],
+    bncc: activity.bncc || [],
+    materials: activity.materials || [],
+    stages,
+    steamMakerDescription: steamText || "",
+    bibliography: activity.bibliography || [],
+    summary: activity.summary || activity.objective || "",
+    priorKnowledge: activity.priorKnowledge || [],
+    vocabulary: activity.vocabulary || [],
+    safetyNotes: activity.safetyNotes || [],
+    activityScaling: activity.activityScaling || {},
+    assemblyGuide: activity.assemblyGuide || [],
+    assessment: activity.assessment || "",
+    teacherTips: activity.tips || ""
+  });
 }
 
 export function openClassroomActivityWindow(activity, projectTitle) {

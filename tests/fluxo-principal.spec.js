@@ -23,8 +23,8 @@ const HAS_CREDENTIALS = EMAIL.length > 0 && PASSWORD.length > 0;
 
 async function login(page, email, password) {
   await page.getByText("Fazer login").click();
-  await page.getByPlaceholder("seu.email@escola.com").fill(email);
-  await page.getByLabel("Senha").fill(password);
+  await page.getByPlaceholder("Digite seu email").fill(email);
+  await page.getByPlaceholder("••••••••").fill(password);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.getByText("Meus Projetos STEAM")).toBeVisible({ timeout: 10_000 });
 }
@@ -52,7 +52,7 @@ test.describe("Tela de login", () => {
   test("exibe formulário ao clicar em Fazer login", async ({ page }) => {
     await page.goto("/");
     await page.getByText("Fazer login").click();
-    await expect(page.getByPlaceholder("seu.email@escola.com")).toBeVisible();
+    await expect(page.getByPlaceholder("Digite seu email")).toBeVisible();
     await expect(page.getByRole("button", { name: "Entrar" })).toBeVisible();
   });
 

@@ -17,6 +17,7 @@ import { useProjects } from "../hooks/useProjects.js";
 import { openReportWindow, openClassroomActivityWindow } from "../lib/exportReport.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 import { trackEvent } from "../lib/analytics.js";
+import { normalizeBnccCodes } from "../lib/bnccSelector.js";
 
 import TextField from "../components/ui/TextField.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -100,7 +101,7 @@ export default function ProjectEditor({
         project.steamMakerDescription || buildDefaultSteamMakerDescription(project)
       );
       setObjectivesText((project.objectives || []).join("\n"));
-      setBnccText((project.bncc || []).join(", "));
+      setBnccText(normalizeBnccCodes(project.bncc || []).join(", "));
       setMaterialsText((project.materials || []).join("\n"));
     }
   }, [projectId, isLoaded]);
@@ -111,10 +112,7 @@ export default function ProjectEditor({
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
 
-    const bncc = bnccText
-      .split(/[,;\n]/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+    const bncc = normalizeBnccCodes(bnccText.split(/[,;\n]/));
 
     const materials = materialsText
       .split("\n")
@@ -470,7 +468,7 @@ export default function ProjectEditor({
       <div style={sectionStyle}>
         <div style={sectionTitleStyle}>BNCC e materiais</div>
         <TextField
-          label="Habilidades BNCC"
+          label="Códigos BNCC"
           value={bnccText}
           onChange={setBnccText}
           placeholder="Ex.: EF07CI12, EF08MA23"

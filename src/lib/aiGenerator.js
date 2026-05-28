@@ -8,17 +8,26 @@ import { AIProviderManager } from "./ai/AIProviderManager.js";
 import {
   formatBnccSuggestions,
   getBnccCodes,
+  normalizeBnccCodes,
   selectBnccHabilidades
 } from "./bnccSelector.js";
+import {
+  getLearningExperienceStageTitles,
+  normalizeLearningExperience,
+  validateLearningExperience
+} from "./learningExperience.js";
 
 function buildPrompt(theme, grade, steamAreas, bnccSuggestions) {
   const areasNames = steamAreas
     .map((letter) => `${letter} (${STEAM_AREAS[letter].name})`)
     .join(", ");
+  const stageTitles = getLearningExperienceStageTitles()
+    .map((title) => `- ${title}`)
+    .join("\n");
 
   return `Você é especialista em educação STEAM e BNCC para Ensino Fundamental II brasileiro.
 
-Crie um projeto educacional STEAM seguindo estes parâmetros:
+Crie uma EXPERIÊNCIA DE APRENDIZAGEM STEAM + CULTURA MAKER seguindo estes parâmetros:
 
 - Tema: ${theme}
 - Ano: ${grade}
@@ -26,44 +35,40 @@ Crie um projeto educacional STEAM seguindo estes parâmetros:
 - Habilidades BNCC selecionadas do banco offline:
 ${formatBnccSuggestions(bnccSuggestions)}
 
-Diretrizes:
-1. Projeto realista para escolas públicas brasileiras (materiais acessíveis)
-2. Questão norteadora aberta e investigativa
-3. Objetivos mensuráveis adequados ao ano
-4. Use no campo "bncc" apenas códigos da lista BNCC offline fornecida acima; não invente códigos novos
-5. Cultura Maker obrigatória em todas as etapas, com mão na massa, prototipagem e iteração
-6. Matriz STEAM com contribuição, atividade e evidência para cada área selecionada
-7. Não organize a resposta por fases, etapas de Design Thinking ou blocos como Imersão, Ideação, Prototipagem, Teste e Compartilhamento
-8. Manual da atividade em padrão de plano de aula formal, com desenvolvimento da aula, explicação pedagógica, condução do professor, atividade prática, desafio maker e material do aluno
-9. Formato pronto para impressão, com seções claras, leitura confortável e estrutura acadêmica limpa
-10. 5 a 8 referências bibliográficas em formato ABNT sobre o tema
-
-Estilo obrigatório:
-- Escrita objetiva, clara, pedagógica, acadêmica e profissional
-- Aparência textual de plano de aula universitário/profissional, sem linguagem de slide ou material promocional
-- Não usar emojis, ícones decorativos, slogans, logo, nome de universidade ou assinatura institucional
-- Manter STEAM e Cultura Maker integrados naturalmente ao texto, sem excesso de criatividade artificial
+Regras obrigatórias:
+1. Nascer de problema real, desafio investigativo, missão, construção/prototipagem, teste e melhoria.
+2. Máximo de 2 páginas A4, com texto compacto e aplicação imediata.
+3. Não gerar apostila, fundamentação acadêmica, matriz STEAM, Design Thinking, material do aluno, vocabulário ou anexos.
+4. Use no campo "bncc" apenas códigos da lista BNCC offline fornecida acima; não invente códigos.
+5. Materiais acessíveis, máximo 6 itens com quantidade por grupo.
+6. Desenvolvimento com exatamente estas etapas:
+${stageTitles}
+7. Cada etapa deve ter no máximo 3 frases curtas, focadas em ação.
+8. Referências reais em formato ABNT. Se não tiver fonte específica, use a BNCC.
 
 Responda APENAS com JSON válido:
 
 {
-  "title": "Título envolvente",
-  "theme": "Subtítulo curto",
-  "duration": "X semanas · Y aulas",
-  "problem": "Problema ou desafio real que mobiliza o projeto",
-  "guidingQuestion": "Pergunta aberta provocadora?",
-  "steamMatrix": {
-    "S": {
-      "contribution": "Contribuição da área para o projeto",
-      "activity": "Atividade relacionada",
-      "evidence": "Evidência esperada"
-    }
-  },
-  "objectives": ["Objetivo 1", "Objetivo 2", "Objetivo 3", "Objetivo 4"],
+  "title": "Título curto da experiência",
+  "theme": "${theme}",
+  "duration": "1 a 2 aulas",
+  "objective": "Objetivo geral curto.",
+  "problem": "Problema real que inicia a experiência.",
+  "mission": "Sua equipe deverá desenvolver uma solução prática para o problema.",
   "bncc": ${JSON.stringify(getBnccCodes(bnccSuggestions))},
-  "materials": ["Material 1", "Material 2", "Material 3", "Material 4", "Material 5"],
-  "activityManual": "Desenvolvimento da aula:\\nApresente o problema, organize a investigação e conduza a construção prática.\\n\\nCondução do professor:\\nOriente os grupos, faça perguntas, acompanhe os testes e registre evidências.\\n\\nAtividade prática e desafio maker:\\nOs estudantes planejam, constroem, testam, melhoram e socializam uma solução.\\n\\nMaterial do aluno:\\nInclua orientação breve para registro, análise e apresentação da produção.",
-  "bibliography": ["AUTOR, A. Título do livro. Editora, ano."]
+  "materials": ["Material 1 - quantidade por grupo", "Material 2 - quantidade por grupo"],
+  "stages": [
+    { "number": 1, "title": "ETAPA 1 - Introdução rápida do desafio", "description": "Apresente o problema e a missão. Mostre uma evidência rápida. Combine o produto esperado." },
+    { "number": 2, "title": "ETAPA 2 - Investigação do problema", "description": "Os alunos observam dados ou exemplos. Levantam hipóteses. Definem critérios de sucesso." },
+    { "number": 3, "title": "ETAPA 3 - Planejamento da solução", "description": "Cada equipe esboça a ideia. Escolhe materiais. Planeja como testar." },
+    { "number": 4, "title": "ETAPA 4 - Construção do protótipo", "description": "Os alunos constroem a primeira versão. Registram decisões. Ajustam a montagem durante a execução." },
+    { "number": 5, "title": "ETAPA 5 - Teste e melhoria", "description": "Cada equipe testa o protótipo. Compara resultados. Melhora um ponto e testa novamente." },
+    { "number": 6, "title": "ETAPA 6 - Apresentação final", "description": "Cada equipe apresenta produto, teste e melhoria. A turma compara soluções. Registra próximos ajustes." }
+  ],
+  "makerChallenge": "Construir, testar, comparar e melhorar uma solução para o problema.",
+  "finalProduct": "Protótipo final com registro do teste e da melhoria feita.",
+  "assessment": ["Critério curto de investigação.", "Critério curto de construção e teste.", "Critério curto de melhoria."],
+  "bibliography": ["BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018."]
 }`;
 }
 
@@ -168,31 +173,9 @@ function getGeneratedText(data) {
 }
 
 function validateProjectStructure(data) {
-  const requiredFields = [
-    "title",
-    "theme",
-    "duration",
-    "problem",
-    "guidingQuestion",
-    "steamMatrix",
-    "objectives",
-    "bncc",
-    "materials",
-    "activityManual"
-  ];
-
-  for (const field of requiredFields) {
-    if (!data[field]) {
-      throw new Error(`Campo obrigatório ausente na resposta: ${field}`);
-    }
-  }
-
-  if (!Array.isArray(data.objectives) || data.objectives.length === 0) {
-    throw new Error("O campo objectives deve ser um array não vazio.");
-  }
-
-  if (typeof data.steamMatrix !== "object" || data.steamMatrix === null) {
-    throw new Error("O campo steamMatrix deve ser um objeto.");
+  const validation = validateLearningExperience(data);
+  if (!validation.valid) {
+    throw new Error(`Experiência STEAM + Maker incompleta: ${validation.missing.join(", ")}`);
   }
 
   if (!Array.isArray(data.bncc) || data.bncc.length === 0) {
@@ -214,12 +197,28 @@ function validateProjectStructure(data) {
   return true;
 }
 
+function buildSteamMatrix(steamAreas = []) {
+  return steamAreas.reduce((acc, letter) => {
+    acc[letter] = {
+      contribution: "Investigação, construção, teste e melhoria aplicados ao desafio.",
+      activity: "Ação prática integrada ao protótipo.",
+      evidence: "Registro do protótipo, teste e melhoria."
+    };
+    return acc;
+  }, {});
+}
+
 function applyOfflineBncc(data, bnccSuggestions) {
   const offlineCodes = getBnccCodes(bnccSuggestions);
-  if (offlineCodes.length === 0) return data;
+  if (offlineCodes.length === 0) {
+    return {
+      ...data,
+      bncc: Array.isArray(data.bncc) ? normalizeBnccCodes(data.bncc) : []
+    };
+  }
 
   const selectedCodes = Array.isArray(data.bncc)
-    ? data.bncc.filter((code) => offlineCodes.includes(code))
+    ? normalizeBnccCodes(data.bncc).filter((code) => offlineCodes.includes(code))
     : [];
 
   return {
@@ -310,11 +309,15 @@ export async function generateProjectWithAI({ theme, grade, steamAreas }) {
 
   try {
     const cleaned = cleanJsonResponse(generatedText);
-    const projectData = applyOfflineBncc(JSON.parse(cleaned), bnccSuggestions);
+    const projectData = normalizeLearningExperience(
+      applyOfflineBncc(JSON.parse(cleaned), bnccSuggestions),
+      { theme, grade }
+    );
 
     validateProjectStructure(projectData);
     projectData.grade = grade;
     projectData.steam = steamAreas;
+    projectData.steamMatrix = projectData.steamMatrix || buildSteamMatrix(steamAreas);
     projectData.generatedAt = new Date().toISOString();
 
     return projectData;

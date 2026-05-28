@@ -4,6 +4,14 @@ import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.j
 import { trackEvent } from "../lib/analytics.js";
 import PedagogicalPlannerModal from "../components/project/PedagogicalPlannerModal.jsx";
 
+const COMPETENCY_TO_LETTER = {
+  science: "S",
+  technology: "T",
+  engineering: "E",
+  arts: "A",
+  mathematics: "M"
+};
+
 function formatSupabaseError(error) {
   return [
     error?.message,
@@ -82,11 +90,17 @@ export default function Dashboard({
       const steamLetters = Object.keys(data.steamMatrix || {}).filter((key) =>
         ["S", "T", "E", "A", "M"].includes(key)
       );
+      const fallbackSteamLetters = (result.competencies || [])
+        .map((key) => COMPETENCY_TO_LETTER[String(key).toLowerCase()])
+        .filter(Boolean);
+      const selectedSteamLetters = steamLetters.length
+        ? steamLetters
+        : [...new Set(fallbackSteamLetters)];
 
       const newProject = await addProjectFromTemplate(
         {
           ...data,
-          steam: steamLetters,
+          steam: selectedSteamLetters,
           grade: data.grade || result.formData?.grade,
           generatedAt,
           source: "pedagogical-planner"
@@ -106,7 +120,7 @@ export default function Dashboard({
         theme: data.theme,
         grade: data.grade || result.formData?.grade,
         discipline: result.formData?.discipline,
-        steam: steamLetters,
+        steam: selectedSteamLetters,
         bncc: data.bncc || [],
         competencies: result.competencies || []
       }).catch(console.error);
