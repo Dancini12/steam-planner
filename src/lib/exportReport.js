@@ -329,6 +329,19 @@ function renderExperienceStages(stages) {
     .join("");
 }
 
+function renderAssemblyPractice(experience) {
+  const materialFunctions = normalizeTextItems(experience.materialFunctions || []);
+  const assemblySteps = experience.assemblySteps || [];
+
+  if (!materialFunctions.length && !assemblySteps.length) return "";
+
+  return `<div class="assembly-practice">
+    <h3>COMO MONTAR A ATIVIDADE NA PRÁTICA</h3>
+    ${materialFunctions.length ? `<div class="material-functions"><strong>Função dos materiais:</strong>${renderSimpleList(materialFunctions)}</div>` : ""}
+    <div class="assembly-steps">${renderExperienceStages(assemblySteps)}</div>
+  </div>`;
+}
+
 function buildActivityPrintHTML(activity) {
   const experience = normalizeLearningExperience(activity);
   const assessmentItems = normalizeTextItems(experience.assessment || []);
@@ -387,11 +400,17 @@ function buildActivityPrintHTML(activity) {
     .mission { border-left: 2px solid #111; padding-left: 0.22cm; margin-top: 0.1cm; }
     .stages { display: grid; grid-template-columns: 1fr 1fr; gap: 0.15cm 0.32cm; }
     .stage { page-break-inside: avoid; }
+    .assembly-practice { margin-top: 0.22cm; border-top: 1px solid #999; padding-top: 0.14cm; }
+    .assembly-practice > h3 { font-size: 9.2pt; letter-spacing: 0.01cm; margin-bottom: 0.1cm; }
+    .material-functions ul { margin-top: 0.08cm; }
+    .assembly-steps { display: grid; grid-template-columns: 1fr; gap: 0.08cm; }
+    .assembly-steps .stage { border-left: 2px solid #999; padding-left: 0.2cm; }
     .ref { padding-left: 0.8cm; text-indent: -0.8cm; font-size: 8.8pt; line-height: 1.25; }
     body.tight { font-size: 8.8pt; line-height: 1.25; padding: 0.9cm 1.05cm; }
     body.tight .header h1 { font-size: 14pt; }
     body.tight .section { margin-top: 0.18cm; }
     body.tight .stages { gap: 0.1cm 0.25cm; }
+    body.tight .assembly-steps { gap: 0.05cm; }
     body.ultra-tight { font-size: 8.2pt; line-height: 1.18; }
     body.ultra-tight .section { margin-top: 0.14cm; }
     @media print { body { padding: 0; } .section, .stage { page-break-inside: avoid; } .section-title { page-break-after: avoid; } }
@@ -426,6 +445,7 @@ function buildActivityPrintHTML(activity) {
   <div class="section">
     <div class="section-heading"><span class="section-number">5</span><div class="section-title">Desenvolvimento da atividade</div></div>
     <div class="stages">${renderExperienceStages(experience.stages)}</div>
+    ${renderAssemblyPractice(experience)}
   </div>
 
   <div class="section">

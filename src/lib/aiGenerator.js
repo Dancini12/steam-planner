@@ -13,6 +13,7 @@ import {
 } from "./bnccSelector.js";
 import {
   getLearningExperienceStageTitles,
+  getPracticalAssemblyStepTitles,
   normalizeLearningExperience,
   validateLearningExperience
 } from "./learningExperience.js";
@@ -22,6 +23,9 @@ function buildPrompt(theme, grade, steamAreas, bnccSuggestions) {
     .map((letter) => `${letter} (${STEAM_AREAS[letter].name})`)
     .join(", ");
   const stageTitles = getLearningExperienceStageTitles()
+    .map((title) => `- ${title}`)
+    .join("\n");
+  const assemblyTitles = getPracticalAssemblyStepTitles()
     .map((title) => `- ${title}`)
     .join("\n");
 
@@ -43,8 +47,12 @@ Regras obrigatórias:
 5. Materiais acessíveis, máximo 6 itens com quantidade por grupo.
 6. Desenvolvimento com exatamente estas etapas:
 ${stageTitles}
-7. Cada etapa deve ter no máximo 3 frases curtas, focadas em ação.
-8. Referências reais em formato ABNT. Se não tiver fonte específica, use a BNCC.
+7. Dentro do desenvolvimento, inclua a subseção "COMO MONTAR A ATIVIDADE NA PRÁTICA" com exatamente estes passos:
+${assemblyTitles}
+8. Explique como usar cada material, como montar o protótipo, como ele funciona, como testar e como melhorar.
+9. Evite frases genéricas como "faça um protótipo", "use os materiais disponíveis" ou "teste a solução" sem explicar como.
+10. Crie 2 testes concretos: um cenário esperado e outro com imprevisto, restrição ou falha.
+11. Referências reais em formato ABNT. Se não tiver fonte específica, use a BNCC.
 
 Responda APENAS com JSON válido:
 
@@ -57,6 +65,7 @@ Responda APENAS com JSON válido:
   "mission": "Sua equipe deverá desenvolver uma solução prática para o problema.",
   "bncc": ${JSON.stringify(getBnccCodes(bnccSuggestions))},
   "materials": ["Material 1 - quantidade por grupo", "Material 2 - quantidade por grupo"],
+  "materialFunctions": ["Material 1: função prática no protótipo.", "Material 2: função prática no mecanismo, teste ou registro."],
   "stages": [
     { "number": 1, "title": "ETAPA 1 - Introdução rápida do desafio", "description": "Apresente o problema e a missão. Mostre uma evidência rápida. Combine o produto esperado." },
     { "number": 2, "title": "ETAPA 2 - Investigação do problema", "description": "Os alunos observam dados ou exemplos. Levantam hipóteses. Definem critérios de sucesso." },
@@ -64,6 +73,13 @@ Responda APENAS com JSON válido:
     { "number": 4, "title": "ETAPA 4 - Construção do protótipo", "description": "Os alunos constroem a primeira versão. Registram decisões. Ajustam a montagem durante a execução." },
     { "number": 5, "title": "ETAPA 5 - Teste e melhoria", "description": "Cada equipe testa o protótipo. Compara resultados. Melhora um ponto e testa novamente." },
     { "number": 6, "title": "ETAPA 6 - Apresentação final", "description": "Cada equipe apresenta produto, teste e melhoria. A turma compara soluções. Registra próximos ajustes." }
+  ],
+  "assemblySteps": [
+    { "number": 1, "title": "ETAPA 1 - Preparar a base", "description": "Explique qual material vira a base, como marcar áreas, onde ficam problema, solução e registros." },
+    { "number": 2, "title": "ETAPA 2 - Construir as partes principais", "description": "Explique quais peças serão montadas, qual material forma cada parte e para que cada parte serve." },
+    { "number": 3, "title": "ETAPA 3 - Criar o mecanismo de interação", "description": "Explique como o protótipo será manipulado, movimentado, simulado ou alterado pelos alunos." },
+    { "number": 4, "title": "ETAPA 4 - Simular uma situação real", "description": "Inclua Teste 1 com cenário esperado e Teste 2 com imprevisto ou restrição para comparar resultados." },
+    { "number": 5, "title": "ETAPA 5 - Ajustar e melhorar", "description": "Explique como identificar falhas e quais melhorias concretas podem ser feitas no material, regra, medida ou apresentação." }
   ],
   "makerChallenge": "Construir, testar, comparar e melhorar uma solução para o problema.",
   "finalProduct": "Protótipo final com registro do teste e da melhoria feita.",

@@ -50,6 +50,14 @@ const DEFAULT_STAGE_DESCRIPTIONS = [
   'Cada equipe apresenta produto, teste realizado, melhoria feita e próximo ajuste possível.',
 ]
 
+const ASSEMBLY_STEP_TITLES = [
+  'ETAPA 1 - Preparar a base',
+  'ETAPA 2 - Construir as partes principais',
+  'ETAPA 3 - Criar o mecanismo de interação',
+  'ETAPA 4 - Simular uma situação real',
+  'ETAPA 5 - Ajustar e melhorar',
+]
+
 const DEFAULT_ASSESSMENT = [
   'A solução responde ao problema real.',
   'O protótipo foi construído, testado e melhorado.',
@@ -97,6 +105,62 @@ function toTextArray(value: unknown): string[] {
     .filter(Boolean)
 }
 
+function getMaterialName(material: string): string {
+  return cleanText(material).split(/\s[-–—]\s/)[0].trim()
+}
+
+function buildDefaultMaterialFunctions(materials: string[]): string[] {
+  const roles = [
+    'base ou superfície principal do protótipo',
+    'fixação das partes e reforço da estrutura',
+    'recorte, dobra ou separação das peças móveis',
+    'marcação de medidas, valores, setas, legenda e registro do teste',
+    'controle do tempo, comparação ou simulação do funcionamento',
+    'peça extra para ajustes, acabamento ou melhoria após o teste',
+  ]
+
+  return materials.map((material, index) => {
+    const materialName = getMaterialName(material) || `Material ${index + 1}`
+    return `${materialName}: use como ${roles[index] || 'parte funcional do protótipo'}.`
+  })
+}
+
+function materialNamesForText(materials: string[]): string {
+  const names = materials.map(getMaterialName).filter(Boolean).slice(0, 4)
+  if (!names.length) return 'os materiais listados'
+  if (names.length === 1) return names[0]
+  return `${names.slice(0, -1).join(', ')} e ${names[names.length - 1]}`
+}
+
+function buildDefaultAssemblyDescriptions(theme: string, materials: string[]): string[] {
+  const cleanTheme = cleanText(theme || 'problema investigado').toLowerCase()
+  const materialText = materialNamesForText(materials)
+
+  return [
+    'Escolha o material mais rígido, como cartolina ou papelão, para formar a base. Marque nela o espaço do problema, a área da solução e o local onde os testes serão registrados.',
+    `Monte as partes principais usando ${materialText}. Separe a estrutura fixa, as peças móveis e a área de registro; cada parte deve mostrar uma decisão da solução.`,
+    'Crie uma forma de interação: cartões que mudam de lugar, abas que abrem, setas que indicam fluxo, peças que deslizam ou uma simulação digital simples. O protótipo deve permitir manipular a solução, não apenas observá-la.',
+    `Teste o protótipo com um cenário real sobre ${cleanTheme}. A equipe deve executar pelo menos dois testes: um caso esperado e uma situação-problema com restrição, falha ou imprevisto.`,
+    'Compare o resultado com os critérios definidos. Identifique uma falha visível, ajuste material, posição, medida, regra ou comunicação visual e repita o teste para verificar a melhoria.',
+  ]
+}
+
+function isGenericAssemblyText(text: unknown): boolean {
+  const cleaned = cleanText(text).toLowerCase()
+  if (!cleaned) return true
+  if (cleaned.split(/\s+/).length < 14) return true
+
+  return [
+    'construa um modelo interativo',
+    'faça um protótipo',
+    'use os materiais disponíveis',
+    'teste a solução',
+    'melhore o projeto',
+    'monte o protótipo',
+    'desenvolva a solução',
+  ].some((phrase) => cleaned === phrase || cleaned.includes(`${phrase}.`))
+}
+
 function normalizeStages(stages: unknown): Record<string, unknown>[] {
   const source = Array.isArray(stages) ? stages : []
   return STAGE_TITLES.map((title, index) => {
@@ -114,6 +178,34 @@ function normalizeStages(stages: unknown): Record<string, unknown>[] {
   })
 }
 
+function normalizeAssemblySteps(raw: Record<string, unknown>, materials: string[], theme: string): Record<string, unknown>[] {
+  const source = Array.isArray(raw.assemblySteps)
+    ? raw.assemblySteps
+    : Array.isArray((raw.practicalAssembly as Record<string, unknown> | undefined)?.steps)
+      ? ((raw.practicalAssembly as Record<string, unknown>).steps as unknown[])
+      : Array.isArray(raw.assemblyGuide)
+        ? raw.assemblyGuide
+        : []
+  const defaultDescriptions = buildDefaultAssemblyDescriptions(theme, materials)
+
+  return ASSEMBLY_STEP_TITLES.map((title, index) => {
+    const rawStep = source[index]
+    const step = rawStep && typeof rawStep === 'object' ? rawStep as Record<string, unknown> : {}
+    const rawDescription = typeof rawStep === 'string'
+      ? rawStep
+      : cleanText(step.description || step.instruction || step.action || step.text || '')
+    const description = isGenericAssemblyText(rawDescription)
+      ? defaultDescriptions[index]
+      : rawDescription
+
+    return {
+      number: index + 1,
+      title,
+      description: limitText(description, 360),
+    }
+  })
+}
+
 function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalRequest): Record<string, unknown> {
   const theme = cleanText(raw.theme || request.theme)
   const stages = normalizeStages(raw.stages || raw.steps)
@@ -123,6 +215,13 @@ function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalReq
   const makerChallenge = limitText(raw.makerChallenge || raw.guidingQuestion || `Construir uma primeira solução para ${theme.toLowerCase()}, testar, registrar falhas e melhorar pelo menos um elemento.`, 300)
   const finalProduct = limitText(raw.finalProduct || `Protótipo físico, visual ou digital sobre ${theme.toLowerCase()}, com registro do teste e da melhoria feita.`, 220)
   const materials = toTextArray(raw.materials).length ? toTextArray(raw.materials) : DEFAULT_MATERIALS
+  const normalizedMaterials = materials.slice(0, 6).map((item) => limitText(item, 90))
+  const sourceMaterialFunctions = toTextArray(raw.materialFunctions)
+  const materialFunctions = (sourceMaterialFunctions.length >= normalizedMaterials.length ? sourceMaterialFunctions : buildDefaultMaterialFunctions(normalizedMaterials))
+    .slice(0, normalizedMaterials.length || 6)
+    .map((item) => limitText(item, 145))
+  const assemblySteps = normalizeAssemblySteps(raw, normalizedMaterials, theme)
+  const activityManual = `${stages.map((stage) => `${stage.title}\n${stage.description}`).join('\n\n')}\n\nCOMO MONTAR A ATIVIDADE NA PRÁTICA\n${assemblySteps.map((step) => `${step.title}\n${step.description}`).join('\n\n')}`
 
   return {
     ...raw,
@@ -134,10 +233,16 @@ function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalReq
     problem,
     mission,
     guidingQuestion: makerChallenge,
-    materials: materials.slice(0, 6).map((item) => limitText(item, 90)),
+    materials: normalizedMaterials,
+    materialFunctions,
     stages,
     developmentStages: stages,
-    activityManual: stages.map((stage) => `${stage.title}\n${stage.description}`).join('\n\n'),
+    assemblySteps,
+    practicalAssembly: {
+      title: 'COMO MONTAR A ATIVIDADE NA PRÁTICA',
+      steps: assemblySteps,
+    },
+    activityManual,
     makerChallenge,
     finalProduct,
     assessment: (toTextArray(raw.assessment).length ? toTextArray(raw.assessment) : DEFAULT_ASSESSMENT)
@@ -164,6 +269,8 @@ function validateLearningExperience(activity: Record<string, unknown>) {
     activity.makerChallenge,
     activity.finalProduct,
     activity.activityManual,
+    ...(Array.isArray(activity.materialFunctions) ? activity.materialFunctions : []),
+    ...(Array.isArray(activity.assemblySteps) ? activity.assemblySteps.map((step) => cleanText((step as Record<string, unknown>).description || '')) : []),
   ].join(' ').toLowerCase()
 
   const missing: string[] = []
@@ -172,11 +279,15 @@ function validateLearningExperience(activity: Record<string, unknown>) {
   if (!activity.problem) missing.push('problem')
   if (!activity.mission) missing.push('mission')
   if (!Array.isArray(activity.materials) || activity.materials.length === 0) missing.push('materials')
+  if (!Array.isArray(activity.materialFunctions) || activity.materialFunctions.length === 0) missing.push('materialFunctions')
   if (!Array.isArray(activity.stages) || activity.stages.length !== 6) missing.push('stages')
+  if (!Array.isArray(activity.assemblySteps) || activity.assemblySteps.length !== 5) missing.push('assemblySteps')
   if (!/investig/.test(text)) missing.push('investigation')
   if (!/constru|mont|cria|prototip/.test(text)) missing.push('prototype')
   if (!/test/.test(text)) missing.push('test')
   if (!/melhor|ajust|redesign|modific/.test(text)) missing.push('improvement')
+  if (!/base/.test(text)) missing.push('base')
+  if (!/simula|cen[aá]rio|situa[cç][aã]o real/.test(text)) missing.push('simulation')
   if (!activity.makerChallenge) missing.push('makerChallenge')
   if (!activity.finalProduct) missing.push('finalProduct')
   if (!Array.isArray(activity.assessment) || activity.assessment.length === 0) missing.push('assessment')
@@ -219,6 +330,7 @@ function buildPrompt(request: PedagogicalRequest): string {
 
   const classesInfo = request.numberOfClasses ? `- Duração total: ${request.numberOfClasses} aulas` : ''
   const stageTitles = STAGE_TITLES.map((title) => `- ${title}`).join('\n')
+  const assemblyTitles = ASSEMBLY_STEP_TITLES.map((title) => `- ${title}`).join('\n')
 
   return `Você é especialista em educação STEAM, Cultura Maker e BNCC para o sistema educacional brasileiro.
 
@@ -254,17 +366,28 @@ ESTRUTURA VISÍVEL OBRIGATÓRIA - somente estas 9 seções:
 Desenvolvimento obrigatório:
 ${stageTitles}
 
+Dentro do desenvolvimento, inclua obrigatoriamente:
+COMO MONTAR A ATIVIDADE NA PRÁTICA
+Essa subseção deve explicar como usar cada material, como montar a base, como transformar os materiais em protótipo, como manipular/simular, como testar, como melhorar e como apresentar.
+
+Passos obrigatórios da montagem:
+${assemblyTitles}
+
 Regras:
 - "objective": 1 frase, até 20 palavras.
 - "problem": problema real e concreto, até 45 palavras.
 - "mission": frase curta começando com "Sua equipe deverá..." quando for grupo.
 - "materials": máximo 6 itens acessíveis, com quantidade por grupo.
+- "materialFunctions": função prática de cada material listado.
 - "stages": exatamente 6 etapas, na ordem acima, cada uma com até 3 frases curtas.
+- "assemblySteps": exatamente 5 etapas de montagem, na ordem acima. Explique o que montar, como montar, qual material usar em cada parte, como funciona, como testar e como melhorar.
 - "makerChallenge": deve indicar o que construir, como testar e o que melhorar.
 - "finalProduct": produto ou protótipo concreto.
 - "assessment": máximo 4 critérios curtos e observáveis.
 - "bibliography": use referência real. Se não tiver fonte específica, use a BNCC.
 - Não use emojis, matriz STEAM, Design Thinking, fundamentação, material do aluno, vocabulário ou anexos.
+- Evite frases genéricas como "faça um protótipo", "use os materiais disponíveis", "teste a solução" ou "melhore o projeto" sem explicar exatamente como.
+- Crie pelo menos 2 testes concretos dentro da montagem ou do desafio maker.
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -280,6 +403,10 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Material 1 - quantidade por grupo",
     "Material 2 - quantidade por grupo"
   ],
+  "materialFunctions": [
+    "Material 1: função prática no protótipo.",
+    "Material 2: função prática no mecanismo, teste ou registro."
+  ],
   "stages": [
     { "number": 1, "title": "ETAPA 1 - Introdução rápida do desafio", "description": "Apresente o problema e a missão. Mostre uma evidência rápida. Combine o produto esperado." },
     { "number": 2, "title": "ETAPA 2 - Investigação do problema", "description": "Os alunos observam dados ou exemplos. Levantam hipóteses. Definem critérios de sucesso." },
@@ -287,6 +414,13 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     { "number": 4, "title": "ETAPA 4 - Construção do protótipo", "description": "Os alunos constroem a primeira versão. Registram decisões. Ajustam a montagem durante a execução." },
     { "number": 5, "title": "ETAPA 5 - Teste e melhoria", "description": "Cada equipe testa o protótipo. Compara resultados. Melhora um ponto e testa novamente." },
     { "number": 6, "title": "ETAPA 6 - Apresentação final", "description": "Cada equipe apresenta produto, teste e melhoria. A turma compara soluções. Registra próximos ajustes." }
+  ],
+  "assemblySteps": [
+    { "number": 1, "title": "ETAPA 1 - Preparar a base", "description": "Explique qual material vira a base, como marcar áreas, onde ficam problema, solução e registros." },
+    { "number": 2, "title": "ETAPA 2 - Construir as partes principais", "description": "Explique quais peças serão montadas, qual material forma cada parte e para que cada parte serve." },
+    { "number": 3, "title": "ETAPA 3 - Criar o mecanismo de interação", "description": "Explique como o protótipo será manipulado, movimentado, simulado ou alterado pelos alunos." },
+    { "number": 4, "title": "ETAPA 4 - Simular uma situação real", "description": "Inclua Teste 1 com cenário esperado e Teste 2 com imprevisto ou restrição para comparar resultados." },
+    { "number": 5, "title": "ETAPA 5 - Ajustar e melhorar", "description": "Explique como identificar falhas e quais melhorias concretas podem ser feitas no material, regra, medida ou apresentação." }
   ],
   "makerChallenge": "Construir, testar, comparar e melhorar uma solução para o problema.",
   "finalProduct": "Protótipo final com registro do teste e da melhoria feita.",

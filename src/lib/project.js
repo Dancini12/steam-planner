@@ -81,8 +81,10 @@ export function createBlankProject() {
     objectives: [],
     bncc: [],
     materials: [],
+    materialFunctions: [],
     activityManual: "",
     stages: [],
+    assemblySteps: [],
     makerChallenge: "",
     assessment: [],
     summary: "",
@@ -129,8 +131,10 @@ export function createProjectFromTemplate(template) {
   project.objectives = template.objectives ? [...template.objectives] : [];
   project.bncc = template.bncc ? [...template.bncc] : [];
   project.materials = template.materials ? [...template.materials] : [];
+  project.materialFunctions = template.materialFunctions ? clone(template.materialFunctions) : [];
   project.activityManual = template.activityManual || "";
   project.stages = template.stages ? clone(template.stages) : [];
+  project.assemblySteps = template.assemblySteps ? clone(template.assemblySteps) : [];
   project.makerChallenge = template.makerChallenge || template.guidingQuestion || "";
   project.assessment = template.assessment ? clone(template.assessment) : [];
   project.summary = template.summary || "";

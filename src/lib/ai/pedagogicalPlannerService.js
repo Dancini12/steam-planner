@@ -15,6 +15,7 @@ import {
 import { getQualityPatterns } from '../machine-learning/behavior-tracking/behaviorTracker.js'
 import {
   getLearningExperienceStageTitles,
+  getPracticalAssemblyStepTitles,
   normalizeLearningExperience,
   validateLearningExperience
 } from '../learningExperience.js'
@@ -40,6 +41,9 @@ function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClas
     : '- Modalidade: EM GRUPO - organize equipes com papéis simples: construtor, testador, registrador e apresentador'
 
   const stageTitles = getLearningExperienceStageTitles()
+    .map((title) => `- ${title}`)
+    .join('\n')
+  const assemblyTitles = getPracticalAssemblyStepTitles()
     .map((title) => `- ${title}`)
     .join('\n')
 
@@ -96,18 +100,29 @@ ESTRUTURA VISÍVEL OBRIGATÓRIA - somente estas 9 seções:
 Desenvolvimento da atividade - títulos obrigatórios:
 ${stageTitles}
 
+Dentro de "Desenvolvimento da atividade", inclua obrigatoriamente a subseção:
+COMO MONTAR A ATIVIDADE NA PRÁTICA
+Ela deve explicar como usar cada material, como organizar a base, como transformar os materiais em protótipo, como manipular/simular, como testar, como melhorar e como apresentar.
+
+Passos obrigatórios da subseção de montagem:
+${assemblyTitles}
+
 Regras de conteúdo:
 - "objective": 1 frase, até 20 palavras.
 - "problem": problema real, concreto e contextualizado, até 45 palavras.
 - "mission": frase curta começando com "Sua equipe deverá..." ou equivalente individual.
 - "materials": máximo 6 itens acessíveis, com quantidade por grupo.
+- "materialFunctions": explique a função prática de cada material listado, em 1 frase curta por material.
 - "stages": exatamente 6 etapas, na ordem obrigatória acima.
+- "assemblySteps": exatamente 5 etapas de montagem, na ordem obrigatória acima. Cada etapa deve explicar o que montar, com qual material, como usar, como testar ou melhorar.
 - "makerChallenge": deve dizer claramente o que construir, como testar e o que melhorar.
 - "finalProduct": protótipo ou produto concreto final.
 - "assessment": máximo 4 critérios curtos, observáveis e ligados ao processo.
 - "bibliography": use fontes verificadas abaixo quando houver. Nunca use Wikipedia. Se não houver fonte específica, inclua apenas a BNCC como referência oficial.
 - "bncc": use APENAS códigos da lista offline acima; não invente códigos.
 - Não use emojis, slogans, texto promocional ou linguagem de apostila.
+- Não escreva frases genéricas como "faça um protótipo", "use os materiais disponíveis", "teste a solução" ou "melhore o projeto" sem explicar exatamente como.
+- Crie pelo menos 2 testes concretos dentro da montagem ou do desafio maker. Ex.: Teste 1 com cenário esperado; Teste 2 com imprevisto, restrição ou falha.
 
 ${verifiedSources.length > 0
   ? `Fontes verificadas em bases acadêmicas reais (Crossref, OpenAlex, SciELO, Semantic Scholar):\n${verifiedSources.map((s, i) => `${i + 1}. ${s.abnt}`).join('\n')}`
@@ -127,6 +142,10 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "materials": [
     "Material 1 - quantidade por grupo",
     "Material 2 - quantidade por grupo"
+  ],
+  "materialFunctions": [
+    "Material 1: função prática no protótipo.",
+    "Material 2: função prática no mecanismo, teste ou registro."
   ],
   "stages": [
     {
@@ -158,6 +177,33 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
       "number": 6,
       "title": "ETAPA 6 - Apresentação final",
       "description": "Cada equipe apresenta produto, teste e melhoria. A turma compara soluções. Feche com uma decisão de próximo ajuste."
+    }
+  ],
+  "assemblySteps": [
+    {
+      "number": 1,
+      "title": "ETAPA 1 - Preparar a base",
+      "description": "Explique qual material vira a base, como marcar áreas, onde ficam problema, solução e registros."
+    },
+    {
+      "number": 2,
+      "title": "ETAPA 2 - Construir as partes principais",
+      "description": "Explique quais peças serão montadas, qual material forma cada parte e para que cada parte serve."
+    },
+    {
+      "number": 3,
+      "title": "ETAPA 3 - Criar o mecanismo de interação",
+      "description": "Explique como o protótipo será manipulado, movimentado, simulado ou alterado pelos alunos."
+    },
+    {
+      "number": 4,
+      "title": "ETAPA 4 - Simular uma situação real",
+      "description": "Inclua Teste 1 com cenário esperado e Teste 2 com imprevisto ou restrição para comparar resultados."
+    },
+    {
+      "number": 5,
+      "title": "ETAPA 5 - Ajustar e melhorar",
+      "description": "Explique como identificar falhas e quais melhorias concretas podem ser feitas no material, regra, medida ou apresentação."
     }
   ],
   "makerChallenge": "Construir, testar, comparar e melhorar uma solução para o problema.",
@@ -293,6 +339,9 @@ function buildClassroomPrompt(project) {
   const stageTitles = getLearningExperienceStageTitles()
     .map((title) => `- ${title}`)
     .join('\n')
+  const assemblyTitles = getPracticalAssemblyStepTitles()
+    .map((title) => `- ${title}`)
+    .join('\n')
 
   const objectives = (project.objectives || []).map((o, i) => `${i + 1}. ${o}`).join('\n')
   const bncc = (project.bncc || []).join(', ')
@@ -341,8 +390,13 @@ Regras:
 - A experiência deve incluir problema real, missão, investigação, construção/prototipagem, teste, comparação e melhoria.
 - Desenvolvimento deve ter exatamente estes títulos:
 ${stageTitles}
+- Dentro do desenvolvimento, inclua a subseção "COMO MONTAR A ATIVIDADE NA PRÁTICA" com estes passos:
+${assemblyTitles}
 - Cada etapa: máximo 3 frases curtas.
 - Materiais: máximo 6 itens acessíveis.
+- "materialFunctions" deve explicar a função de cada material no protótipo.
+- "assemblySteps" deve explicar como montar, manipular, simular, testar e melhorar. Não use frases genéricas.
+- Inclua 2 testes concretos: um cenário esperado e um cenário com imprevisto, restrição ou falha.
 - Avaliação: máximo 4 critérios curtos.
 - Referências: máximo 3 itens. Use as referências do projeto se houver; não invente fonte.
 - Não use emojis.
@@ -359,6 +413,10 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "materials": [
     "material 1 - quantidade por grupo",
     "material 2 - quantidade por grupo"
+  ],
+  "materialFunctions": [
+    "material 1: função prática no protótipo.",
+    "material 2: função prática no mecanismo, teste ou registro."
   ],
   "stages": [
     {
@@ -390,6 +448,33 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
       "number": 6,
       "title": "ETAPA 6 - Apresentação final",
       "description": "Cada equipe apresenta produto, teste e melhoria. A turma compara soluções. Registra próximos ajustes."
+    }
+  ],
+  "assemblySteps": [
+    {
+      "number": 1,
+      "title": "ETAPA 1 - Preparar a base",
+      "description": "Explique qual material vira a base, como marcar áreas, onde ficam problema, solução e registros."
+    },
+    {
+      "number": 2,
+      "title": "ETAPA 2 - Construir as partes principais",
+      "description": "Explique quais peças serão montadas, qual material forma cada parte e para que cada parte serve."
+    },
+    {
+      "number": 3,
+      "title": "ETAPA 3 - Criar o mecanismo de interação",
+      "description": "Explique como o protótipo será manipulado, movimentado, simulado ou alterado pelos alunos."
+    },
+    {
+      "number": 4,
+      "title": "ETAPA 4 - Simular uma situação real",
+      "description": "Inclua Teste 1 com cenário esperado e Teste 2 com imprevisto ou restrição para comparar resultados."
+    },
+    {
+      "number": 5,
+      "title": "ETAPA 5 - Ajustar e melhorar",
+      "description": "Explique como identificar falhas e quais melhorias concretas podem ser feitas no material, regra, medida ou apresentação."
     }
   ],
   "makerChallenge": "Construir, testar, comparar e melhorar uma solução para o problema.",
