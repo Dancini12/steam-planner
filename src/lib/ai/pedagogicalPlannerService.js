@@ -65,29 +65,30 @@ ${qualityPatterns.topGrades.length ? `- Séries em que as atividades funcionaram
 ${qualityPatterns.topSteamAreas.length ? `- Áreas STEAM que geraram maior engajamento: ${qualityPatterns.topSteamAreas.join(', ')}` : ''}
 Adapte a complexidade, a linguagem e a abordagem prática para se alinhar a esses padrões que funcionaram bem para este professor.` : ''}
 
-ESTILO DE ESCRITA — aplicar em todos os campos:
-- Escreva como professor experiente: humano, natural, prático — não como artigo científico
-- Frases curtas, comandos claros e vocabulário simples
-- Prefira listas objetivas a blocos narrativos longos
-- Zero repetição de ideias entre campos
-- Linguagem acolhedora, próxima da sala de aula real
-- Use marcadores visuais: 💡 (dica), 📌 (atenção), 🛠 (momento maker), 🎯 (objetivo)
+ESTILO DE ESCRITA E ORGANIZAÇÃO — aplicar em todos os campos:
+- Escrita objetiva, clara, pedagógica, acadêmica e profissional
+- Aparência textual de plano de aula formal, com leitura confortável e organização simples
+- Frases diretas, sem blocos longos e sem repetição de ideias entre campos
+- Linguagem adequada a documento universitário/profissional, sem aparência de slide, Canva ou peça promocional
+- Não usar emojis, ícones decorativos, slogan, logo, nome de universidade ou assinatura institucional
+- Manter STEAM e Cultura Maker integrados naturalmente, sem excesso de criatividade artificial
 
 Diretrizes:
 1. Materiais: máximo 6 itens acessíveis, com quantidade por grupo. Ex.: "2 cartolinas por grupo"
 2. Questão norteadora: 1 frase aberta e investigativa
-3. Objetivos: máximo 4, verbo de ação direto e mensurável
+3. Objetivos: máximo 4; o primeiro deve funcionar como objetivo geral e os demais como objetivos específicos, com verbos de ação mensuráveis
 4. Campo "bncc": use APENAS os códigos da lista offline acima, no formato "CÓDIGO — descrição breve". Não invente códigos.
 5. Cultura Maker obrigatória: construção + prototipagem + iteração (construir → testar → melhorar). Mesmo atividades teóricas devem ter produção prática ou representação visual.
 6. Não organize por fases de Design Thinking
-7. Campo "activityManual" no estilo de roteiro maker, com linguagem simples e objetiva:
-   - "1. Materiais necessários": lista com quantidade e finalidade curta
-   - "2. Passo a passo da atividade": etapas concretas de construção, investigação, teste e apresentação
-   - "3. Integração STEAM e Cultura Maker": explique como investigar, criar, construir, testar, melhorar e explicar aparecem na prática
-   Use frases curtas. Explique o que o professor faz e o que os alunos fazem.
+7. Campo "activityManual" em padrão de plano de aula formal:
+   - "Desenvolvimento da aula": sequência objetiva da aula
+   - "Condução do professor": mediação, perguntas, organização e registros
+   - "Atividade prática e desafio maker": construção, teste, melhoria e socialização
+   - "Material do aluno": orientação breve para registro, análise e apresentação
+   Use frases claras. Explique o que o professor faz e o que os alunos fazem.
 8. Referências: use SOMENTE fontes verificadas abaixo. Aceitas também: BBC Brasil, ONU Brasil, National Geographic, Nova Escola, Porvir, InfoMoney, Canaltech. NUNCA Wikipedia. Não invente dados. Lista vazia → "bibliography": [].
 9. Campo "stages" — EXATAMENTE 8 etapas, com instruções completas e objetivas. Cada etapa DEVE ter:
-   - "objective": frase com 🎯, máx. 10 palavras
+   - "objective": frase sem emoji, máx. 10 palavras
    - "description": 3 comandos práticos, com no máximo 50 palavras no total. Diga o que o professor faz e o que os alunos fazem.
    - "teacherScript": 1 fala curta do professor, com no máximo 25 palavras
    - "questions": 0-2 perguntas curtas e abertas
@@ -126,83 +127,83 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Material 4 — quantidade por grupo e/ou turma",
     "Material 5 — quantidade por grupo e/ou turma"
   ],
-  "activityManual": "1. Materiais necessários\\n- Material 1 — quantidade e uso.\\n- Material 2 — quantidade e uso.\\n\\n2. Passo a passo da atividade\\nPreparação: organize os grupos, distribua os materiais e apresente o desafio.\\nConstrução maker: os alunos produzem uma primeira versão da solução com orientação do professor.\\nTeste e melhoria: os grupos testam, observam problemas e ajustam o produto.\\nSocialização: cada grupo apresenta o que fez, o que funcionou e o que mudaria.\\n\\n3. Integração STEAM e Cultura Maker\\nA atividade integra investigação, criação, construção, teste, melhoria e explicação das escolhas feitas pelos estudantes.",
+  "activityManual": "Desenvolvimento da aula:\\nApresente o problema, organize a investigação e conduza a produção prática.\\n\\nCondução do professor:\\nOriente os grupos, faça perguntas, acompanhe os testes e registre evidências.\\n\\nAtividade prática e desafio maker:\\nOs estudantes planejam, constroem, testam, melhoram e socializam uma solução.\\n\\nMaterial do aluno:\\nInclua orientação breve para registro, análise e apresentação da produção.",
   "stages": [
     {
       "number": 1,
       "title": "Etapa 1 — Introdução",
       "duration": "10 min",
-      "objective": "🎯 A turma entende o desafio.",
+      "objective": "A turma entende o desafio.",
       "description": "Mostre uma imagem, objeto ou notícia. Apresente o problema em linguagem simples. Peça que os alunos digam hipóteses e dúvidas iniciais.",
-      "teacherScript": "💡 Hoje vamos investigar este problema e criar uma resposta prática.",
+      "teacherScript": "Hoje vamos investigar este problema e criar uma resposta prática.",
       "questions": ["Pergunta de abertura para despertar curiosidade?", "O que você já sabe sobre esse assunto?"]
     },
     {
       "number": 2,
       "title": "Etapa 2 — Explicação",
       "duration": "10-15 min",
-      "objective": "🎯 A turma relembra conceitos essenciais.",
+      "objective": "A turma relembra conceitos essenciais.",
       "description": "Explique apenas 2 conceitos-chave. Use um exemplo do cotidiano. Faça uma pergunta de verificação antes da prática e anote palavras importantes no quadro.",
-      "teacherScript": "📌 Guardem esta ideia: ela vai orientar a construção de vocês.",
+      "teacherScript": "Guardem esta ideia: ela vai orientar a construção de vocês.",
       "questions": ["Pergunta de verificação de compreensão?", "Alguém consegue dar um exemplo parecido?"]
     },
     {
       "number": 3,
       "title": "Etapa 3 — Organização",
       "duration": "5-8 min",
-      "objective": "🎯 Os grupos sabem o que fazer.",
+      "objective": "Os grupos sabem o que fazer.",
       "description": "Forme grupos e defina papéis simples. Distribua materiais. Combine tempo, produto esperado, cuidado com materiais e regra de colaboração.",
-      "teacherScript": "💡 Antes de começar: cada grupo precisa saber o que vai entregar.",
+      "teacherScript": "Antes de começar: cada grupo precisa saber o que vai entregar.",
       "questions": []
     },
     {
       "number": 4,
       "title": "Etapa 4 — Desenvolvimento Maker",
       "duration": "20-30 min",
-      "objective": "🛠 Os grupos criam uma primeira versão.",
+      "objective": "Os grupos criam uma primeira versão.",
       "description": "Os grupos constroem, desenham ou montam a solução. O professor circula, observa e faz perguntas. Avise o tempo restante e peça registro das decisões.",
-      "teacherScript": "🛠 Façam uma primeira versão simples. Depois vamos melhorar.",
+      "teacherScript": "Façam uma primeira versão simples. Depois vamos melhorar.",
       "questions": []
     },
     {
       "number": 5,
       "title": "Etapa 5 — Mediação",
       "duration": "durante o desenvolvimento",
-      "objective": "🎯 Os grupos destravam dificuldades.",
+      "objective": "Os grupos destravam dificuldades.",
       "description": "Observe antes de intervir. Ajude com perguntas, não respostas prontas. Registre evidências rápidas sobre participação, colaboração e escolhas dos grupos.",
-      "teacherScript": "📌 O que vocês já tentaram? O que pode ser testado agora?",
+      "teacherScript": "O que vocês já tentaram? O que pode ser testado agora?",
       "questions": ["O que vocês já tentaram?", "O que aconteceu quando fizeram isso?", "Que outras formas vocês podem testar?"]
     },
     {
       "number": 6,
       "title": "Etapa 6 — Testes e melhoria",
       "duration": "10-15 min",
-      "objective": "🎯 Os grupos testam e melhoram.",
+      "objective": "Os grupos testam e melhoram.",
       "description": "Cada grupo testa a produção. Registra o que funcionou e o que precisa melhorar. Ajusta pelo menos uma coisa antes de apresentar.",
-      "teacherScript": "💡 Erro é dado. Usem o teste para melhorar a solução.",
+      "teacherScript": "Erro é dado. Usem o teste para melhorar a solução.",
       "questions": ["O que funcionou?", "O que não funcionou e por quê?", "Como podemos melhorar?"]
     },
     {
       "number": 7,
       "title": "Etapa 7 — Reflexão coletiva",
       "duration": "10 min",
-      "objective": "🎯 A turma socializa descobertas.",
+      "objective": "A turma socializa descobertas.",
       "description": "Cada grupo apresenta em 1 minuto. Peça uma descoberta, uma dificuldade e uma melhoria feita. Registre ideias comuns no quadro.",
-      "teacherScript": "📌 Apresentem o que fizeram, o que funcionou e o que mudariam.",
+      "teacherScript": "Apresentem o que fizeram, o que funcionou e o que mudariam.",
       "questions": ["O que funcionou melhor?", "O que vocês mudariam?"]
     },
     {
       "number": 8,
       "title": "Etapa 8 — Fechamento",
       "duration": "8-10 min",
-      "objective": "🎯 A turma fecha a aprendizagem.",
+      "objective": "A turma fecha a aprendizagem.",
       "description": "Retome o desafio inicial. Destaque 2 aprendizagens. Combine entrega, registro, avaliação rápida ou próximo passo.",
-      "teacherScript": "💡 Hoje vocês investigaram, criaram, testaram e melhoraram uma solução.",
+      "teacherScript": "Hoje vocês investigaram, criaram, testaram e melhoraram uma solução.",
       "questions": ["O que você aprendeu hoje?", "Onde isso aparece fora da escola?"]
     }
   ],
-  "beforeClass": "• Material 1: onde conseguir e como preparar\\n• Material 2: quantidade e organização\\n• Ambiente: como reorganizar a sala\\n• 📌 Atenção: [algo específico a não esquecer]",
-  "afterClass": "• Registre fotos das produções dos grupos\\n• Avaliação formativa: observe [o quê] em [quem]\\n• Devolutiva: [como e quando dar retorno aos alunos]",
+  "beforeClass": "- Material 1: onde conseguir e como preparar\\n- Material 2: quantidade e organização\\n- Ambiente: como reorganizar a sala\\n- Atenção: [algo específico a não esquecer]",
+  "afterClass": "- Registre fotos das produções dos grupos\\n- Avaliação formativa: observe [o quê] em [quem]\\n- Devolutiva: [como e quando dar retorno aos alunos]",
   "teacherTips": "1. Turmas agitadas: [dica prática em 1 frase]\\n2. Poucos recursos: [dica prática em 1 frase]\\n3. Alunos com dificuldade: [dica prática em 1 frase]\\n4. Tempo reduzido: [dica prática em 1 frase]\\n5. Turmas avançadas: [dica prática em 1 frase]\\n6. Escolas públicas: [dica prática em 1 frase]",
   "studentActivity": {
     "textBase": "Texto-base completo com mínimo 150 palavras, linguagem adequada à série. Pode ser uma reportagem, notícia, situação real ou texto educativo que contextualiza o tema e mobiliza a investigação. Escreva de forma cativante e adequada à faixa etária.",
@@ -339,7 +340,7 @@ function buildClassroomPrompt(project) {
 
   return `Você é especialista em educação STEAM e Cultura Maker para o sistema educacional brasileiro.
 
-Um professor planejou o seguinte projeto STEAM e precisa de um ROTEIRO DE AULA PRÁTICO para aplicar em sala de aula.
+Um professor planejou o seguinte projeto STEAM e precisa de uma atividade em formato de plano de aula formal para aplicar em sala de aula.
 
 DADOS DO PROJETO:
 - Título: ${project.title || ''}
@@ -360,7 +361,13 @@ ${matrixLines}
 ${phaseLines || '  (sem planos específicos registrados)'}
 
 TAREFA:
-Gere uma atividade prática no estilo de roteiro maker para aplicar em sala. O resultado deve ficar parecido com este formato: "Projeto: [nome]", "1. Materiais Necessários", "2. Passo a Passo da Construção/Atividade", "3. Integração das Disciplinas". Use linguagem simples, objetiva e direta.
+Gere uma atividade prática com linguagem de plano de aula acadêmico/profissional. O conteúdo final será organizado na estrutura: PLANO DE AULA; Instituição; Área; Professor; Tema; Horário; Data; Local; 1. Objetivos; 2. Metodologia; 3. Interface; 4. Atividades propostas; 5. Avaliação; 6. Recursos didáticos; 7. Referências.
+
+Estilo obrigatório:
+- Escrita objetiva, clara, pedagógica, acadêmica e profissional.
+- Não usar emojis, ícones decorativos, slogan, logo, nome de universidade ou assinatura institucional.
+- Manter visual textual limpo, sem aparência de slide ou Canva.
+- Integrar STEAM e Cultura Maker de modo natural, sem transformar a atividade em texto artificial.
 
 Regras obrigatórias para o roteiro:
 1. Liste materiais com quantidades e finalidade curta.
@@ -369,10 +376,10 @@ Regras obrigatórias para o roteiro:
 4. Em cada passo, diga exatamente o que o professor prepara/orienta e o que os alunos fazem.
 5. Mostre como o STEAM e a Cultura Maker acontecem na prática: investigar, criar, construir, testar, melhorar e explicar.
 6. Evite teoria longa. Quando precisar explicar conceito, use 1 frase simples ligada ao que foi feito.
-7. Use linguagem direta, simples e adequada ao professor.
+7. Use linguagem direta, formal e adequada ao professor.
 8. Inclua "steamIntegration" com S, T, E, A, M, cada item com 1 frase curta e aplicada ao projeto.
 9. "assessment" deve ter no máximo 3 frases simples.
-10. "tips" deve ter no máximo 4 bullets curtos.
+10. "tips" deve ter no máximo 4 itens curtos, sem emojis.
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -429,7 +436,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "O que vocês mudariam?"
   ],
   "assessment": "Observe participação, colaboração, registro das ideias e melhoria da solução. Use a apresentação curta como evidência de aprendizagem. Valorize o processo, não apenas o produto final.",
-  "tips": "• Pouco tempo: reduza a produção para um esboço testável.\\n• Poucos materiais: trabalhe com papel, caneta e reaproveitamento.\\n• Dificuldade: entregue um exemplo simples para iniciar.\\n• Turma agitada: combine papéis e tempo para cada grupo.",
+  "tips": "- Pouco tempo: reduza a produção para um esboço testável.\\n- Poucos materiais: trabalhe com papel, caneta e reaproveitamento.\\n- Dificuldade: entregue um exemplo simples para iniciar.\\n- Turma agitada: combine papéis e tempo para cada grupo.",
   "bncc": ["EF07CI05", "EF07MA03"]
 }`
 }

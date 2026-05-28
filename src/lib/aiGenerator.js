@@ -34,9 +34,15 @@ Diretrizes:
 5. Cultura Maker obrigatória em todas as etapas, com mão na massa, prototipagem e iteração
 6. Matriz STEAM com contribuição, atividade e evidência para cada área selecionada
 7. Não organize a resposta por fases, etapas de Design Thinking ou blocos como Imersão, Ideação, Prototipagem, Teste e Compartilhamento
-8. Manual da atividade em três partes, nesta ordem: "Resumo das competências" com um texto geral sobre as competências solicitadas; "Materiais utilizados" explicando para que serve cada material; "Como montar e conduzir" orientando o professor na montagem do projeto e no uso dos materiais
-9. Formato pronto para impressão, com seções claras e layout sequencial
+8. Manual da atividade em padrão de plano de aula formal, com desenvolvimento da aula, explicação pedagógica, condução do professor, atividade prática, desafio maker e material do aluno
+9. Formato pronto para impressão, com seções claras, leitura confortável e estrutura acadêmica limpa
 10. 5 a 8 referências bibliográficas em formato ABNT sobre o tema
+
+Estilo obrigatório:
+- Escrita objetiva, clara, pedagógica, acadêmica e profissional
+- Aparência textual de plano de aula universitário/profissional, sem linguagem de slide ou material promocional
+- Não usar emojis, ícones decorativos, slogans, logo, nome de universidade ou assinatura institucional
+- Manter STEAM e Cultura Maker integrados naturalmente ao texto, sem excesso de criatividade artificial
 
 Responda APENAS com JSON válido:
 
@@ -56,7 +62,7 @@ Responda APENAS com JSON válido:
   "objectives": ["Objetivo 1", "Objetivo 2", "Objetivo 3", "Objetivo 4"],
   "bncc": ${JSON.stringify(getBnccCodes(bnccSuggestions))},
   "materials": ["Material 1", "Material 2", "Material 3", "Material 4", "Material 5"],
-  "activityManual": "Resumo das competências:\\nTexto geral e breve conectando as competências STEAM solicitadas à atividade.\\n\\nMateriais utilizados:\\n- Material 1: explique como será usado e por que é necessário.\\n- Material 2: explique como será usado e por que é necessário.\\n\\nComo montar e conduzir:\\nPassos práticos para o professor montar o projeto com a turma, distribuir e usar os materiais, orientar a produção, registrar evidências, cuidar da segurança e finalizar.",
+  "activityManual": "Desenvolvimento da aula:\\nApresente o problema, organize a investigação e conduza a construção prática.\\n\\nCondução do professor:\\nOriente os grupos, faça perguntas, acompanhe os testes e registre evidências.\\n\\nAtividade prática e desafio maker:\\nOs estudantes planejam, constroem, testam, melhoram e socializam uma solução.\\n\\nMaterial do aluno:\\nInclua orientação breve para registro, análise e apresentação da produção.",
   "bibliography": ["AUTOR, A. Título do livro. Editora, ano."]
 }`;
 }
