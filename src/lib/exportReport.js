@@ -341,9 +341,12 @@ function renderMaterialsForExperience(experience) {
   // Render them directly; fall back to plain materials list if unavailable
   const lines = materialFunctions.length > 0 ? materialFunctions : materials;
 
+  // Exclude the "TABELA DE TESTE" line — it is rendered as an HTML table in section 5
+  const displayedReadyMaterials = readyMaterials.filter((item) => !/^tabela de teste/i.test(item));
+
   return `
     ${renderSimpleList(lines)}
-    ${readyMaterials.length ? `<div class="ready-materials"><strong>Materiais prontos:</strong>${renderSimpleList(readyMaterials)}</div>` : ""}
+    ${displayedReadyMaterials.length ? `<div class="ready-materials"><strong>Materiais prontos:</strong>${renderSimpleList(displayedReadyMaterials)}</div>` : ""}
   `;
 }
 

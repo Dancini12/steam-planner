@@ -316,6 +316,51 @@ function normalizeReferences(value: unknown): string[] {
   return (references.length ? references : [FALLBACK_REFERENCE]).slice(0, 3).map(finishSentence)
 }
 
+function extractBRL(text: string): number[] {
+  return [...text.matchAll(/R\$\s*([\d.]+,\d{2})/g)]
+    .map((m) => parseFloat((m[1] as string).replace(/\./g, '').replace(',', '.')))
+}
+
+function formatBRL(value: number): string {
+  return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function correctGabaritoArithmetic(gabarito: string[], readyMaterials: string[]): string[] {
+  const scenarios = readyMaterials.filter((item) => /^CEN[AÁ]RIO/i.test(String(item)))
+  if (!scenarios.length) return gabarito
+
+  const isFinancial = scenarios.some((s) => /receita|renda|sal[aá]rio|despesa|aluguel|saldo/i.test(s))
+  if (!isFinancial) return gabarito
+
+  return gabarito.map((gabItem, index) => {
+    const scenario = scenarios[index]
+    if (!scenario) return gabItem
+
+    const amounts = extractBRL(String(scenario))
+    if (amounts.length < 3) return gabItem
+
+    // Use amounts as-is: first value = receita, rest = despesas
+    const receitaVal = amounts[0]
+    const despesaVals = amounts.slice(1)
+    const totalDespesas = despesaVals.reduce((a, b) => a + b, 0)
+    const saldoCalculado = receitaVal - totalDespesas
+
+    // Extract the saldo the AI wrote in the gabarito
+    const gabAmounts = extractBRL(gabItem)
+    const gabSaldo = gabAmounts.length ? gabAmounts[gabAmounts.length - 1] : null
+
+    if (gabSaldo !== null && Math.abs(gabSaldo - saldoCalculado) > 1) {
+      // Replace the wrong saldo with the correct one
+      return gabItem.replace(
+        /R\$\s*[\d.]+,\d{2}(?=\s*\.?\s*$)/,
+        formatBRL(saldoCalculado)
+      )
+    }
+
+    return gabItem
+  })
+}
+
 function normalizeTeacherOrientation(raw: Record<string, unknown>): string {
   const source = raw.teacherOrientation || raw.teacherNote || raw.professorNote
   if (!source) return ''
@@ -389,7 +434,7 @@ function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalReq
     assessment,
     bibliography: normalizeReferences(raw.bibliography || raw.references),
     steamConnection: normalizeSteamConnection(raw),
-    teacherGabarito: normalizeTeacherGabarito(raw),
+    teacherGabarito: correctGabaritoArithmetic(normalizeTeacherGabarito(raw), Array.isArray(raw.readyMaterials) ? raw.readyMaterials as string[] : []),
     teacherOrientation: normalizeTeacherOrientation(raw),
     priorKnowledge: [],
     vocabulary: [],
@@ -534,6 +579,7 @@ Regras:
 - Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
 - Inclua "teacherGabarito": resultados esperados de cada cenário, 1 frase curta por item com valores, saldo ou conclusão objetiva.
 - Em cenários financeiros, nunca escreva apenas "Economia: R$ X". Use "Sobra mensal prevista: R$ X" ou "Saldo disponível para poupança/investimento: R$ X".
+- GABARITO MATEMÁTICO OBRIGATÓRIO: em "teacherGabarito", para cada cenário com valores numéricos, copie EXATAMENTE os valores do readyMaterials correspondente (sem inventar valores), some as despesas mostrando a conta (ex: R$ 1.200 + R$ 250 = R$ 1.450), calcule saldo = receita − total_despesas. Formato: "Cenário 1: Receita R$ X; despesas R$ A + R$ B = R$ Y; Saldo final = R$ X − R$ Y = R$ Z." O resultado deve ser matematicamente correto.
 - Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
