@@ -462,9 +462,24 @@ function fixScenarioQuestions(readyMaterials) {
   });
 }
 
+function fixGabaritoLanguage(teacherGabarito) {
+  const negTerms = /\b(d[eé]ficit|preju[ií]zo|saldo negativo|crise financeira)\b/gi;
+  return teacherGabarito.map((item) => {
+    if (!negTerms.test(item)) return item;
+    negTerms.lastIndex = 0;
+    const amounts = extractBRLAmounts(item);
+    const lastAmount = amounts[amounts.length - 1];
+    if (lastAmount !== undefined && lastAmount > 0) {
+      return item.replace(negTerms, "reorganização do saldo");
+    }
+    return item;
+  });
+}
+
 function autoFixExperience(experience) {
   const fix = fixDanglingText;
   const fixedReadyMaterials = fixScenarioQuestions((experience.readyMaterials || []).map(fix));
+  const fixedGabarito = fixGabaritoLanguage((experience.teacherGabarito || []).map(fix));
   return {
     ...experience,
     objective: fix(experience.objective),
@@ -476,7 +491,7 @@ function autoFixExperience(experience) {
     stages: (experience.stages || []).map((s) => ({ ...s, description: fix(s.description) })),
     materialFunctions: (experience.materialFunctions || []).map(fix),
     readyMaterials: fixedReadyMaterials,
-    teacherGabarito: (experience.teacherGabarito || []).map(fix),
+    teacherGabarito: fixedGabarito,
   };
 }
 
