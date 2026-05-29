@@ -51,6 +51,7 @@ ${stageTitles}
 12. Referências reais em formato ABNT. Se não tiver fonte específica, use a BNCC. Não use reticências.
 13. Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
 14. Inclua "steamConnection" com 1 frase curta por área (Ciência, Tecnologia, Engenharia, Arte, Matemática).
+15. Inclua "teacherGabarito": resultados esperados de cada cenário, 1 frase curta por item com valores, saldo ou conclusão objetiva.
 
 Responda APENAS com JSON válido:
 
@@ -92,7 +93,11 @@ Responda APENAS com JSON válido:
     "engineering": "o que será construído, testado e melhorado.",
     "art": "elemento visual, criativo ou comunicativo do protótipo.",
     "mathematics": "cálculos, medidas ou comparação de dados."
-  }
+  },
+  "teacherGabarito": [
+    "Cenário 1: resultado esperado com valores ou conclusão objetiva.",
+    "Cenário 2: resultado do imprevisto com impacto observado."
+  ]
 }`;
 }
 

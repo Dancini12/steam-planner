@@ -313,6 +313,15 @@ function normalizeReferences(value: unknown): string[] {
   return (references.length ? references : [FALLBACK_REFERENCE]).slice(0, 3).map(finishSentence)
 }
 
+function normalizeTeacherGabarito(raw: Record<string, unknown>): string[] {
+  const source = raw.teacherGabarito || raw.gabarito || raw.answerKey
+  if (!source) return []
+  return toTextArray(source)
+    .map((item) => limitText(item, 220))
+    .filter(Boolean)
+    .slice(0, 4)
+}
+
 function normalizeSteamConnection(raw: Record<string, unknown>): Record<string, string> {
   const sc = (raw.steamConnection && typeof raw.steamConnection === 'object' ? raw.steamConnection : {}) as Record<string, unknown>
   const keys = ['science', 'technology', 'engineering', 'art', 'mathematics']
@@ -371,6 +380,7 @@ function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalReq
     assessment,
     bibliography: normalizeReferences(raw.bibliography || raw.references),
     steamConnection: normalizeSteamConnection(raw),
+    teacherGabarito: normalizeTeacherGabarito(raw),
     priorKnowledge: [],
     vocabulary: [],
     safetyNotes: [],
@@ -505,6 +515,7 @@ Regras:
 - Não use reticências. Nenhum campo pode terminar com texto cortado.
 - Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
 - Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
+- Inclua "teacherGabarito": resultados esperados de cada cenário, 1 frase curta por item com valores, saldo ou conclusão objetiva.
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -554,7 +565,11 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "engineering": "o que será construído, testado e melhorado.",
     "art": "elemento visual, criativo ou comunicativo do protótipo.",
     "mathematics": "cálculos, medidas ou comparação de dados."
-  }
+  },
+  "teacherGabarito": [
+    "Cenário 1: resultado esperado com valores ou conclusão objetiva.",
+    "Cenário 2: resultado do imprevisto com impacto observado."
+  ]
 }`
 }
 

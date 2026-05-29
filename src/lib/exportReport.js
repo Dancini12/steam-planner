@@ -363,6 +363,46 @@ function renderSteamConnection(steamConnection) {
   return items ? `<ul class="steam-connection">${items}</ul>` : "";
 }
 
+function renderTestTable(readyMaterials) {
+  const items = normalizeTextItems(readyMaterials || []);
+  const scenarioCount = items.filter((item) => /^CEN[AÁ]RIO/i.test(item)).length;
+  if (!scenarioCount) return "";
+
+  // Extract column headers from the TABELA DE TESTE item, if present
+  const tableItem = items.find((item) => /tabela de teste/i.test(item));
+  let columns = ["Cenário", "Resultado observado", "Falha identificada", "Melhoria aplicada", "Resultado após melhoria"];
+  if (tableItem) {
+    const afterDash = tableItem.replace(/tabela de teste\s*[-—:]\s*/i, "").replace(/\.$/, "");
+    const parsed = afterDash.split("|").map((c) => c.trim()).filter(Boolean);
+    if (parsed.length >= 3) columns = ["Cenário", ...parsed.slice(1)];
+  }
+
+  const headers = columns.map((col) => `<th>${escapeHtml(col)}</th>`).join("");
+  const rows = Array.from({ length: scenarioCount }, (_, i) => {
+    const cells = columns.slice(1).map(() => `<td class="blank-cell"></td>`).join("");
+    return `<tr><td>Cenário ${i + 1}</td>${cells}</tr>`;
+  }).join("");
+
+  return `<div class="test-table-wrapper">
+    <p class="test-table-title"><strong>Tabela de Teste</strong></p>
+    <table class="test-table">
+      <thead><tr>${headers}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function renderTeacherGabarito(gabarito) {
+  if (!Array.isArray(gabarito) || !gabarito.length) return "";
+  const items = gabarito
+    .map((item) => `<p class="gabarito-item">${cleanHtml(stripDecorativeMarkers(item))}</p>`)
+    .join("");
+  return `<div class="gabarito-section">
+    <p class="gabarito-title"><strong>Gabarito do Professor</strong></p>
+    ${items}
+  </div>`;
+}
+
 function renderAssessmentRubric(experience) {
   const rubric = Array.isArray(experience.assessmentRubric) && experience.assessmentRubric.length
     ? experience.assessmentRubric
@@ -447,6 +487,17 @@ function buildActivityPrintHTML(activity) {
     .ref { padding-left: 0.8cm; text-indent: -0.8cm; font-size: 8.8pt; line-height: 1.25; }
     .steam-connection { padding-left: 0.42cm; margin: 0; }
     .steam-connection li { margin-bottom: 0.04cm; }
+    .duration-line { font-size: 8.4pt; color: #444; margin-top: 0.05cm; }
+    .test-table-wrapper { margin-top: 0.1cm; }
+    .test-table-title { margin-bottom: 0.05cm; }
+    .test-table { width: 100%; border-collapse: collapse; font-size: 7.8pt; }
+    .test-table th { background: #eee; border: 1px solid #999; padding: 0.05cm 0.08cm; text-align: left; font-weight: 700; }
+    .test-table td { border: 1px solid #bbb; padding: 0; height: 0.52cm; vertical-align: middle; }
+    .test-table td:first-child { padding: 0.04cm 0.08cm; font-weight: 600; white-space: nowrap; }
+    .test-table .blank-cell { background: #fafafa; }
+    .gabarito-section { margin-top: 0.1cm; border-top: 1px dashed #bbb; padding-top: 0.08cm; }
+    .gabarito-title { margin-bottom: 0.04cm; }
+    .gabarito-item { margin-bottom: 0.04cm; }
     body.tight { font-size: 8.1pt; line-height: 1.16; padding: 0.65cm 0.78cm; }
     body.tight .header h1 { font-size: 12.5pt; }
     body.tight .section { margin-top: 0.12cm; }
@@ -464,6 +515,7 @@ function buildActivityPrintHTML(activity) {
     <div>
       <div class="doc-type">Experiência de Aprendizagem STEAM + Cultura Maker</div>
       <h1>${cleanHtml(experience.title || 'Atividade Pedagógica')}</h1>
+      ${experience.duration ? `<div class="duration-line">Duração estimada: ${cleanHtml(experience.duration)}</div>` : ""}
     </div>
   </div>
 
@@ -486,6 +538,7 @@ function buildActivityPrintHTML(activity) {
   <div class="section">
     <div class="section-heading"><span class="section-number">5</span><div class="section-title">Desenvolvimento e montagem da atividade</div></div>
     <div class="stages">${renderExperienceStages(experience.stages)}</div>
+    ${renderTestTable(experience.readyMaterials)}
   </div>
 
   <div class="section">
@@ -511,6 +564,7 @@ function buildActivityPrintHTML(activity) {
   <div class="section">
     <div class="section-heading"><span class="section-number">${experience.steamConnection && Object.values(experience.steamConnection).some(Boolean) ? 10 : 9}</span><div class="section-title">Referências</div></div>
     ${renderReferenceList(experience.bibliography)}
+    ${renderTeacherGabarito(experience.teacherGabarito)}
   </div>
 
   <script>

@@ -114,6 +114,7 @@ Regras de conteúdo:
 - Não use reticências. Nenhuma frase pode terminar cortada com "...".
 - Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
 - Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
+- Inclua "teacherGabarito": resultados esperados de cada cenário, 1 frase curta por item com valores, saldo ou conclusão objetiva.
 
 ${verifiedSources.length > 0
   ? `Fontes verificadas em bases acadêmicas reais (Crossref, OpenAlex, SciELO, Semantic Scholar):\n${verifiedSources.map((s, i) => `${i + 1}. ${s.abnt}`).join('\n')}`
@@ -192,7 +193,11 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "engineering": "o que será construído, testado e melhorado.",
     "art": "elemento visual, criativo ou comunicativo do protótipo.",
     "mathematics": "cálculos, medidas ou comparação de dados."
-  }
+  },
+  "teacherGabarito": [
+    "Cenário 1: resultado esperado com valores ou conclusão objetiva.",
+    "Cenário 2: resultado do imprevisto com impacto observado."
+  ]
 }`
 }
 

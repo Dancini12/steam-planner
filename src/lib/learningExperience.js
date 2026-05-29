@@ -377,6 +377,15 @@ function normalizeReferences(value, compact = false) {
   return selected.map((item) => finishSentence(item));
 }
 
+function normalizeTeacherGabarito(activity) {
+  const source = activity.teacherGabarito || activity.gabarito || activity.answerKey;
+  if (!source) return [];
+  return toTextArray(source)
+    .map((item) => limitText(item, 220))
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
 function normalizeSteamConnection(activity) {
   const sc = activity.steamConnection || {};
   const keys = ["science", "technology", "engineering", "art", "mathematics"];
@@ -481,6 +490,7 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
   let assessment = assessmentRubric.map((item) => `${item.criterion} | ${item.observation}`);
   let bibliography = normalizeReferences(activity.bibliography || activity.references);
   const steamConnection = normalizeSteamConnection(activity);
+  const teacherGabarito = normalizeTeacherGabarito(activity);
 
   let normalized = {
     ...activity,
@@ -508,6 +518,7 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
     assessment,
     bibliography,
     steamConnection,
+    teacherGabarito,
     summary: buildSummary({ problem, mission, finalProduct }),
     activityManual: buildActivityManual(stages),
     priorKnowledge: [],
