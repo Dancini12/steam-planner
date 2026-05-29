@@ -634,9 +634,10 @@ function buildActivityPrintHTMLFromExperience(experience) {
     .test-table td { border: 1px solid #bbb; padding: 0; height: 0.65cm; vertical-align: middle; }
     .test-table td:first-child { padding: 0.04cm 0.08cm; font-weight: 600; white-space: nowrap; }
     .test-table .blank-cell { background: #fafafa; }
-    .gabarito-section { margin-top: 0.1cm; border-top: 1px dashed #bbb; padding-top: 0.08cm; }
-    .gabarito-title { margin-bottom: 0.04cm; }
-    .gabarito-item { margin-bottom: 0.04cm; }
+    .gabarito-page { page-break-before: always; padding-top: 0.6cm; }
+    .gabarito-page h2 { font-size: 12pt; font-weight: 700; border-bottom: 2px solid #111; padding-bottom: 0.18cm; margin-bottom: 0.12cm; }
+    .gabarito-subtitle { font-size: 7.8pt; color: #666; font-style: italic; margin-bottom: 0.4cm; }
+    .gabarito-item { margin-bottom: 0.22cm; line-height: 1.35; }
     body.tight { font-size: 8.1pt; line-height: 1.16; padding: 0.65cm 0.78cm; }
     body.tight .header h1 { font-size: 12.5pt; }
     body.tight .section { margin-top: 0.12cm; }
@@ -648,6 +649,8 @@ function buildActivityPrintHTMLFromExperience(experience) {
   </style>
 </head>
 <body>
+
+<div id="activity-content">
 
   <div class="header">
     <span class="section-number">1</span>
@@ -704,18 +707,28 @@ function buildActivityPrintHTMLFromExperience(experience) {
   <div class="section">
     <div class="section-heading"><span class="section-number">${experience.steamConnection && Object.values(experience.steamConnection).some(Boolean) ? 10 : 9}</span><div class="section-title">Referências</div></div>
     ${renderReferenceList(experience.bibliography)}
-    ${renderTeacherGabarito(experience.teacherGabarito)}
   </div>
+
+</div><!-- end #activity-content -->
+
+  ${(Array.isArray(experience.teacherGabarito) && experience.teacherGabarito.length) ? `<div class="gabarito-page">
+    <h2>Gabarito do Professor</h2>
+    <p class="gabarito-subtitle">Material exclusivo do professor — não distribuir aos alunos</p>
+    ${experience.teacherGabarito.map((item) => `<p class="gabarito-item">${formatCleanMultiline(stripDecorativeMarkers(item))}</p>`).join("")}
+  </div>` : ""}
 
   <script>
     window.addEventListener('load', function() {
       setTimeout(function() {
         var body = document.body;
+        var actContent = document.getElementById('activity-content');
         var twoPages = 1122 * 2;
-        if (body.scrollHeight > twoPages) {
+        var h = actContent ? actContent.getBoundingClientRect().height : body.scrollHeight;
+        if (h > twoPages) {
           body.classList.add('tight');
           setTimeout(function() {
-            if (body.scrollHeight > twoPages) body.classList.add('ultra-tight');
+            var h2 = actContent ? actContent.getBoundingClientRect().height : body.scrollHeight;
+            if (h2 > twoPages) body.classList.add('ultra-tight');
             window.print();
           }, 80);
         } else {
