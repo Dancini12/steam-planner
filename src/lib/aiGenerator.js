@@ -49,6 +49,8 @@ ${stageTitles}
 10. Crie 2 testes concretos: um cenário esperado e outro com imprevisto, restrição ou falha.
 11. Avaliação em mini rubrica: "criterion" e "observation".
 12. Referências reais em formato ABNT. Se não tiver fonte específica, use a BNCC. Não use reticências.
+13. Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
+14. Inclua "steamConnection" com 1 frase curta por área (Ciência, Tecnologia, Engenharia, Arte, Matemática).
 
 Responda APENAS com JSON válido:
 
@@ -83,7 +85,14 @@ Responda APENAS com JSON válido:
     { "criterion": "Melhoria", "observation": "O grupo ajustou o protótipo após identificar falha?" },
     { "criterion": "Comunicação", "observation": "O grupo explicou solução, teste e melhoria?" }
   ],
-  "bibliography": ["BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018."]
+  "bibliography": ["BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018."],
+  "steamConnection": {
+    "science": "conceito ou fenômeno investigado na atividade.",
+    "technology": "recurso, ferramenta ou sistema utilizado.",
+    "engineering": "o que será construído, testado e melhorado.",
+    "art": "elemento visual, criativo ou comunicativo do protótipo.",
+    "mathematics": "cálculos, medidas ou comparação de dados."
+  }
 }`;
 }
 

@@ -112,6 +112,8 @@ Regras de conteúdo:
 - Não escreva frases genéricas como "faça um protótipo", "use os materiais disponíveis", "teste a solução" ou "melhore o projeto" sem explicar exatamente como.
 - Crie pelo menos 2 testes concretos dentro da montagem ou do desafio maker. Ex.: Teste 1 com cenário esperado; Teste 2 com imprevisto, restrição ou falha.
 - Não use reticências. Nenhuma frase pode terminar cortada com "...".
+- Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
+- Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
 
 ${verifiedSources.length > 0
   ? `Fontes verificadas em bases acadêmicas reais (Crossref, OpenAlex, SciELO, Semantic Scholar):\n${verifiedSources.map((s, i) => `${i + 1}. ${s.abnt}`).join('\n')}`
@@ -183,7 +185,14 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   ],
   "bibliography": [
     "${verifiedSources[0]?.abnt || 'BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.'}"
-  ]
+  ],
+  "steamConnection": {
+    "science": "conceito ou fenômeno investigado na atividade.",
+    "technology": "recurso, ferramenta ou sistema utilizado.",
+    "engineering": "o que será construído, testado e melhorado.",
+    "art": "elemento visual, criativo ou comunicativo do protótipo.",
+    "mathematics": "cálculos, medidas ou comparação de dados."
+  }
 }`
 }
 

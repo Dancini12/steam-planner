@@ -71,6 +71,8 @@ function cleanText(value) {
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
     .replace(/[\uFE0F\u200D]/g, "")
     .replace(/\.{3,}|…/g, ".")
+    .replace(/[Pp]ós-its?/g, "notas adesivas")
+    .replace(/[Pp]ost-[Ii]ts?/g, "notas adesivas")
     .replace(/[ \t]+/g, " ")
     .replace(/\s+\n/g, "\n")
     .replace(/\n\s+/g, "\n")
@@ -375,6 +377,17 @@ function normalizeReferences(value, compact = false) {
   return selected.map((item) => finishSentence(item));
 }
 
+function normalizeSteamConnection(activity) {
+  const sc = activity.steamConnection || {};
+  const keys = ["science", "technology", "engineering", "art", "mathematics"];
+  const result = {};
+  for (const key of keys) {
+    const value = cleanText(sc[key] || "");
+    result[key] = value ? limitText(value, 140) : "";
+  }
+  return result;
+}
+
 function buildActivityManual(stages) {
   const stageText = stages
     .map((stage) => `${stage.title}\n${stage.description}`)
@@ -467,6 +480,7 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
   let assessmentRubric = normalizeAssessmentRubric(activity);
   let assessment = assessmentRubric.map((item) => `${item.criterion} | ${item.observation}`);
   let bibliography = normalizeReferences(activity.bibliography || activity.references);
+  const steamConnection = normalizeSteamConnection(activity);
 
   let normalized = {
     ...activity,
@@ -493,6 +507,7 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
     assessmentRubric,
     assessment,
     bibliography,
+    steamConnection,
     summary: buildSummary({ problem, mission, finalProduct }),
     activityManual: buildActivityManual(stages),
     priorKnowledge: [],

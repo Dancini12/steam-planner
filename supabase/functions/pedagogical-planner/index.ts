@@ -71,7 +71,12 @@ const FALLBACK_REFERENCE = 'BRASIL. Ministério da Educação. Base Nacional Com
 
 function cleanText(value: unknown): string {
   if (value == null) return ''
-  return String(value).replace(/\.{3,}|…/g, '.').replace(/\s+/g, ' ').trim()
+  return String(value)
+    .replace(/\.{3,}|…/g, '.')
+    .replace(/[Pp]ós-its?/g, 'notas adesivas')
+    .replace(/[Pp]ost-[Ii]ts?/g, 'notas adesivas')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function finishSentence(value: unknown): string {
@@ -308,6 +313,16 @@ function normalizeReferences(value: unknown): string[] {
   return (references.length ? references : [FALLBACK_REFERENCE]).slice(0, 3).map(finishSentence)
 }
 
+function normalizeSteamConnection(raw: Record<string, unknown>): Record<string, string> {
+  const sc = (raw.steamConnection && typeof raw.steamConnection === 'object' ? raw.steamConnection : {}) as Record<string, unknown>
+  const keys = ['science', 'technology', 'engineering', 'art', 'mathematics']
+  const result: Record<string, string> = {}
+  for (const key of keys) {
+    result[key] = limitText(sc[key] || '', 140)
+  }
+  return result
+}
+
 function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalRequest): Record<string, unknown> {
   const theme = cleanText(raw.theme || request.theme)
   const objective = limitText(raw.objective || toTextArray(raw.objectives)[0] || 'Investigar um problema real, construir uma solução, testar resultados e propor melhoria.', 280)
@@ -355,6 +370,7 @@ function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalReq
     assessmentRubric,
     assessment,
     bibliography: normalizeReferences(raw.bibliography || raw.references),
+    steamConnection: normalizeSteamConnection(raw),
     priorKnowledge: [],
     vocabulary: [],
     safetyNotes: [],
@@ -487,6 +503,8 @@ Regras:
 - Evite frases genéricas como "faça um protótipo", "use os materiais disponíveis", "teste a solução" ou "melhore o projeto" sem explicar exatamente como.
 - Crie pelo menos 2 testes concretos dentro da montagem ou do desafio maker.
 - Não use reticências. Nenhum campo pode terminar com texto cortado.
+- Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
+- Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -529,7 +547,14 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   ],
   "bibliography": [
     "${FALLBACK_REFERENCE}"
-  ]
+  ],
+  "steamConnection": {
+    "science": "conceito ou fenômeno investigado na atividade.",
+    "technology": "recurso, ferramenta ou sistema utilizado.",
+    "engineering": "o que será construído, testado e melhorado.",
+    "art": "elemento visual, criativo ou comunicativo do protótipo.",
+    "mathematics": "cálculos, medidas ou comparação de dados."
+  }
 }`
 }
 

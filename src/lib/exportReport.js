@@ -46,6 +46,8 @@ function stripDecorativeMarkers(text) {
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
     .replace(/[\uFE0F\u200D]/g, "")
     .replace(/\.{3,}|…/g, ".")
+    .replace(/[Pp]ós-its?/g, "notas adesivas")
+    .replace(/[Pp]ost-[Ii]ts?/g, "notas adesivas")
     .replace(/[•●▪]/g, "-")
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n[ \t]+/g, "\n")
@@ -345,6 +347,22 @@ function renderMaterialsForExperience(experience) {
   `;
 }
 
+function renderSteamConnection(steamConnection) {
+  if (!steamConnection) return "";
+  const entries = [
+    ["Ciência", steamConnection.science],
+    ["Tecnologia", steamConnection.technology],
+    ["Engenharia", steamConnection.engineering],
+    ["Arte", steamConnection.art],
+    ["Matemática", steamConnection.mathematics]
+  ];
+  const items = entries
+    .filter(([, v]) => v)
+    .map(([label, value]) => `<li><strong>${label}:</strong> ${cleanHtml(value)}</li>`)
+    .join("");
+  return items ? `<ul class="steam-connection">${items}</ul>` : "";
+}
+
 function renderAssessmentRubric(experience) {
   const rubric = Array.isArray(experience.assessmentRubric) && experience.assessmentRubric.length
     ? experience.assessmentRubric
@@ -427,6 +445,8 @@ function buildActivityPrintHTML(activity) {
     .rubric-table th, .rubric-table td { border: 1px solid #999; padding: 0.06cm 0.1cm; text-align: left; vertical-align: top; }
     .rubric-table th { background: #eee; font-weight: 700; }
     .ref { padding-left: 0.8cm; text-indent: -0.8cm; font-size: 8.8pt; line-height: 1.25; }
+    .steam-connection { padding-left: 0.42cm; margin: 0; }
+    .steam-connection li { margin-bottom: 0.04cm; }
     body.tight { font-size: 8.1pt; line-height: 1.16; padding: 0.65cm 0.78cm; }
     body.tight .header h1 { font-size: 12.5pt; }
     body.tight .section { margin-top: 0.12cm; }
@@ -478,13 +498,18 @@ function buildActivityPrintHTML(activity) {
     <p>${formatCleanMultiline(experience.finalProduct)}</p>
   </div>
 
+  ${renderSteamConnection(experience.steamConnection) ? `<div class="section">
+    <div class="section-heading"><span class="section-number">8</span><div class="section-title">Conexão STEAM + Maker</div></div>
+    ${renderSteamConnection(experience.steamConnection)}
+  </div>` : ""}
+
   <div class="section">
-    <div class="section-heading"><span class="section-number">8</span><div class="section-title">Avaliação</div></div>
+    <div class="section-heading"><span class="section-number">${experience.steamConnection && Object.values(experience.steamConnection).some(Boolean) ? 9 : 8}</span><div class="section-title">Avaliação</div></div>
     ${renderAssessmentRubric(experience)}
   </div>
 
   <div class="section">
-    <div class="section-heading"><span class="section-number">9</span><div class="section-title">Referências</div></div>
+    <div class="section-heading"><span class="section-number">${experience.steamConnection && Object.values(experience.steamConnection).some(Boolean) ? 10 : 9}</span><div class="section-title">Referências</div></div>
     ${renderReferenceList(experience.bibliography)}
   </div>
 
