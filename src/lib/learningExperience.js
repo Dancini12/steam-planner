@@ -73,6 +73,8 @@ function cleanText(value) {
     .replace(/\.{3,}|…/g, ".")
     .replace(/[Pp]ós-its?/g, "notas adesivas")
     .replace(/[Pp]ost-[Ii]ts?/g, "notas adesivas")
+    .replace(/^\s*\|.*\|\s*$/gm, "")
+    .replace(/^\s*[-|: ]+\s*$/gm, "")
     .replace(/[ \t]+/g, " ")
     .replace(/\s+\n/g, "\n")
     .replace(/\n\s+/g, "\n")

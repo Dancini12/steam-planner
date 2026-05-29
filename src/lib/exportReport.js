@@ -49,6 +49,8 @@ function stripDecorativeMarkers(text) {
     .replace(/[Pp]ós-its?/g, "notas adesivas")
     .replace(/[Pp]ost-[Ii]ts?/g, "notas adesivas")
     .replace(/[•●▪]/g, "-")
+    .replace(/^\s*\|.*\|\s*$/gm, "")
+    .replace(/^\s*[-|: ]+\s*$/gm, "")
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n[ \t]+/g, "\n")
     .replace(/[ \t]{2,}/g, " ")
@@ -378,7 +380,7 @@ function renderTestTable(readyMaterials) {
 
   // Extract column headers from the TABELA DE TESTE item, if present
   const tableItem = items.find((item) => /tabela de teste/i.test(item));
-  let columns = ["Cenário", "Resultado observado", "Falha identificada", "Melhoria aplicada", "Resultado após melhoria"];
+  let columns = ["Cenário", "Resultado antes", "Falha observada", "Melhoria feita", "Resultado depois"];
   if (tableItem) {
     const afterDash = tableItem.replace(/tabela de teste\s*[-—:]\s*/i, "").replace(/\.$/, "");
     const parsed = afterDash.split("|").map((c) => c.trim()).filter(Boolean);
@@ -442,8 +444,27 @@ function fixDanglingText(text) {
   return t;
 }
 
+function fixScenarioQuestions(readyMaterials) {
+  return readyMaterials.map((item) => {
+    if (!/^CEN[AÁ]RIO/i.test(item)) return item;
+    if (!/d[eé]ficit/i.test(item)) return item;
+
+    const amounts = extractBRLAmounts(item);
+    if (amounts.length < 3) return item;
+
+    // First amount = receita, rest = despesas; positive saldo means no real deficit
+    const receita = amounts[0];
+    const totalDespesas = amounts.slice(1).reduce((a, b) => a + b, 0);
+    if (receita - totalDespesas > 0) {
+      return item.replace(/d[eé]ficit/gi, "reorganização do saldo");
+    }
+    return item;
+  });
+}
+
 function autoFixExperience(experience) {
   const fix = fixDanglingText;
+  const fixedReadyMaterials = fixScenarioQuestions((experience.readyMaterials || []).map(fix));
   return {
     ...experience,
     objective: fix(experience.objective),
@@ -454,7 +475,7 @@ function autoFixExperience(experience) {
     teacherOrientation: experience.teacherOrientation ? fix(experience.teacherOrientation) : experience.teacherOrientation,
     stages: (experience.stages || []).map((s) => ({ ...s, description: fix(s.description) })),
     materialFunctions: (experience.materialFunctions || []).map(fix),
-    readyMaterials: (experience.readyMaterials || []).map(fix),
+    readyMaterials: fixedReadyMaterials,
     teacherGabarito: (experience.teacherGabarito || []).map(fix),
   };
 }
@@ -610,7 +631,7 @@ function buildActivityPrintHTMLFromExperience(experience) {
     .test-table-title { margin-bottom: 0.05cm; }
     .test-table { width: 100%; border-collapse: collapse; font-size: 7.8pt; }
     .test-table th { background: #eee; border: 1px solid #999; padding: 0.05cm 0.08cm; text-align: left; font-weight: 700; }
-    .test-table td { border: 1px solid #bbb; padding: 0; height: 0.52cm; vertical-align: middle; }
+    .test-table td { border: 1px solid #bbb; padding: 0; height: 0.65cm; vertical-align: middle; }
     .test-table td:first-child { padding: 0.04cm 0.08cm; font-weight: 600; white-space: nowrap; }
     .test-table .blank-cell { background: #fafafa; }
     .gabarito-section { margin-top: 0.1cm; border-top: 1px dashed #bbb; padding-top: 0.08cm; }

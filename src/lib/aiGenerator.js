@@ -53,7 +53,9 @@ ${stageTitles}
 14. Inclua "steamConnection" com 1 frase curta por área (Ciência, Tecnologia, Engenharia, Arte, Matemática).
 15. Inclua "teacherGabarito": resultados esperados de cada cenário, 1 frase curta por item com valores, saldo ou conclusão objetiva.
 16. Em cenários financeiros, nunca escreva apenas "Economia: R$ X". Use "Sobra mensal prevista: R$ X" ou "Saldo disponível para poupança/investimento: R$ X".
-17. GABARITO MATEMÁTICO OBRIGATÓRIO: em "teacherGabarito", para cada cenário com valores numéricos, copie EXATAMENTE os valores do readyMaterials correspondente (sem inventar valores), some as despesas mostrando a conta (ex: R$ 1.200 + R$ 250 + R$ 100 = R$ 1.550), calcule saldo = receita − total_despesas. O resultado deve ser matematicamente correto. Formato: "Cenário 1: Receita R$ X; despesas R$ A + R$ B = R$ Y; Saldo final = R$ X − R$ Y = R$ Z."
+17. Nunca use tabelas markdown (| col | col | ou --- | --- | ---) em nenhum campo JSON. Em "readyMaterials", use apenas uma linha de texto simples: "TABELA DE TESTE - Col1 | Col2 | Col3." sem barras verticais extras ou linhas separadoras.
+18. Em cenários: se o saldo final for positivo, não use a palavra "déficit". Use "reorganização", "impacto no saldo" ou "preservação da poupança".
+19. GABARITO MATEMÁTICO OBRIGATÓRIO: em "teacherGabarito", para cada cenário com valores numéricos, copie EXATAMENTE os valores do readyMaterials correspondente (sem inventar valores), some as despesas mostrando a conta (ex: R$ 1.200 + R$ 250 + R$ 100 = R$ 1.550), calcule saldo = receita − total_despesas. O resultado deve ser matematicamente correto. Formato: "Cenário 1: Receita R$ X; despesas R$ A + R$ B = R$ Y; Saldo final = R$ X − R$ Y = R$ Z."
 18. Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
 
 Responda APENAS com JSON válido:
