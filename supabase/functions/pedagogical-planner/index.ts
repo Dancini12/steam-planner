@@ -93,7 +93,10 @@ function limitText(value: unknown, maxChars: number): string {
   const sentenceBreak = Math.max(slice.lastIndexOf('.'), slice.lastIndexOf('?'), slice.lastIndexOf('!'), slice.lastIndexOf(';'))
   const wordBreak = slice.lastIndexOf(' ')
   const cutAt = sentenceBreak > maxChars * 0.55 ? sentenceBreak + 1 : wordBreak
-  return finishSentence(slice.slice(0, cutAt > 0 ? cutAt : maxChars))
+  let fragment = slice.slice(0, cutAt > 0 ? cutAt : maxChars).trimEnd()
+  // Remove dangling conjunctions/prepositions to avoid "...e." or "...da."
+  fragment = fragment.replace(/\s+(e|ou|de|da|do|dos|das|com|para|que|se|em|na|no|nas|nos|a|o|ao|por|pelo|pela|um|uma|mais|mas|nem|sobre|após|entre)$/i, '').trimEnd()
+  return finishSentence(fragment)
 }
 
 function toTextArray(value: unknown): string[] {
@@ -313,6 +316,12 @@ function normalizeReferences(value: unknown): string[] {
   return (references.length ? references : [FALLBACK_REFERENCE]).slice(0, 3).map(finishSentence)
 }
 
+function normalizeTeacherOrientation(raw: Record<string, unknown>): string {
+  const source = raw.teacherOrientation || raw.teacherNote || raw.professorNote
+  if (!source) return ''
+  return limitText(source, 280)
+}
+
 function normalizeTeacherGabarito(raw: Record<string, unknown>): string[] {
   const source = raw.teacherGabarito || raw.gabarito || raw.answerKey
   if (!source) return []
@@ -381,6 +390,7 @@ function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalReq
     bibliography: normalizeReferences(raw.bibliography || raw.references),
     steamConnection: normalizeSteamConnection(raw),
     teacherGabarito: normalizeTeacherGabarito(raw),
+    teacherOrientation: normalizeTeacherOrientation(raw),
     priorKnowledge: [],
     vocabulary: [],
     safetyNotes: [],
@@ -516,6 +526,9 @@ Regras:
 - Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
 - Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
 - Inclua "teacherGabarito": resultados esperados de cada cenário, 1 frase curta por item com valores, saldo ou conclusão objetiva.
+- Em "duration": use "1 a 2 aulas" quando a atividade tiver construção, teste, melhoria e apresentação; "1 aula" apenas para atividades simples.
+- Em cenários financeiros, nunca escreva apenas "Economia: R$ X". Use "Sobra mensal prevista: R$ X" ou "Saldo disponível para poupança/investimento: R$ X".
+- Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -569,7 +582,8 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "teacherGabarito": [
     "Cenário 1: resultado esperado com valores ou conclusão objetiva.",
     "Cenário 2: resultado do imprevisto com impacto observado."
-  ]
+  ],
+  "teacherOrientation": "Durante a atividade, estimule os alunos a justificarem suas escolhas e registrarem as melhorias no protótipo."
 }`
 }
 

@@ -100,7 +100,10 @@ function limitText(value, maxChars) {
   const wordBreak = slice.lastIndexOf(" ");
   const cutAt = sentenceBreak > maxChars * 0.55 ? sentenceBreak + 1 : wordBreak;
 
-  return finishSentence(slice.slice(0, cutAt > 0 ? cutAt : maxChars));
+  let fragment = slice.slice(0, cutAt > 0 ? cutAt : maxChars).trimEnd();
+  // Remove dangling conjunctions/prepositions to avoid "...e." or "...da."
+  fragment = fragment.replace(/\s+(e|ou|de|da|do|dos|das|com|para|que|se|em|na|no|nas|nos|a|o|ao|por|pelo|pela|um|uma|mais|mas|nem|sobre|após|entre)$/i, "").trimEnd();
+  return finishSentence(fragment);
 }
 
 function toTextArray(value) {
@@ -377,6 +380,12 @@ function normalizeReferences(value, compact = false) {
   return selected.map((item) => finishSentence(item));
 }
 
+function normalizeTeacherOrientation(activity) {
+  const source = activity.teacherOrientation || activity.teacherNote || activity.professorNote;
+  if (!source) return "";
+  return limitText(cleanText(source), 280);
+}
+
 function normalizeTeacherGabarito(activity) {
   const source = activity.teacherGabarito || activity.gabarito || activity.answerKey;
   if (!source) return [];
@@ -491,6 +500,7 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
   let bibliography = normalizeReferences(activity.bibliography || activity.references);
   const steamConnection = normalizeSteamConnection(activity);
   const teacherGabarito = normalizeTeacherGabarito(activity);
+  const teacherOrientation = normalizeTeacherOrientation(activity);
 
   let normalized = {
     ...activity,
@@ -519,6 +529,7 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
     bibliography,
     steamConnection,
     teacherGabarito,
+    teacherOrientation,
     summary: buildSummary({ problem, mission, finalProduct }),
     activityManual: buildActivityManual(stages),
     priorKnowledge: [],

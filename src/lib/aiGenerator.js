@@ -52,6 +52,9 @@ ${stageTitles}
 13. Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
 14. Inclua "steamConnection" com 1 frase curta por área (Ciência, Tecnologia, Engenharia, Arte, Matemática).
 15. Inclua "teacherGabarito": resultados esperados de cada cenário, 1 frase curta por item com valores, saldo ou conclusão objetiva.
+16. Em "duration": use "1 a 2 aulas" quando a atividade tiver construção, teste, melhoria e apresentação; use "1 aula" apenas para atividades simples sem apresentação.
+17. Em cenários financeiros, nunca escreva apenas "Economia: R$ X". Use "Sobra mensal prevista: R$ X" ou "Saldo disponível para poupança/investimento: R$ X".
+18. Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
 
 Responda APENAS com JSON válido:
 
@@ -97,7 +100,8 @@ Responda APENAS com JSON válido:
   "teacherGabarito": [
     "Cenário 1: resultado esperado com valores ou conclusão objetiva.",
     "Cenário 2: resultado do imprevisto com impacto observado."
-  ]
+  ],
+  "teacherOrientation": "Durante a atividade, estimule os alunos a justificarem suas escolhas e registrarem as melhorias no protótipo."
 }`;
 }
 

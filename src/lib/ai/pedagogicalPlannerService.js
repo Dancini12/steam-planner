@@ -115,6 +115,9 @@ Regras de conteúdo:
 - Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
 - Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
 - Inclua "teacherGabarito": resultados esperados de cada cenário, 1 frase curta por item com valores, saldo ou conclusão objetiva.
+- Em "duration": use "1 a 2 aulas" quando a atividade tiver construção, teste, melhoria e apresentação; "1 aula" apenas para atividades simples.
+- Em cenários financeiros, nunca escreva apenas "Economia: R$ X". Use "Sobra mensal prevista: R$ X" ou "Saldo disponível para poupança/investimento: R$ X".
+- Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
 
 ${verifiedSources.length > 0
   ? `Fontes verificadas em bases acadêmicas reais (Crossref, OpenAlex, SciELO, Semantic Scholar):\n${verifiedSources.map((s, i) => `${i + 1}. ${s.abnt}`).join('\n')}`
@@ -197,7 +200,8 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "teacherGabarito": [
     "Cenário 1: resultado esperado com valores ou conclusão objetiva.",
     "Cenário 2: resultado do imprevisto com impacto observado."
-  ]
+  ],
+  "teacherOrientation": "Durante a atividade, estimule os alunos a justificarem suas escolhas e registrarem as melhorias no protótipo."
 }`
 }
 

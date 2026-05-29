@@ -363,6 +363,11 @@ function renderSteamConnection(steamConnection) {
   return items ? `<ul class="steam-connection">${items}</ul>` : "";
 }
 
+function renderTeacherOrientation(text) {
+  if (!text) return "";
+  return `<p class="teacher-note"><strong>Orientação ao professor:</strong> ${formatCleanMultiline(text)}</p>`;
+}
+
 function renderTestTable(readyMaterials) {
   const items = normalizeTextItems(readyMaterials || []);
   const scenarioCount = items.filter((item) => /^CEN[AÁ]RIO/i.test(item)).length;
@@ -485,6 +490,7 @@ function buildActivityPrintHTML(activity) {
     .rubric-table th, .rubric-table td { border: 1px solid #999; padding: 0.06cm 0.1cm; text-align: left; vertical-align: top; }
     .rubric-table th { background: #eee; font-weight: 700; }
     .ref { padding-left: 0.8cm; text-indent: -0.8cm; font-size: 8.8pt; line-height: 1.25; }
+    .teacher-note { margin-top: 0.1cm; padding: 0.07cm 0.18cm; border-left: 2px solid #555; background: #F9FAFB; font-style: italic; }
     .steam-connection { padding-left: 0.42cm; margin: 0; }
     .steam-connection li { margin-bottom: 0.04cm; }
     .duration-line { font-size: 8.4pt; color: #444; margin-top: 0.05cm; }
@@ -528,6 +534,7 @@ function buildActivityPrintHTML(activity) {
     <div class="section-heading"><span class="section-number">3</span><div class="section-title">Problema/desafio</div></div>
     <p>${formatCleanMultiline(experience.problem)}</p>
     ${experience.mission ? `<p class="mission"><strong>Missão:</strong> ${formatCleanMultiline(experience.mission)}</p>` : ""}
+    ${renderTeacherOrientation(experience.teacherOrientation)}
   </div>
 
   <div class="section">
