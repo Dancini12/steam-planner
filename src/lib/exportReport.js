@@ -430,8 +430,117 @@ function renderAssessmentRubric(experience) {
   </table>`;
 }
 
-function buildActivityPrintHTML(activity) {
-  const experience = normalizeLearningExperience(activity);
+// ── Export validation ─────────────────────────────────────────────────────────
+
+const DANGLING = /\s+(e|ou|de|da|do|dos|das|com|para|que|se|em|na|no|nas|nos|a|o|ao|por|pelo|pela|pelos|pelas|um|uma|uns|umas|mais|mas|nem|sobre|após|antes|entre|sua|seu|seus|suas|este|esta|estes|estas|esse|essa|todo|toda|qual|quando|onde|como|permitindo|incluindo|utilizando|tendo|gerando)\.?$/i;
+
+function fixDanglingText(text) {
+  if (!text) return text;
+  let t = text.replace(/\.{3,}|…/g, ".").trim();
+  t = t.replace(DANGLING, "").trim();
+  if (t && !/[.!?:;)\]"]$/.test(t)) t += ".";
+  return t;
+}
+
+function autoFixExperience(experience) {
+  const fix = fixDanglingText;
+  return {
+    ...experience,
+    objective: fix(experience.objective),
+    problem: fix(experience.problem),
+    mission: fix(experience.mission),
+    makerChallenge: fix(experience.makerChallenge),
+    finalProduct: fix(experience.finalProduct),
+    teacherOrientation: experience.teacherOrientation ? fix(experience.teacherOrientation) : experience.teacherOrientation,
+    stages: (experience.stages || []).map((s) => ({ ...s, description: fix(s.description) })),
+    materialFunctions: (experience.materialFunctions || []).map(fix),
+    readyMaterials: (experience.readyMaterials || []).map(fix),
+    teacherGabarito: (experience.teacherGabarito || []).map(fix),
+  };
+}
+
+function extractBRLAmounts(text) {
+  return [...(text || "").matchAll(/R\$\s*([\d.]+,\d{2})/g)]
+    .map((m) => parseFloat(m[1].replace(/\./g, "").replace(",", ".")));
+}
+
+function validateExportedExperience(experience) {
+  const blocking = [];
+  const warnings = [];
+
+  // Required fields
+  [
+    ["Objetivo geral", experience.objective],
+    ["Problema/desafio", experience.problem],
+    ["Missão", experience.mission],
+    ["Desafio Maker", experience.makerChallenge],
+    ["Produto final", experience.finalProduct],
+  ].forEach(([label, value]) => {
+    if (!value || value.trim().length < 10) {
+      blocking.push(`Campo "${label}" ausente ou incompleto.`);
+    }
+  });
+
+  // Stages
+  (experience.stages || []).forEach((s) => {
+    if (!s.description || s.description.trim().length < 10) {
+      blocking.push(`Etapa ${s.number || "?"}: descrição ausente ou incompleta.`);
+    }
+  });
+
+  // Gabarito
+  if (!experience.teacherGabarito || experience.teacherGabarito.length === 0) {
+    blocking.push("Gabarito do professor ausente.");
+  } else {
+    experience.teacherGabarito.forEach((item, i) => {
+      if (!item || item.trim().length < 15) {
+        blocking.push(`Gabarito cenário ${i + 1}: conteúdo incompleto.`);
+      }
+      // Truncated currency: R$ followed by fewer than 3 digits without proper decimal
+      if (/R\$\s*\d{1,2}(?!\d|,|\.)(?:\s*\.|$)/.test(item)) {
+        blocking.push(`Gabarito cenário ${i + 1}: valor monetário possivelmente truncado.`);
+      }
+      // "déficit" but last BRL value is positive
+      if (/d[eé]ficit/i.test(item)) {
+        const amounts = extractBRLAmounts(item);
+        const last = amounts[amounts.length - 1];
+        if (last !== undefined && last > 0) {
+          blocking.push(`Gabarito cenário ${i + 1}: texto menciona "déficit" mas saldo calculado é positivo (${last.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}).`);
+        }
+      }
+    });
+  }
+
+  // Bibliography
+  if (!experience.bibliography || experience.bibliography.length === 0) {
+    warnings.push("Referências bibliográficas ausentes.");
+  }
+
+  return { blocking, warnings };
+}
+
+function buildExportErrorHTML(blocking, warnings) {
+  const li = (items, cls) => items.map((i) => `<li class="${cls}">${escapeHtml(i)}</li>`).join("");
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Validação — Problemas encontrados</title>
+<style>
+  body{font-family:Arial,sans-serif;padding:2cm;max-width:20cm;margin:0 auto}
+  h1{color:#DC2626;border-bottom:2px solid #DC2626;padding-bottom:.5rem}
+  ul{padding-left:1.5rem} li{margin-bottom:.4rem}
+  .blocking{color:#DC2626} .warning{color:#D97706}
+  .info{background:#FEF3C7;border:1px solid #F59E0B;padding:1rem;border-radius:6px;margin-top:1.5rem}
+</style></head><body>
+<h1>⚠️ Exportação bloqueada</h1>
+<p>O documento apresenta problemas que precisam ser corrigidos antes da exportação:</p>
+${blocking.length ? `<p><strong>Bloqueantes:</strong></p><ul>${li(blocking, "blocking")}</ul>` : ""}
+${warnings.length ? `<p><strong>Avisos:</strong></p><ul>${li(warnings, "warning")}</ul>` : ""}
+<div class="info"><strong>O que fazer:</strong> Feche esta janela, gere uma nova atividade e tente exportar novamente.</div>
+</body></html>`;
+}
+
+// ── HTML builder ──────────────────────────────────────────────────────────────
+
+function buildActivityPrintHTMLFromExperience(experience) {
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -598,17 +707,34 @@ function buildActivityPrintHTML(activity) {
 </html>`;
 }
 
-export function openActivityPrintWindow(activity) {
-  const html = buildActivityPrintHTML(activity);
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+function buildActivityPrintHTML(activity) {
+  const experience = autoFixExperience(normalizeLearningExperience(activity));
+  return buildActivityPrintHTMLFromExperience(experience);
+}
+
+function openBlob(html) {
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
-  const newWindow = window.open(url, '_blank');
-  if (!newWindow) {
+  const win = window.open(url, "_blank");
+  if (!win) {
     alert("Não foi possível abrir o PDF. Verifique se o navegador está bloqueando pop-ups e tente novamente.");
     URL.revokeObjectURL(url);
-    return;
+    return false;
   }
   setTimeout(() => URL.revokeObjectURL(url), 60000);
+  return true;
+}
+
+export function openActivityPrintWindow(activity) {
+  const experience = autoFixExperience(normalizeLearningExperience(activity));
+  const { blocking, warnings } = validateExportedExperience(experience);
+
+  if (blocking.length > 0) {
+    openBlob(buildExportErrorHTML(blocking, warnings));
+    return;
+  }
+
+  openBlob(buildActivityPrintHTMLFromExperience(experience));
 }
 import {
   EVALUATION_INSTRUMENTS,
