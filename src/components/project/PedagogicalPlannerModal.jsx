@@ -56,24 +56,6 @@ const STEAM_COMPETENCIES = [
 ]
 
 const PERSONALIZATION_OPTIONS = {
-  detailLevel: {
-    title: 'Nível de detalhamento',
-    type: 'single',
-    options: [
-      { id: 'resumo_pratico', label: 'Resumo prático', instruction: 'Manter a experiência objetiva, com instruções diretas e sem excesso de texto.' },
-      { id: 'passo_a_passo', label: 'Etapas curtas', instruction: 'Organizar a execução em 6 etapas curtas, com foco em ação, construção, teste e melhoria.' },
-      { id: 'roteiro_completo', label: 'Oficina compacta', instruction: 'Incluir todos os elementos obrigatórios da oficina sem criar seções extras ou fundamentação longa.' }
-    ]
-  },
-  materials: {
-    title: 'Materiais',
-    type: 'single',
-    options: [
-      { id: 'quantidade_grupo', label: 'Quantidade por grupo', instruction: 'Listar materiais com quantidade por grupo e, se necessário, quantidade total para a turma.' },
-      { id: 'baixo_custo', label: 'Baixo custo/reutilizáveis', instruction: 'Priorizar materiais baratos, recicláveis, reutilizáveis e fáceis de encontrar em escolas públicas.' },
-      { id: 'sem_eletronica', label: 'Sem eletrônica', instruction: 'Evitar materiais eletrônicos e propor alternativas analógicas ou de papelaria.' }
-    ]
-  },
   assessment: {
     title: 'Avaliação',
     type: 'single',
@@ -85,8 +67,6 @@ const PERSONALIZATION_OPTIONS = {
 }
 
 const defaultPersonalization = {
-  detailLevel: 'resumo_pratico',
-  materials: 'quantidade_grupo',
   assessment: 'observacao'
 }
 
@@ -207,8 +187,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
     steamCompetencies: [],
     numberOfClasses: '',
     modality: 'grupo',
-    personalization: buildDefaultPersonalization(),
-    manualInstructions: ''
+    personalization: buildDefaultPersonalization()
   })
   const [previewData, setPreviewData] = useState(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -232,8 +211,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
       steamCompetencies: [],
       numberOfClasses: '',
       modality: 'grupo',
-      personalization: buildDefaultPersonalization(),
-      manualInstructions: ''
+      personalization: buildDefaultPersonalization()
     })
     setPreviewData(null)
     setError('')
@@ -278,10 +256,6 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
         .filter((option) => selectedIds.includes(option.id))
         .forEach((option) => instructions.push(`- ${option.instruction}`))
     })
-
-    if (formData.manualInstructions.trim()) {
-      instructions.push(`- Solicitação adicional do professor: ${formData.manualInstructions.trim()}`)
-    }
 
     return instructions.join('\n')
   }
@@ -355,11 +329,6 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
         }
       }
     })
-    setError('')
-  }
-
-  const handleManualInstructionsChange = (manualInstructions) => {
-    setFormData(prev => ({ ...prev, manualInstructions }))
     setError('')
   }
 
@@ -640,18 +609,6 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
               </div>
             ))}
 
-            <div style={personalizationGroupStyle}>
-              <h4 style={previewSubtitleStyle}>Pedido manual opcional</h4>
-              <TextField
-                placeholder="Ex.: A turma tem poucos materiais, prefiro grupos de 4 alunos, evite uso de celular..."
-                value={formData.manualInstructions}
-                onChange={handleManualInstructionsChange}
-                multiline
-                rows={3}
-                fullWidth
-                variant="light"
-              />
-            </div>
           </div>
         )
 
