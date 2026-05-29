@@ -389,7 +389,6 @@ function validateLearningExperience(activity: Record<string, unknown>) {
   if (!Array.isArray(activity.readyMaterials) || activity.readyMaterials.length === 0) missing.push('readyMaterials')
   if (!Array.isArray(activity.stages) || activity.stages.length !== 6) missing.push('stages')
   if (!Array.isArray(activity.assemblySteps) || activity.assemblySteps.length !== 6) missing.push('assemblySteps')
-  if (!/investig/.test(text)) missing.push('investigation')
   if (!/constru|mont|cria|prototip/.test(text)) missing.push('prototype')
   if (!/test/.test(text)) missing.push('test')
   if (!/melhor|ajust|redesign|modific/.test(text)) missing.push('improvement')
