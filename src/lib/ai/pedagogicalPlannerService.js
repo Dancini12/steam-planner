@@ -34,7 +34,13 @@ function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClas
 
   const uniqueLetters = [...new Set(steamLetters)]
 
-  const classesInfo = numberOfClasses ? `- Duração total: ${numberOfClasses} aulas` : ''
+  const nClasses = parseInt(numberOfClasses) || 1
+  const classesInfo = `- Duração total: ${nClasses} aula${nClasses !== 1 ? 's' : ''}`
+  const complexityGuide = nClasses >= 3
+    ? `- COMPLEXIDADE PARA ${nClasses} AULAS: projeto mais amplo — pesquisa inicial, planejamento, prototipagem, testes comparativos, redesign e apresentação final.`
+    : nClasses >= 2
+      ? `- COMPLEXIDADE PARA ${nClasses} AULAS: construção mais elaborada, investigação detalhada, teste e melhoria com mais tempo, apresentação dos grupos.`
+      : `- COMPLEXIDADE PARA 1 AULA: atividade compacta — construção simples, teste rápido, melhoria objetiva, apresentação curta; evitar etapas longas e pesquisa extensa.`
   const modalityInfo = modality === 'individual'
     ? '- Modalidade: INDIVIDUAL - o aluno constrói, testa, registra e melhora sua solução'
     : '- Modalidade: EM GRUPO - organize equipes com papéis simples: construtor, testador, registrador e apresentador'
@@ -54,6 +60,7 @@ Dados da experiência:
 - Tema central: ${theme}
 - Áreas STEAM envolvidas: ${uniqueLetters.join(', ')}
 ${classesInfo}
+${complexityGuide}
 ${modalityInfo}
 - Habilidades BNCC selecionadas do banco offline:
 ${formatBnccSuggestions(bnccSuggestions)}
@@ -115,7 +122,6 @@ Regras de conteúdo:
 - Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
 - Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
 - Inclua "teacherGabarito": resultados esperados de cada cenário, 1 frase curta por item com valores, saldo ou conclusão objetiva.
-- Em "duration": use "1 a 2 aulas" quando a atividade tiver construção, teste, melhoria e apresentação; "1 aula" apenas para atividades simples.
 - Em cenários financeiros, nunca escreva apenas "Economia: R$ X". Use "Sobra mensal prevista: R$ X" ou "Saldo disponível para poupança/investimento: R$ X".
 - Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
 
@@ -522,7 +528,7 @@ export class PedagogicalPlannerService {
         ...normalized,
         grade,
         discipline,
-        duration: normalized.duration || `${numberOfClasses || 1} aula${numberOfClasses > 1 ? 's' : ''}`,
+        duration: `${parseInt(numberOfClasses) || 1} aula${(parseInt(numberOfClasses) || 1) !== 1 ? 's' : ''}`,
         steamMatrix: normalized.steamMatrix || buildSteamMatrixFromCompetencies(steamCompetencies),
         modality: modality || 'grupo'
       },

@@ -365,7 +365,7 @@ function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalReq
     ...raw,
     title: limitText(raw.title || `Desafio Maker: ${theme}`, 80),
     theme,
-    duration: raw.duration || `${request.numberOfClasses || 1} aula${request.numberOfClasses && String(request.numberOfClasses) !== '1' ? 's' : ''}`,
+    duration: `${Number(request.numberOfClasses) || 1} aula${(Number(request.numberOfClasses) || 1) !== 1 ? 's' : ''}`,
     objective,
     objectives: [objective],
     problem,
@@ -483,6 +483,13 @@ Parâmetros:
 - Tema central: ${request.theme}
 - Áreas STEAM envolvidas: ${steamLetters.join(', ')}
 ${classesInfo}
+${
+  Number(request.numberOfClasses) >= 3
+    ? `- COMPLEXIDADE PARA ${request.numberOfClasses} AULAS: projeto mais amplo — inclua pesquisa inicial, planejamento, prototipagem, testes comparativos, redesign e apresentação final.`
+    : Number(request.numberOfClasses) >= 2
+      ? `- COMPLEXIDADE PARA ${request.numberOfClasses} AULAS: construção mais elaborada, investigação detalhada, teste e melhoria com mais tempo, apresentação dos grupos.`
+      : `- COMPLEXIDADE PARA 1 AULA: atividade compacta — construção simples, teste rápido, melhoria objetiva, apresentação curta; evitar etapas longas e pesquisa extensa.`
+}
 
 REGRA CENTRAL:
 Toda atividade deve nascer de um problema real, desafio investigativo, missão prática, construção/prototipagem, teste e melhoria da solução.
@@ -526,7 +533,6 @@ Regras:
 - Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
 - Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
 - Inclua "teacherGabarito": resultados esperados de cada cenário, 1 frase curta por item com valores, saldo ou conclusão objetiva.
-- Em "duration": use "1 a 2 aulas" quando a atividade tiver construção, teste, melhoria e apresentação; "1 aula" apenas para atividades simples.
 - Em cenários financeiros, nunca escreva apenas "Economia: R$ X". Use "Sobra mensal prevista: R$ X" ou "Saldo disponível para poupança/investimento: R$ X".
 - Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
 
