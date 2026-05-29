@@ -569,7 +569,6 @@ export function validateLearningExperience(activity) {
   if (!(activity.readyMaterials || []).length) missing.push("materiais prontos");
   if ((activity.stages || []).length !== 6) missing.push("6 etapas de desenvolvimento e montagem");
   if ((activity.assemblySteps || []).length !== 6) missing.push("passo a passo de montagem");
-  if (!/investig/.test(text)) missing.push("investigação");
   if (!/constru|mont|cria|prototip/.test(text)) missing.push("construção/prototipagem");
   if (!/test/.test(text)) missing.push("teste prático");
   if (!/melhor|ajust|redesign|modific/.test(text)) missing.push("melhoria/redesign");
