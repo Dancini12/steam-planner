@@ -335,15 +335,12 @@ function renderMaterialsForExperience(experience) {
   const materialFunctions = normalizeTextItems(experience.materialFunctions || []);
   const readyMaterials = normalizeTextItems(experience.readyMaterials || []);
 
-  const materialLines = materials.map((material, index) => {
-    const functionText = materialFunctions[index] || "";
-    const materialName = material.split(/\s[-–—]\s/)[0].trim().toLowerCase();
-    const cleanFunction = functionText.replace(new RegExp(`^${materialName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*:\\s*`, "i"), "");
-    return cleanFunction ? `${material} - uso: ${cleanFunction}` : material;
-  });
+  // materialFunctions already contain the material name ("Cartolina: função prática.")
+  // Render them directly; fall back to plain materials list if unavailable
+  const lines = materialFunctions.length > 0 ? materialFunctions : materials;
 
   return `
-    ${renderSimpleList(materialLines)}
+    ${renderSimpleList(lines)}
     ${readyMaterials.length ? `<div class="ready-materials"><strong>Materiais prontos:</strong>${renderSimpleList(readyMaterials)}</div>` : ""}
   `;
 }
@@ -494,10 +491,17 @@ function buildActivityPrintHTML(activity) {
   <script>
     window.addEventListener('load', function() {
       setTimeout(function() {
+        var body = document.body;
         var twoPages = 1122 * 2;
-        if (document.body.scrollHeight > twoPages) document.body.classList.add('tight');
-        if (document.body.scrollHeight > twoPages) document.body.classList.add('ultra-tight');
-        window.print();
+        if (body.scrollHeight > twoPages) {
+          body.classList.add('tight');
+          setTimeout(function() {
+            if (body.scrollHeight > twoPages) body.classList.add('ultra-tight');
+            window.print();
+          }, 80);
+        } else {
+          window.print();
+        }
       }, 400);
     });
   </script>

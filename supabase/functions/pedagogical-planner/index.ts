@@ -274,7 +274,7 @@ function normalizeAssemblySteps(raw: Record<string, unknown>, materials: string[
     return {
       number: index + 1,
       title,
-      description: limitText(description, 360),
+      description: limitText(description, 440),
     }
   })
 }
@@ -283,7 +283,7 @@ function normalizeReadyMaterials(raw: Record<string, unknown>, theme: string): s
   const source = raw.readyMaterials || raw.printableMaterials || raw.scenarios || raw.testScenarios
   const items = toTextArray(source)
   const selected = (items.length ? items : buildDefaultReadyMaterials(theme)).slice(0, 4)
-  return selected.map((item) => limitText(item, 220))
+  return selected.map((item) => limitText(item, 520))
 }
 
 function normalizeAssessmentRubric(raw: Record<string, unknown>): Record<string, string>[] {
@@ -296,8 +296,8 @@ function normalizeAssessmentRubric(raw: Record<string, unknown>): Record<string,
   const fallback = DEFAULT_ASSESSMENT.map(parseRubricItem).filter(Boolean) as Record<string, string>[]
 
   return (items.length ? items : fallback).slice(0, 4).map((item) => ({
-    criterion: limitText(item.criterion, 28),
-    observation: limitText(item.observation, 110),
+    criterion: limitText(item.criterion, 40),
+    observation: limitText(item.observation, 180),
   }))
 }
 
@@ -310,19 +310,19 @@ function normalizeReferences(value: unknown): string[] {
 
 function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalRequest): Record<string, unknown> {
   const theme = cleanText(raw.theme || request.theme)
-  const objective = limitText(raw.objective || toTextArray(raw.objectives)[0] || 'Investigar um problema real, construir uma solução, testar resultados e propor melhoria.', 170)
-  const problem = limitText(raw.problem || `Como criar uma solução prática para um problema real relacionado a ${theme.toLowerCase()}?`, 340)
-  const mission = limitText(raw.mission || `Sua equipe deverá investigar ${theme}, construir uma solução simples, testar e melhorar o resultado.`, 180)
-  const makerChallenge = limitText(raw.makerChallenge || raw.guidingQuestion || `Construir uma primeira solução para ${theme.toLowerCase()}, testar, registrar falhas e melhorar pelo menos um elemento.`, 300)
-  const finalProduct = limitText(raw.finalProduct || `Protótipo físico, visual ou digital sobre ${theme.toLowerCase()}, com registro do teste e da melhoria feita.`, 220)
+  const objective = limitText(raw.objective || toTextArray(raw.objectives)[0] || 'Investigar um problema real, construir uma solução, testar resultados e propor melhoria.', 280)
+  const problem = limitText(raw.problem || `Como criar uma solução prática para um problema real relacionado a ${theme.toLowerCase()}?`, 520)
+  const mission = limitText(raw.mission || `Sua equipe deverá investigar ${theme}, construir uma solução simples, testar e melhorar o resultado.`, 320)
+  const makerChallenge = limitText(raw.makerChallenge || raw.guidingQuestion || `Construir uma primeira solução para ${theme.toLowerCase()}, testar, registrar falhas e melhorar pelo menos um elemento.`, 380)
+  const finalProduct = limitText(raw.finalProduct || `Protótipo físico, visual ou digital sobre ${theme.toLowerCase()}, com registro do teste e da melhoria feita.`, 300)
   const materials = toTextArray(raw.materials).length ? toTextArray(raw.materials) : DEFAULT_MATERIALS
-  const normalizedMaterials = materials.slice(0, 6).map((item) => limitText(item, 90))
+  const normalizedMaterials = materials.slice(0, 6).map((item) => limitText(item, 120))
   const stages = normalizeStages(raw, normalizedMaterials, theme)
   const assemblySteps = stages
   const sourceMaterialFunctions = toTextArray(raw.materialFunctions)
   const materialFunctions = (sourceMaterialFunctions.length >= normalizedMaterials.length ? sourceMaterialFunctions : buildDefaultMaterialFunctions(normalizedMaterials))
     .slice(0, normalizedMaterials.length || 6)
-    .map((item) => limitText(item, 120))
+    .map((item) => limitText(item, 200))
   const readyMaterials = normalizeReadyMaterials(raw, theme)
   const assessmentRubric = normalizeAssessmentRubric(raw)
   const assessment = assessmentRubric.map((item) => `${item.criterion} | ${item.observation}`)
@@ -330,7 +330,7 @@ function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalReq
 
   return {
     ...raw,
-    title: limitText(raw.title || `Desafio Maker: ${theme}`, 70),
+    title: limitText(raw.title || `Desafio Maker: ${theme}`, 80),
     theme,
     duration: raw.duration || `${request.numberOfClasses || 1} aula${request.numberOfClasses && String(request.numberOfClasses) !== '1' ? 's' : ''}`,
     objective,

@@ -29,20 +29,20 @@ const FALLBACK_REFERENCE =
   "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.";
 
 const LIMITS = {
-  title: 70,
-  objective: 170,
-  problem: 360,
-  mission: 190,
-  material: 90,
-  stage: 240,
-  stageTight: 170,
-  materialFunction: 120,
-  readyMaterial: 230,
-  readyMaterialTight: 180,
-  makerChallenge: 230,
-  finalProduct: 170,
-  assessment: 120,
-  maxChars: 4300
+  title: 80,
+  objective: 280,
+  problem: 520,
+  mission: 320,
+  material: 120,
+  stage: 440,
+  stageTight: 380,
+  materialFunction: 200,
+  readyMaterial: 520,
+  readyMaterialTight: 440,
+  makerChallenge: 380,
+  finalProduct: 300,
+  assessment: 180,
+  maxChars: 7000
 };
 
 export const LEARNING_EXPERIENCE_SECTIONS = [
@@ -513,8 +513,8 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
     bibliography = normalizeReferences(activity.bibliography || activity.references, true);
     normalized = {
       ...normalized,
-      problem: limitText(problem, 280),
-      mission: limitText(mission, 150),
+      problem: limitText(problem, 460),
+      mission: limitText(mission, 280),
       stages,
       developmentStages: stages,
       developmentAssemblySteps: stages,
