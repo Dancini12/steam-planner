@@ -1760,6 +1760,141 @@ function validateExportedExperience(experience) {
   return { blocking, warnings };
 }
 
+function rebuildStructuredTeacherGabarito(experience) {
+  const financialGabarito = buildFinancialGabaritoFromReadyMaterials(experience.readyMaterials || []);
+  const fallbackGabarito = (experience.teacherGabarito || []).length
+    ? experience.teacherGabarito
+    : buildFallbackGabaritoFromReadyMaterials(experience.readyMaterials || []);
+  const baseGabarito = financialGabarito.length ? financialGabarito : fallbackGabarito;
+  if (!baseGabarito.length) return experience;
+
+  const teacherGabarito = completeGabaritoForScenarios(
+    baseGabarito,
+    experience.readyMaterials || []
+  ).map(reviewGabaritoText);
+
+  return {
+    ...experience,
+    teacherGabarito: orderGabaritoItems(teacherGabarito)
+  };
+}
+
+function repairTextBeforeExport(experience) {
+  const fix = fixDanglingText;
+  return {
+    ...experience,
+    title: reviewText(experience.title),
+    theme: reviewText(experience.theme),
+    duration: reviewText(experience.duration),
+    objective: fix(experience.objective),
+    problem: fix(experience.problem),
+    mission: fix(experience.mission),
+    makerChallenge: fix(experience.makerChallenge),
+    finalProduct: fix(experience.finalProduct),
+    teacherOrientation: experience.teacherOrientation ? fix(experience.teacherOrientation) : experience.teacherOrientation,
+    materials: (experience.materials || []).map(fix).map(fixMaterialSafety),
+    stages: (experience.stages || []).map((stage) => ({
+      ...stage,
+      title: reviewText(stage.title),
+      description: fixDecisionLanguage(fix(stage.description))
+    })),
+    materialFunctions: (experience.materialFunctions || []).map(fix).map(fixMaterialSafety),
+    readyMaterials: (experience.readyMaterials || []).map(fix).map(fixDecisionLanguage),
+    assessmentRubric: (experience.assessmentRubric || []).map((item) => ({
+      ...item,
+      criterion: cleanCriterionName(item.criterion || ""),
+      observation: fix(item.observation || item.description || "")
+    })),
+    steamConnection: Object.fromEntries(
+      Object.entries(experience.steamConnection || {}).map(([key, value]) => [key, fix(value)])
+    ),
+    teacherGabarito: (experience.teacherGabarito || []).map(reviewGabaritoText)
+  };
+}
+
+function getExportRepairCorrections(blocking, warnings) {
+  const text = [...(blocking || []), ...(warnings || [])].join(" ");
+  const corrections = [];
+
+  if (/gabarito|c[aá]lculo|financeir|receita|despesa|economia|melhoria|cen[aá]rio/i.test(text)) {
+    corrections.push("gabarito financeiro recalculado por dados estruturados");
+  }
+
+  if (/letra min[uú]scula|espa[cç]os|quebras de linha|html|markdown|texto|frase/i.test(text)) {
+    corrections.push("revisão textual reaplicada antes da exportação");
+  }
+
+  if (!corrections.length) {
+    corrections.push("autocorreção geral reaplicada");
+  }
+
+  return corrections;
+}
+
+function repairExperienceBeforeExport(experience, blocking, warnings) {
+  const corrections = getExportRepairCorrections(blocking, warnings);
+  let repaired = { ...experience };
+
+  if (corrections.some((item) => /gabarito financeiro/i.test(item))) {
+    repaired = rebuildStructuredTeacherGabarito(repaired);
+  }
+
+  if (corrections.some((item) => /textual|geral/i.test(item))) {
+    repaired = repairTextBeforeExport(repaired);
+  }
+
+  return repaired;
+}
+
+function prepareExperienceForExport(activity, maxAttempts = 3) {
+  let experience = autoFixExperience(normalizeLearningExperience(activity));
+  let lastValidation = { blocking: [], warnings: [] };
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const validation = validateExportedExperience(experience);
+    lastValidation = validation;
+    console.info("[export-validation] tentativa", attempt, validation);
+
+    if (validation.blocking.length === 0) {
+      return {
+        ok: true,
+        experience,
+        blocking: [],
+        warnings: validation.warnings,
+        attempts: attempt
+      };
+    }
+
+    const corrections = getExportRepairCorrections(validation.blocking, validation.warnings);
+    experience = repairExperienceBeforeExport(experience, validation.blocking, validation.warnings);
+    console.info("[export-repair] correções aplicadas", corrections);
+    experience = autoFixExperience(experience);
+  }
+
+  const finalValidation = validateExportedExperience(experience);
+
+  if (finalValidation.blocking.length === 0) {
+    return {
+      ok: true,
+      experience,
+      blocking: [],
+      warnings: finalValidation.warnings,
+      attempts: maxAttempts
+    };
+  }
+
+  console.warn("[export-blocked] erros persistentes", finalValidation.blocking);
+
+  return {
+    ok: false,
+    experience,
+    blocking: finalValidation.blocking,
+    warnings: finalValidation.warnings,
+    attempts: maxAttempts,
+    lastValidation
+  };
+}
+
 function buildExportErrorHTML(blocking, warnings) {
   const li = (items, cls) => items.map((i) => `<li class="${cls}">${escapeHtml(i)}</li>`).join("");
   return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
@@ -2038,12 +2173,11 @@ function buildActivityPrintHTMLFromExperience(experience) {
 }
 
 function buildActivityPrintHTML(activity) {
-  const experience = autoFixExperience(normalizeLearningExperience(activity));
-  const { blocking, warnings } = validateExportedExperience(experience);
-  if (blocking.length > 0) {
-    return buildExportErrorHTML(blocking, warnings);
+  const result = prepareExperienceForExport(activity);
+  if (!result.ok) {
+    return buildExportErrorHTML(result.blocking, result.warnings);
   }
-  return buildActivityPrintHTMLFromExperience(experience);
+  return buildActivityPrintHTMLFromExperience(result.experience);
 }
 
 function openBlob(html) {
@@ -2059,15 +2193,14 @@ function openBlob(html) {
 }
 
 export function openActivityPrintWindow(activity) {
-  const experience = autoFixExperience(normalizeLearningExperience(activity));
-  const { blocking, warnings } = validateExportedExperience(experience);
+  const result = prepareExperienceForExport(activity);
 
-  if (blocking.length > 0) {
-    openBlob(buildExportErrorHTML(blocking, warnings));
+  if (!result.ok) {
+    openBlob(buildExportErrorHTML(result.blocking, result.warnings));
     return;
   }
 
-  openBlob(buildActivityPrintHTMLFromExperience(experience));
+  openBlob(buildActivityPrintHTMLFromExperience(result.experience));
 }
 import {
   EVALUATION_INSTRUMENTS,
