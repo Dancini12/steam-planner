@@ -369,16 +369,35 @@ function parseMaterialItem(item) {
   const useText = (parts[1] || "").trim();
   const obsText = (parts[2] || "").trim();
 
-  // Parse qty and unit
+  // Parse qty (numeral) and unit (type + distribution context)
   let qty = "1";
   let unit = "por grupo";
   if (qtyUnit) {
-    const unitMatch = qtyUnit.match(/\b(por\s+grupo|para\s+a\s+turma|por\s+aluno|por\s+turma|conforme\s+disponibilidade)\b/i);
-    if (unitMatch) {
-      unit = unitMatch[1].trim();
-      qty = qtyUnit.slice(0, unitMatch.index).trim() || "1";
+    const distPattern = /\b(por\s+grupo|para\s+a\s+turma|por\s+aluno|por\s+turma|conforme\s+disponibilidade)\b/i;
+    const distMatch = qtyUnit.match(distPattern);
+    if (distMatch) {
+      const distribution = distMatch[1].trim();
+      const before = qtyUnit.slice(0, distMatch.index).trim();
+      // Extract leading numeral: "1", "2 a 4", "20 a 30", etc.
+      const numMatch = before.match(/^(\d+(?:\s+a\s+\d+)?)/);
+      if (numMatch) {
+        qty = numMatch[1].trim();
+        const typeStr = before.slice(numMatch[0].length).trim();
+        unit = typeStr ? `${typeStr} ${distribution}` : distribution;
+      } else {
+        // Non-numeric qty like "quantidade variada"
+        qty = before || "—";
+        unit = distribution;
+      }
     } else {
-      qty = qtyUnit || "1";
+      // No distribution keyword — extract leading number if present
+      const numMatch = qtyUnit.match(/^(\d+(?:\s+a\s+\d+)?)/);
+      if (numMatch) {
+        qty = numMatch[1].trim();
+        unit = qtyUnit.slice(numMatch[0].length).trim() || "por grupo";
+      } else {
+        qty = qtyUnit || "1";
+      }
     }
   }
 
