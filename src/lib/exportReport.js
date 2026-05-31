@@ -48,6 +48,7 @@ function stripDecorativeMarkers(text) {
     .replace(/\.{3,}|…/g, ".")
     .replace(/[Pp]ós-its?/g, "notas adesivas")
     .replace(/[Pp]ost-[Ii]ts?/g, "notas adesivas")
+    .replace(/\b(tesouras?)(?!\s+sem\s+ponta)/gi, (m) => /s$/i.test(m) ? "Tesouras sem ponta" : "Tesoura sem ponta")
     .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/\*([^*\n]+)\*/g, "$1")
@@ -341,22 +342,90 @@ function renderExperienceStages(stages) {
     .join("");
 }
 
+function parseMaterialItem(item) {
+  const cleaned = stripDecorativeMarkers(item).replace(/\.\s*$/, "").trim();
+  if (!cleaned) return null;
+
+  // Find name/rest separator: colon preferred, then " - "
+  let name, rest;
+  const colonIdx = cleaned.indexOf(":");
+  if (colonIdx > 0) {
+    name = cleaned.slice(0, colonIdx).trim();
+    rest = cleaned.slice(colonIdx + 1).trim();
+  } else {
+    const dashMatch = cleaned.match(/^(.+?)\s+-\s+(.+)$/);
+    if (dashMatch) {
+      name = dashMatch[1].trim();
+      rest = dashMatch[2].trim();
+    } else {
+      name = cleaned;
+      rest = "";
+    }
+  }
+
+  // Split rest on em-dash: qty_unit — use — obs (up to 3 parts)
+  const parts = rest ? rest.split(/\s+[—–]\s+/) : [];
+  const qtyUnit = (parts[0] || "").trim();
+  const useText = (parts[1] || "").trim();
+  const obsText = (parts[2] || "").trim();
+
+  // Parse qty and unit
+  let qty = "1";
+  let unit = "por grupo";
+  if (qtyUnit) {
+    const unitMatch = qtyUnit.match(/\b(por\s+grupo|para\s+a\s+turma|por\s+aluno|por\s+turma|conforme\s+disponibilidade)\b/i);
+    if (unitMatch) {
+      unit = unitMatch[1].trim();
+      qty = qtyUnit.slice(0, unitMatch.index).trim() || "1";
+    } else {
+      qty = qtyUnit || "1";
+    }
+  }
+
+  // Observation: use explicit third segment, or derive from material name
+  let obs = obsText;
+  if (!obs) {
+    if (/tesoura\s+sem\s+ponta/i.test(name)) obs = "Segura para o E.F.";
+    else if (/\bcola\s+quente\b|\bestilete\b|\bsolda\b|\bferro\s+de\s+soldar\b/i.test(name)) obs = "Supervisão do professor";
+    else obs = "—";
+  }
+
+  return { name: name || cleaned, qty, unit, use: useText || "—", obs };
+}
+
 function renderMaterialsForExperience(experience) {
   const materials = normalizeTextItems(experience.materials || []);
   const materialFunctions = normalizeTextItems(experience.materialFunctions || []);
   const readyMaterials = normalizeTextItems(experience.readyMaterials || []);
 
-  // materialFunctions already contain the material name ("Cartolina: função prática.")
-  // Render them directly; fall back to plain materials list if unavailable
   const lines = materialFunctions.length > 0 ? materialFunctions : materials;
-
-  // Exclude the "TABELA DE TESTE" line — it is rendered as an HTML table in section 5
   const displayedReadyMaterials = readyMaterials.filter((item) => !/^tabela de teste/i.test(item));
 
-  return `
-    ${renderSimpleList(lines)}
-    ${displayedReadyMaterials.length ? `<div class="ready-materials"><strong>Materiais prontos:</strong>${renderSimpleList(displayedReadyMaterials)}</div>` : ""}
-  `;
+  const rows = lines
+    .map(parseMaterialItem)
+    .filter(Boolean)
+    .map(({ name, qty, unit, use, obs }) =>
+      `<tr>
+        <td>${escapeHtml(name)}</td>
+        <td class="mat-qty">${escapeHtml(qty)}</td>
+        <td>${escapeHtml(unit)}</td>
+        <td>${escapeHtml(use)}</td>
+        <td>${escapeHtml(obs)}</td>
+      </tr>`
+    )
+    .join("");
+
+  const table = rows
+    ? `<table class="materials-table">
+        <thead><tr>
+          <th>Item</th><th>Qtd.</th><th>Unidade</th><th>Uso na atividade</th><th>Observação</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`
+    : renderSimpleList(lines);
+
+  return `${table}
+    ${displayedReadyMaterials.length ? `<div class="ready-materials"><strong>Materiais prontos:</strong>${renderSimpleList(displayedReadyMaterials)}</div>` : ""}`;
 }
 
 function renderSteamConnection(steamConnection) {
@@ -387,11 +456,14 @@ function renderTestTable(readyMaterials) {
 
   // Extract column headers from the TABELA DE TESTE item, if present
   const tableItem = items.find((item) => /tabela de teste/i.test(item));
-  let columns = ["Cenário", "Resultado antes", "Falha observada", "Melhoria feita", "Resultado depois"];
+  let columns = ["Cenário/Teste", "Resultado Inicial", "Falha Observada", "Melhoria Aplicada", "Resultado Após Melhoria"];
   if (tableItem) {
     const afterDash = tableItem.replace(/tabela de teste\s*[-—:]\s*/i, "").replace(/\.$/, "");
     const parsed = afterDash.split("|").map((c) => c.trim()).filter(Boolean);
-    if (parsed.length >= 3) columns = ["Cenário", ...parsed.slice(1)];
+    if (parsed.length >= 3) {
+      const firstCol = /^[Cc]en[aá]rio/i.test(parsed[0]) ? parsed[0] : "Cenário";
+      columns = [firstCol, ...parsed.slice(1)];
+    }
   }
 
   const headers = columns.map((col) => `<th>${escapeHtml(col)}</th>`).join("");
@@ -469,6 +541,25 @@ function fixScenarioQuestions(readyMaterials) {
   });
 }
 
+const RISKY_MATERIAL_RE = /\bcola\s+quente\b|\bestilete\b|\bsolda(?:\s+el[eé]trica?)?\b|\bferro\s+de\s+soldar\b/i;
+
+function fixMaterialSafety(item) {
+  if (!item) return item;
+  if (RISKY_MATERIAL_RE.test(item) && !/supervis[aã]o/i.test(item)) {
+    return item.replace(/\.?\s*$/, " — uso com supervisão do professor.");
+  }
+  return item;
+}
+
+function fixDecisionLanguage(text) {
+  if (!text) return text;
+  return text
+    .replace(/\b(a\s+família|a\s+pessoa|o\s+estudante|o\s+aluno)\s+decide\s+(comprar|adquirir|contratar|investir|gastar)/gi,
+      (_, subj, verb) => `${subj.replace(/\s+/g, " ")} avalia ${verb}`)
+    .replace(/\bfamília\s+decide\s+(comprar|adquirir|contratar|investir|gastar)/gi,
+      (_, verb) => `família avalia ${verb}`);
+}
+
 function fixGabaritoLanguage(teacherGabarito) {
   const negTerms = /\b(d[eé]ficit|preju[ií]zo|saldo negativo|crise financeira)\b/gi;
   return teacherGabarito.map((item) => {
@@ -485,7 +576,7 @@ function fixGabaritoLanguage(teacherGabarito) {
 
 function autoFixExperience(experience) {
   const fix = fixDanglingText;
-  const fixedReadyMaterials = fixScenarioQuestions((experience.readyMaterials || []).map(fix));
+  const fixedReadyMaterials = fixScenarioQuestions((experience.readyMaterials || []).map(fix)).map(fixDecisionLanguage);
   const fixedGabarito = fixGabaritoLanguage((experience.teacherGabarito || []).map(fix));
   return {
     ...experience,
@@ -495,8 +586,8 @@ function autoFixExperience(experience) {
     makerChallenge: fix(experience.makerChallenge),
     finalProduct: fix(experience.finalProduct),
     teacherOrientation: experience.teacherOrientation ? fix(experience.teacherOrientation) : experience.teacherOrientation,
-    stages: (experience.stages || []).map((s) => ({ ...s, description: fix(s.description) })),
-    materialFunctions: (experience.materialFunctions || []).map(fix),
+    stages: (experience.stages || []).map((s) => ({ ...s, description: fixDecisionLanguage(fix(s.description)) })),
+    materialFunctions: (experience.materialFunctions || []).map(fix).map(fixMaterialSafety),
     readyMaterials: fixedReadyMaterials,
     teacherGabarito: fixedGabarito,
   };
@@ -655,6 +746,10 @@ function buildActivityPrintHTMLFromExperience(experience) {
     .stage { page-break-inside: avoid; }
     .ready-materials { margin-top: 0.08cm; border-left: 2px solid #777; padding-left: 0.18cm; }
     .ready-materials strong { display: block; margin-bottom: 0.04cm; }
+    .materials-table { width: 100%; border-collapse: collapse; font-size: 8pt; margin-bottom: 0.06cm; }
+    .materials-table th { background: #eee; border: 1px solid #999; padding: 0.05cm 0.08cm; font-weight: 700; text-align: left; white-space: nowrap; }
+    .materials-table td { border: 1px solid #bbb; padding: 0.04cm 0.08cm; vertical-align: top; word-break: break-word; }
+    .materials-table .mat-qty { text-align: center; white-space: nowrap; }
     .rubric-table { width: 100%; border-collapse: collapse; font-size: 8.3pt; }
     .rubric-table th, .rubric-table td { border: 1px solid #999; padding: 0.06cm 0.1cm; text-align: left; vertical-align: top; }
     .rubric-table th { background: #eee; font-weight: 700; }

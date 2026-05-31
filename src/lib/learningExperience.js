@@ -73,6 +73,7 @@ function cleanText(value) {
     .replace(/\.{3,}|…/g, ".")
     .replace(/[Pp]ós-its?/g, "notas adesivas")
     .replace(/[Pp]ost-[Ii]ts?/g, "notas adesivas")
+    .replace(/\b(tesouras?)(?!\s+sem\s+ponta)/gi, (m) => /s$/i.test(m) ? "Tesouras sem ponta" : "Tesoura sem ponta")
     .replace(/^\s*\|.*\|\s*$/gm, "")
     .replace(/^\s*[-|: ]+\s*$/gm, "")
     .replace(/[ \t]+/g, " ")
@@ -185,8 +186,12 @@ function buildDefaultMaterialFunctions(materials) {
   ];
 
   return materials.map((material, index) => {
+    const full = cleanText(material);
+    const qtyMatch = full.match(/[:\-–—]\s*(\d[\w\s]*?(?:por\s+grupo|por\s+equipe|para\s+a\s+turma|por\s+turma))/i);
+    const qty = qtyMatch ? qtyMatch[1].trim() : "1 por grupo";
     const materialName = getMaterialName(material) || `Material ${index + 1}`;
-    return `${materialName}: use como ${roles[index] || "parte funcional do protótipo"}.`;
+    const role = roles[index] || "parte funcional do protótipo";
+    return `${materialName}: ${qty} — ${role}.`;
   });
 }
 
@@ -212,7 +217,7 @@ function buildDefaultReadyMaterials(theme) {
     `CENÁRIO 1 - Funcionamento esperado: aplique o protótipo em uma situação comum de ${cleanTheme}. Registre resultado, medida ou decisão obtida.`,
     `CENÁRIO 2 - Imprevisto: retire um recurso, aumente a demanda ou crie uma restrição ligada a ${cleanTheme}. Compare com o primeiro teste.`,
     "CENÁRIO 3 - Decisão de melhoria: escolha uma falha observada, aplique uma mudança e teste novamente para verificar se houve avanço.",
-    "TABELA DE TESTE - Critério | Resultado antes | Falha observada | Melhoria feita | Resultado depois."
+    "TABELA DE TESTE - Cenário/Teste | Resultado Inicial | Falha Observada | Melhoria Aplicada | Resultado Após Melhoria."
   ];
 }
 
@@ -478,11 +483,18 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
   let stages = normalizeStages(activity, materials, theme);
   let assemblySteps = stages;
   const sourceMaterialFunctions = toTextArray(activity.materialFunctions);
-  const materialFunctions = compactArray(
+  const rawMaterialFunctions = compactArray(
     sourceMaterialFunctions.length >= materials.length ? sourceMaterialFunctions : [],
     materials.length || 6,
     LIMITS.materialFunction,
     buildDefaultMaterialFunctions(materials)
+  );
+  // Normalize separator: "qty, role" → "qty — role" for uniform display
+  const materialFunctions = rawMaterialFunctions.map((item) =>
+    item.replace(
+      /(\d[^,—]*?(?:por\s+(?:grupo|turma|equipe)|para\s+a\s+turma)),\s+/gi,
+      "$1 — "
+    )
   );
   let readyMaterials = normalizeReadyMaterials(activity, theme);
 

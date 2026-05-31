@@ -40,15 +40,15 @@ Regras obrigatórias:
 2. Máximo de 2 páginas A4, com texto compacto e aplicação imediata.
 3. Não gerar apostila, fundamentação acadêmica, matriz STEAM, Design Thinking, material do aluno, vocabulário ou anexos.
 4. Use no campo "bncc" apenas códigos da lista BNCC offline fornecida acima; não invente códigos.
-5. Materiais acessíveis, máximo 6 itens com quantidade por grupo.
+5. Materiais acessíveis, máximo 6 itens. Formato obrigatório para "materialFunctions": "Nome: quantidade por grupo — finalidade." Exemplo: "Cartolina: 1 folha por grupo — base do protótipo." e "Tesoura sem ponta: 1 por grupo — recorte das peças." Para uso coletivo: "Projetor: 1 para a turma — apresentação inicial." Para materiais de risco (cola quente, estilete, solda), adicionar: " — uso com supervisão do professor."
 6. Desenvolvimento e montagem com exatamente estas etapas:
 ${stageTitles}
 7. Explique como preparar base, dividir materiais, construir, interagir, testar, ajustar e apresentar.
-8. Gere "readyMaterials" com cenários, fichas, cartões, tabela de teste, perguntas ou dados citados.
+8. Gere "readyMaterials" com cenários, fichas, cartões, tabela de teste, perguntas ou dados citados. Para atividades com cálculo, orçamento, medidas ou comparação numérica, use a tabela financeira: "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo | Melhoria Aplicada | Resultado Após Melhoria." Para demais atividades, use: "TABELA DE TESTE - Cenário/Teste | Resultado Inicial | Falha Observada | Melhoria Aplicada | Resultado Após Melhoria."
 9. Evite frases genéricas como "faça um protótipo", "use os materiais disponíveis" ou "teste a solução" sem explicar como.
 10. Crie 2 testes concretos: um cenário esperado e outro com imprevisto, restrição ou falha.
 11. Avaliação em mini rubrica: "criterion" e "observation".
-12. Referências reais em formato ABNT. Se não tiver fonte específica, use a BNCC. Não use reticências.
+12. Referências reais em formato ABNT, preferencialmente 2 quando houver fontes confiáveis disponíveis; mínimo 1. Se não tiver fonte específica, use a BNCC. Nunca inventar DOI. Não use reticências.
 13. Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
 14. Inclua "steamConnection" com 1 frase curta por área (Ciência, Tecnologia, Engenharia, Arte, Matemática).
 15. Inclua "teacherGabarito": resultados esperados de cada cenário, 1 frase curta por item com valores, saldo ou conclusão objetiva.
@@ -57,7 +57,9 @@ ${stageTitles}
 18. Em cenários: se o saldo final for positivo, não use a palavra "déficit". Use "reorganização", "impacto no saldo" ou "preservação da poupança".
 19. No "teacherGabarito": se o saldo final for positivo, não usar "déficit", "prejuízo" ou "saldo negativo". Usar: "O saldo ainda é positivo, mas foi reduzido. Sugerir reorganização para preservar poupança."
 20. GABARITO MATEMÁTICO OBRIGATÓRIO: em "teacherGabarito", para cada cenário com valores numéricos, copie EXATAMENTE os valores do readyMaterials correspondente (sem inventar valores), some as despesas mostrando a conta (ex: R$ 1.200 + R$ 250 + R$ 100 = R$ 1.550), calcule saldo = receita − total_despesas. O resultado deve ser matematicamente correto. Formato: "Cenário 1: Receita R$ X; despesas R$ A + R$ B = R$ Y; Saldo final = R$ X − R$ Y = R$ Z."
-18. Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
+21. Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
+22. Sempre que listar materiais com tesoura, use "Tesouras sem ponta" em vez de "Tesouras". Exemplo correto: "Tesouras sem ponta: 1 por grupo".
+23. Em cenários financeiros, nunca escreva como se a decisão já fosse tomada automaticamente. Use "a família avalia comprar" ou "a família considera comprar", nunca "a família decide comprar".
 
 Responda APENAS com JSON válido:
 
@@ -69,12 +71,12 @@ Responda APENAS com JSON válido:
   "problem": "Problema real que inicia a experiência.",
   "mission": "Sua equipe deverá desenvolver uma solução prática para o problema.",
   "bncc": ${JSON.stringify(getBnccCodes(bnccSuggestions))},
-  "materials": ["Material 1 - quantidade por grupo", "Material 2 - quantidade por grupo"],
-  "materialFunctions": ["Material 1: função prática no protótipo.", "Material 2: função prática no mecanismo, teste ou registro."],
+  "materials": ["Material 1: 1 folha por grupo", "Material 2: 1 conjunto por grupo"],
+  "materialFunctions": ["Material 1: 1 folha por grupo — base do protótipo.", "Material 2: 1 conjunto por grupo — função no mecanismo, teste ou registro."],
   "readyMaterials": [
     "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
     "CENÁRIO 2 - Imprevisto: restrição, falha ou mudança para comparar.",
-    "TABELA DE TESTE - Critério | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo | Melhoria Aplicada | Resultado Após Melhoria."
+    "TABELA DE TESTE - Cenário/Teste | Resultado Inicial | Falha Observada | Melhoria Aplicada | Resultado Após Melhoria."
   ],
   "stages": [
     { "number": 1, "title": "ETAPA 1 - Preparar a base e dividir materiais", "description": "Divida a base em problema, solução, teste e melhoria. Separe peças móveis e registro." },
@@ -92,7 +94,7 @@ Responda APENAS com JSON válido:
     { "criterion": "Melhoria", "observation": "O grupo ajustou o protótipo após identificar falha?" },
     { "criterion": "Comunicação", "observation": "O grupo explicou solução, teste e melhoria?" }
   ],
-  "bibliography": ["BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018."],
+  "bibliography": ["BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.", "[Segunda referência real em formato ABNT, relacionada ao tema da atividade — obrigatória quando houver fonte confiável.]"],
   "steamConnection": {
     "science": "conceito ou fenômeno investigado na atividade.",
     "technology": "recurso, ferramenta ou sistema utilizado.",
