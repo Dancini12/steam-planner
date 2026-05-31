@@ -933,9 +933,10 @@ const EXPENSE_TOTAL_RE = /\b(?:novo\s+)?total\s+de\s+despesas\b|\bdespesas?\s+to
 const REVENUE_TOTAL_RE = /\b(?:receita|renda)\s+total\b|\btotal\s+de\s+(?:receitas?|rendas?)\b/i;
 const BALANCE_RE = /\b(saldo|sobra\s+mensal|resultado\s+final)\b/i;
 const UNEXPECTED_RE = /\b(imprevisto|emerg[eê]ncia|emergencial|conserto|reparo|aumento|acr[eé]scimo|acrescimo|novo\s+gasto|gasto\s+extra|custo\s+extra|m[eé]dic[oa]|rem[eé]dio|consulta|carro|manuten[cç][aã]o)\b/i;
-const FIXED_EXPENSE_RE = /\b(despesas?\s+fixas?|aluguel|escola|mensalidade|internet|[aá]gua|luz|energia|condom[ií]nio|telefone|celular|plano|presta[cç][aã]o|financiamento|seguro)\b/i;
+const FIXED_EXPENSE_RE = /\b(despesas?\s+fixas?|aluguel|escola|mensalidade|internet|[aá]gua|luz|energia|condom[ií]nio|telefone|celular|plano|presta[cç][aã]o|financiamento|seguro|educa[cç][aã]o|sa[uú]de|farm[aá]cia)\b/i;
 const VARIABLE_EXPENSE_RE = /\b(despesas?\s+vari[aá]veis?|alimenta[cç][aã]o|mercado|transporte|lazer|compras?|roupas?|passeio|restaurante|lanche|combust[ií]vel|gastos?\s+vari[aá]veis?)\b/i;
 const EXPENSE_RE = /\b(despesas?|gastos?|custos?|contas?|pagamentos?)\b/i;
+const FAMILY_REVENUE_RE = /\b(pai|m[aã]e|respons[aá]vel(?:\s+\d+)?|cuidador(?:a)?)\b/i;
 
 function buildEmptyStructuredBudget() {
   return {
@@ -965,11 +966,11 @@ function normalizeFinancialDescription(value, fallback) {
 }
 
 function getCurrentFinancialSection(before) {
-  const matches = [...before.matchAll(/\b(receitas?|rendas?|despesas?\s+fixas?|despesas?\s+vari[aá]veis?|imprevistos?|melhorias?|economias?)\b/gi)];
+  const matches = [...before.matchAll(/\b(receitas?|rendas?|despesas?\s+fixas?|gastos?\s+fixos?|custos?\s+fixos?|despesas?\s+vari[aá]veis?|gastos?\s+vari[aá]veis?|custos?\s+vari[aá]veis?|imprevistos?|melhorias?|economias?)\b/gi)];
   const last = matches.length ? matches[matches.length - 1][0] : "";
   if (/receitas?|rendas?/i.test(last)) return FINANCIAL_ENTRY_TYPE.RECEITA;
-  if (/despesas?\s+fixas?/i.test(last)) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
-  if (/despesas?\s+vari[aá]veis?/i.test(last)) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
+  if (/(?:despesas?|gastos?|custos?)\s+fixos?/i.test(last)) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
+  if (/(?:despesas?|gastos?|custos?)\s+vari[aá]veis?/i.test(last)) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
   if (/imprevistos?/i.test(last)) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
   if (/melhorias?|economias?/i.test(last)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   return "";
@@ -982,13 +983,13 @@ function classifyFinancialEntry({ label, currentSection, afterClause }) {
   if (EXPENSE_TOTAL_RE.test(label) || EXPENSE_TOTAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_TOTAL;
   if (REVENUE_TOTAL_RE.test(label) || REVENUE_TOTAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.RECEITA_TOTAL;
   if (BALANCE_RE.test(label) && !IMPROVEMENT_RE.test(local)) return FINANCIAL_ENTRY_TYPE.SALDO;
-  if (REVENUE_RE.test(local) || currentSection === FINANCIAL_ENTRY_TYPE.RECEITA) return FINANCIAL_ENTRY_TYPE.RECEITA;
   if (IMPROVEMENT_RE.test(local)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (currentSection === FINANCIAL_ENTRY_TYPE.MELHORIA) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (UNEXPECTED_RE.test(local) || currentSection === FINANCIAL_ENTRY_TYPE.IMPREVISTO) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
   if (FIXED_EXPENSE_RE.test(local) || currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_FIXA) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
   if (VARIABLE_EXPENSE_RE.test(local) || currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
   if (EXPENSE_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
+  if (REVENUE_RE.test(local) || FAMILY_REVENUE_RE.test(local) || currentSection === FINANCIAL_ENTRY_TYPE.RECEITA) return FINANCIAL_ENTRY_TYPE.RECEITA;
   return FINANCIAL_ENTRY_TYPE.OUTRO;
 }
 
@@ -1027,7 +1028,7 @@ function parseFinancialEntries(text) {
         id: match.index,
         amount: Math.abs(amount),
         label: normalizedLabel,
-        context: `${currentSection} ${normalizedLabel} ${afterClause}`.replace(/\s+/g, " ").trim(),
+        context: `${currentSection} ${normalizedLabel}`.replace(/\s+/g, " ").trim(),
         description,
         type,
         isRevenue: type === FINANCIAL_ENTRY_TYPE.RECEITA || type === FINANCIAL_ENTRY_TYPE.RECEITA_TOTAL,
@@ -1051,6 +1052,7 @@ function toBudgetItem(entry) {
     valor: entry.amount,
     sourceIndex: entry.id,
     type: entry.type,
+    rawLabel: entry.label,
     context: entry.context
   };
 }
@@ -1278,16 +1280,20 @@ function buildStructuredScenarioGabarito(data) {
     return lines.join("\n");
   }
 
-  lines.push(formatBudgetLine("Despesas fixas", data.structured.despesasFixas, data.despesasFixasTotal));
-  lines.push(formatBudgetLine("Despesas variáveis", data.structured.despesasVariaveis, data.despesasVariaveisTotal));
-  if (data.imprevistosTotal > 0) {
-    lines.push(formatBudgetLine("Imprevistos", data.structured.imprevistos, data.imprevistosTotal));
+  if (data.despesasFixasTotal + data.despesasVariaveisTotal > 0) {
+    lines.push(formatBudgetLine("Despesas fixas", data.structured.despesasFixas, data.despesasFixasTotal));
+    lines.push(formatBudgetLine("Despesas variáveis", data.structured.despesasVariaveis, data.despesasVariaveisTotal));
+    if (data.imprevistosTotal > 0) {
+      lines.push(formatBudgetLine("Imprevistos", data.structured.imprevistos, data.imprevistosTotal));
+    }
+    lines.push(formatPartsTotalLine(
+      "Despesas totais",
+      [data.despesasFixasTotal, data.despesasVariaveisTotal, data.imprevistosTotal],
+      data.totalExpenses
+    ));
+  } else {
+    lines.push(`Despesas totais: ${formatCurrencyBRL(data.totalExpenses)}.`);
   }
-  lines.push(formatPartsTotalLine(
-    "Despesas totais",
-    [data.despesasFixasTotal, data.despesasVariaveisTotal, data.imprevistosTotal],
-    data.totalExpenses
-  ));
   lines.push(`${data.imprevistosTotal > 0 ? "Saldo antes da melhoria" : "Saldo final"}: ${formatCurrencyBRL(data.receitaTotal)} - ${formatCurrencyBRL(data.totalExpenses)} = ${formatCurrencyBRL(data.saldo)}.`);
   return lines.join("\n");
 }
@@ -1573,17 +1579,17 @@ function getRevenueBudgetItems(structured) {
 }
 
 function hasRevenueMarker(item) {
-  return REVENUE_RE.test(`${item?.descricao || ""} ${item?.context || ""}`);
+  return REVENUE_RE.test(`${item?.descricao || ""} ${item?.rawLabel || ""}`);
 }
 
 function hasExpenseMarker(item) {
   return /aluguel|escola|internet|[aá]gua|luz|energia|alimenta[cç][aã]o|transporte|lazer|despesas?|gastos?|custos?|imprevisto|conserto|reparo/i.test(
-    `${item?.descricao || ""} ${item?.context || ""}`
+    `${item?.descricao || ""} ${item?.rawLabel || ""}`
   );
 }
 
 function hasImprovementMarker(item) {
-  return IMPROVEMENT_RE.test(`${item?.descricao || ""} ${item?.context || ""}`);
+  return IMPROVEMENT_RE.test(`${item?.descricao || ""} ${item?.rawLabel || ""}`);
 }
 
 function hasDuplicatedStructuredValue(data) {
