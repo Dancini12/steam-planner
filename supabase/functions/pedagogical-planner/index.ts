@@ -372,10 +372,10 @@ function normalizeTeacherOrientation(raw: Record<string, unknown>): string {
 function normalizeTeacherGabarito(raw: Record<string, unknown>): string[] {
   const source = raw.teacherGabarito || raw.gabarito || raw.answerKey
   if (!source) return []
+  // No limitText or slice — gabarito must never be truncated
   return toTextArray(source)
-    .map((item) => limitText(item, 220))
+    .map((item) => cleanText(item))
     .filter(Boolean)
-    .slice(0, 4)
 }
 
 function normalizeSteamConnection(raw: Record<string, unknown>): Record<string, string> {

@@ -531,17 +531,31 @@ function validateExportedExperience(experience) {
     experience.teacherGabarito.forEach((item, i) => {
       if (!item || item.trim().length < 15) {
         blocking.push(`Gabarito cenário ${i + 1}: conteúdo incompleto.`);
+        return;
       }
-      // Truncated currency: R$ followed by fewer than 3 digits without proper decimal
-      if (/R\$\s*\d{1,2}(?!\d|,|\.)(?:\s*\.|$)/.test(item)) {
-        blocking.push(`Gabarito cenário ${i + 1}: valor monetário possivelmente truncado.`);
+      const t = item.trim();
+      // Incomplete math operation (ends with = - + or just R$)
+      if (/[=+\-]\s*$|R\$\s*$/.test(t)) {
+        blocking.push(`Gabarito cenário ${i + 1}: operação matemática incompleta.`);
+      }
+      // Truncated currency: R$ followed by only 1-2 digits without decimal
+      if (/R\$\s*\d{1,2}(?!\d|,|\.)(?:\s*\.|$)/.test(t)) {
+        blocking.push(`Gabarito cenário ${i + 1}: valor monetário truncado (ex: "R$ 3." sem vírgula).`);
+      }
+      // Sentence ends without punctuation or ends mid-word
+      if (!/[.!?)]$/.test(t)) {
+        blocking.push(`Gabarito cenário ${i + 1}: frase sem ponto final — texto possivelmente cortado.`);
+      }
+      // Ellipses
+      if (/\.{3,}|…/.test(t)) {
+        blocking.push(`Gabarito cenário ${i + 1}: contém reticências — texto cortado.`);
       }
       // "déficit" but last BRL value is positive
-      if (/d[eé]ficit/i.test(item)) {
-        const amounts = extractBRLAmounts(item);
+      if (/d[eé]ficit/i.test(t)) {
+        const amounts = extractBRLAmounts(t);
         const last = amounts[amounts.length - 1];
         if (last !== undefined && last > 0) {
-          blocking.push(`Gabarito cenário ${i + 1}: texto menciona "déficit" mas saldo calculado é positivo (${last.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}).`);
+          blocking.push(`Gabarito cenário ${i + 1}: menciona "déficit" mas saldo é positivo.`);
         }
       }
     });
@@ -649,10 +663,19 @@ function buildActivityPrintHTMLFromExperience(experience) {
     .test-table td { border: 1px solid #bbb; padding: 0; height: 0.65cm; vertical-align: middle; }
     .test-table td:first-child { padding: 0.04cm 0.08cm; font-weight: 600; white-space: nowrap; }
     .test-table .blank-cell { background: #fafafa; }
-    .gabarito-page { page-break-before: always; padding-top: 0.6cm; }
-    .gabarito-page h2 { font-size: 12pt; font-weight: 700; border-bottom: 2px solid #111; padding-bottom: 0.18cm; margin-bottom: 0.12cm; }
+    .gabarito-page {
+      page-break-before: always; break-before: page;
+      height: auto !important; overflow: visible !important;
+      padding-top: 0.6cm;
+      font-size: 9pt !important; line-height: 1.3 !important;
+    }
+    .gabarito-page h2 { font-size: 12pt !important; font-weight: 700; border-bottom: 2px solid #111; padding-bottom: 0.18cm; margin-bottom: 0.12cm; }
     .gabarito-subtitle { font-size: 7.8pt; color: #666; font-style: italic; margin-bottom: 0.4cm; }
-    .gabarito-item { margin-bottom: 0.22cm; line-height: 1.35; }
+    .gabarito-item {
+      page-break-inside: auto; break-inside: auto;
+      height: auto !important; overflow: visible !important;
+      margin-bottom: 0.25cm; line-height: 1.35;
+    }
     body.tight { font-size: 8.1pt; line-height: 1.16; padding: 0.65cm 0.78cm; }
     body.tight .header h1 { font-size: 12.5pt; }
     body.tight .section { margin-top: 0.12cm; }

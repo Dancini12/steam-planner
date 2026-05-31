@@ -391,10 +391,10 @@ function normalizeTeacherOrientation(activity) {
 function normalizeTeacherGabarito(activity) {
   const source = activity.teacherGabarito || activity.gabarito || activity.answerKey;
   if (!source) return [];
+  // No limitText or slice — gabarito must never be truncated
   return toTextArray(source)
-    .map((item) => limitText(item, 220))
-    .filter(Boolean)
-    .slice(0, 4);
+    .map((item) => cleanText(item))
+    .filter(Boolean);
 }
 
 function normalizeSteamConnection(activity) {
