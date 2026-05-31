@@ -161,6 +161,56 @@ function compactArray(value, maxItems, maxChars, fallback = []) {
     .filter(Boolean);
 }
 
+function isScenarioReadyMaterial(item) {
+  return /^CEN[AÁ]RIO\s*\d*/i.test(cleanText(item));
+}
+
+function isTestTableReadyMaterial(item) {
+  return /^TABELA\s+DE\s+TESTE/i.test(cleanText(item));
+}
+
+function groupReadyMaterialScenarios(value, fallback = []) {
+  const sourceItems = toTextArray(value);
+  const items = sourceItems.length ? sourceItems : fallback;
+  const lines = items.flatMap((item) => cleanText(item)
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean));
+  const grouped = [];
+  let currentScenario = null;
+
+  const finishScenario = () => {
+    if (currentScenario?.length) {
+      grouped.push(currentScenario.join("\n"));
+    }
+    currentScenario = null;
+  };
+
+  lines.forEach((line) => {
+    if (isScenarioReadyMaterial(line)) {
+      finishScenario();
+      currentScenario = [line];
+      return;
+    }
+
+    if (isTestTableReadyMaterial(line)) {
+      finishScenario();
+      grouped.push(line);
+      return;
+    }
+
+    if (currentScenario) {
+      currentScenario.push(line);
+      return;
+    }
+
+    grouped.push(line);
+  });
+
+  finishScenario();
+  return grouped;
+}
+
 function getFirstText(...values) {
   for (const value of values) {
     if (Array.isArray(value)) {
@@ -404,9 +454,16 @@ function normalizeAssemblySteps(activity, materials, theme, compact = false) {
 function normalizeReadyMaterials(activity, theme, compact = false) {
   const source = activity.readyMaterials || activity.printableMaterials || activity.scenarios || activity.testScenarios;
   const fallback = buildDefaultReadyMaterials(theme);
-  const maxItems = 4;
   const maxChars = compact ? LIMITS.readyMaterialTight : LIMITS.readyMaterial;
-  return compactArray(source, maxItems, maxChars, fallback);
+  const groupedItems = groupReadyMaterialScenarios(source, fallback);
+  const hasScenarios = groupedItems.some(isScenarioReadyMaterial);
+  const maxItems = hasScenarios ? 6 : 4;
+  const scenarioMaxChars = Math.max(maxChars, compact ? 1200 : 1400);
+
+  return groupedItems
+    .slice(0, maxItems)
+    .map((item) => limitText(item, isScenarioReadyMaterial(item) ? scenarioMaxChars : maxChars))
+    .filter(Boolean);
 }
 
 function normalizeAssessmentRubric(activity, compact = false) {
