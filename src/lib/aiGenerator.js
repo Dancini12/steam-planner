@@ -74,7 +74,7 @@ Responda APENAS com JSON válido:
   "readyMaterials": [
     "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
     "CENÁRIO 2 - Imprevisto: restrição, falha ou mudança para comparar.",
-    "TABELA DE TESTE - Critério | Receita Total | Despesas Totais | Saldo | Melhoria Aplicada | Resultado Após Melhoria."
+    "TABELA DE TESTE - Critério | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo | Melhoria Aplicada | Resultado Após Melhoria."
   ],
   "stages": [
     { "number": 1, "title": "ETAPA 1 - Preparar a base e dividir materiais", "description": "Divida a base em problema, solução, teste e melhoria. Separe peças móveis e registro." },

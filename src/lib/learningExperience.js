@@ -204,7 +204,7 @@ function buildDefaultReadyMaterials(theme) {
       "CENÁRIO 1 - Saldo positivo: renda R$ 3.500; aluguel R$ 900; alimentação R$ 800; transporte R$ 350; energia/água R$ 280; lazer R$ 200. Pergunta: quanto sobra?",
       "CENÁRIO 2 - Imprevisto: renda R$ 3.000; despesas fixas R$ 2.400; gasto médico R$ 600. Pergunta: ficou positivo ou negativo? O que ajustar?",
       "CENÁRIO 3 - Decisão: renda R$ 4.000; despesas R$ 3.200; celular R$ 1.200. Pergunta: comprar agora, parcelar ou adiar? Justifique.",
-      "TABELA DE TESTE - Critério | Receita Total | Despesas Totais | Saldo | Melhoria Aplicada | Resultado Após Melhoria."
+      "TABELA DE TESTE - Critério | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo | Melhoria Aplicada | Resultado Após Melhoria."
     ];
   }
 
