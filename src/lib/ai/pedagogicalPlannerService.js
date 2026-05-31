@@ -88,7 +88,7 @@ LIMITE OBRIGATÓRIO:
 - Cada etapa deve ter no máximo 3 frases curtas, com foco em ação.
 - Não inclua seções extras, material do aluno, vocabulário, fundamentação, matriz STEAM, Design Thinking, anexos ou explicação sobre Cultura Maker.
 
-ESTRUTURA VISÍVEL OBRIGATÓRIA - somente estas 9 seções:
+ESTRUTURA VISÍVEL OBRIGATÓRIA - somente estas 10 seções principais, mais o gabarito em página separada:
 1. Experiência de Aprendizagem STEAM + Cultura Maker
 2. Objetivo geral
 3. Problema/desafio
@@ -96,8 +96,10 @@ ESTRUTURA VISÍVEL OBRIGATÓRIA - somente estas 9 seções:
 5. Desenvolvimento e montagem da atividade
 6. Desafio Maker
 7. Produto final
-8. Avaliação
-9. Referências
+8. Conexão STEAM + Maker
+9. Avaliação
+10. Referências
+11. Gabarito do professor em página separada
 
 Desenvolvimento e montagem da atividade - títulos obrigatórios:
 ${stageTitles}
@@ -108,7 +110,7 @@ Regras de conteúdo:
 - "mission": frase curta começando com "Sua equipe deverá..." ou equivalente individual.
 - "materials": máximo 6 itens acessíveis, com quantidade por grupo.
 - "materialFunctions": explique a função prática de cada material listado, em 1 frase curta por material.
-- "readyMaterials": entregue os cenários, fichas, cartões, tabela de teste, perguntas ou dados citados. Nunca cite material complementar sem gerar o conteúdo pronto.
+- "readyMaterials": entregue os cenários, fichas, cartões, tabela de teste, perguntas ou dados citados. Nunca cite material complementar sem gerar o conteúdo pronto. Para atividades com cálculo financeiro, orçamento familiar, renda, despesas, poupança ou investimento, use exatamente: "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
 - "stages": exatamente 6 etapas de desenvolvimento e montagem, na ordem obrigatória acima. Cada etapa deve explicar como preparar base, dividir materiais, construir, interagir, testar, ajustar ou apresentar.
 - "makerChallenge": deve dizer claramente o que construir, como testar e o que melhorar.
 - "finalProduct": protótipo ou produto concreto final.
@@ -121,12 +123,12 @@ Regras de conteúdo:
 - Não use reticências. Nenhuma frase pode terminar cortada com "...".
 - Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
 - Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
-- Inclua "teacherGabarito": resultados esperados de cada cenário, 1 frase curta por item com valores, saldo ou conclusão objetiva.
+- Inclua "teacherGabarito": resultados esperados de cada cenário em formato didático. Use um item por cenário, com linhas curtas separadas por ponto e vírgula.
 - Em cenários financeiros, nunca escreva apenas "Economia: R$ X". Use "Sobra mensal prevista: R$ X" ou "Saldo disponível para poupança/investimento: R$ X".
 - Nunca use tabelas markdown (| col | col | ou --- | --- | ---) em nenhum campo JSON. Em "readyMaterials", use apenas uma linha de texto simples: "TABELA DE TESTE - Col1 | Col2 | Col3." sem barras verticais extras ou linhas separadoras.
 - Em cenários: se o saldo final for positivo, não use "déficit". Use "reorganização", "impacto no saldo" ou "preservação da poupança".
 - No "teacherGabarito": se o saldo final for positivo, não usar "déficit", "prejuízo" ou "saldo negativo". Usar: "O saldo ainda é positivo, mas foi reduzido. Sugerir reorganização para preservar poupança."
-- GABARITO MATEMÁTICO OBRIGATÓRIO: em "teacherGabarito", para cada cenário com valores numéricos, copie EXATAMENTE os valores do readyMaterials correspondente (sem inventar valores), some as despesas mostrando a conta (ex: R$ 1.200 + R$ 250 = R$ 1.450), calcule saldo = receita − total_despesas. Formato: "Cenário 1: Receita R$ X; despesas R$ A + R$ B = R$ Y; Saldo final = R$ X − R$ Y = R$ Z." O resultado deve ser matematicamente correto.
+- GABARITO MATEMÁTICO OBRIGATÓRIO: em "teacherGabarito", para cada cenário com valores numéricos, copie EXATAMENTE os valores do readyMaterials correspondente (sem inventar valores), some as despesas mostrando a conta (ex: R$ 1.200 + R$ 250 = R$ 1.450), calcule saldo = receita − total_despesas. Formato: "Cenário 1: Receita total: R$ X; Despesas totais: R$ A + R$ B = R$ Y; Saldo final: R$ X − R$ Y = R$ Z." O resultado deve ser matematicamente correto.
 - Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
 
 ${verifiedSources.length > 0
@@ -155,7 +157,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "readyMaterials": [
     "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
     "CENÁRIO 2 - Imprevisto: restrição, falha ou mudança para comparar.",
-    "TABELA DE TESTE - Critério | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo | Melhoria Aplicada | Resultado Após Melhoria."
+    "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
   ],
   "stages": [
     {
@@ -197,9 +199,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     { "criterion": "Melhoria", "observation": "O grupo ajustou o protótipo após identificar falha?" },
     { "criterion": "Comunicação", "observation": "O grupo explicou solução, teste e melhoria?" }
   ],
-  "bibliography": [
-    "${verifiedSources[0]?.abnt || 'BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.'}"
-  ],
+  "bibliography": ${JSON.stringify(verifiedSources.length ? verifiedSources.slice(0, 2).map((source) => source.abnt) : ['BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.'])},
   "steamConnection": {
     "science": "conceito ou fenômeno investigado na atividade.",
     "technology": "recurso, ferramenta ou sistema utilizado.",
@@ -208,8 +208,8 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "mathematics": "cálculos, medidas ou comparação de dados."
   },
   "teacherGabarito": [
-    "Cenário 1: resultado esperado com valores ou conclusão objetiva.",
-    "Cenário 2: resultado do imprevisto com impacto observado."
+    "Cenário 1: Receita total: R$ X; Despesas totais: R$ A + R$ B = R$ Y; Saldo final: R$ X − R$ Y = R$ Z.",
+    "Cenário 2: Resultado do imprevisto com impacto observado; Sugestão de melhoria objetiva."
   ],
   "teacherOrientation": "Durante a atividade, estimule os alunos a justificarem suas escolhas e registrarem as melhorias no protótipo."
 }`
@@ -365,7 +365,7 @@ ${objectives}
 ${phaseLines || '  (sem planos específicos registrados)'}
 
 TAREFA:
-Gere somente as 9 seções obrigatórias:
+Gere somente as 10 seções principais obrigatórias e o gabarito do professor em página separada:
 1. Experiência de Aprendizagem STEAM + Cultura Maker
 2. Objetivo geral
 3. Problema/desafio
@@ -373,8 +373,10 @@ Gere somente as 9 seções obrigatórias:
 5. Desenvolvimento e montagem da atividade
 6. Desafio Maker
 7. Produto final
-8. Avaliação
-9. Referências
+8. Conexão STEAM + Maker
+9. Avaliação
+10. Referências
+11. Gabarito do professor em página separada
 
 Regras:
 - Deve caber em no máximo 2 páginas A4.
@@ -389,7 +391,9 @@ ${stageTitles}
 - "stages" deve explicar como preparar base, dividir materiais, construir, manipular, testar, ajustar e apresentar. Não use frases genéricas.
 - Inclua 2 testes concretos: um cenário esperado e um cenário com imprevisto, restrição ou falha.
 - Avaliação: mini rubrica com "criterion" e "observation", máximo 4 linhas.
-- Referências: máximo 3 itens. Use as referências do projeto se houver; não invente fonte.
+- Referências: preferencialmente 2 itens, mínimo 1. Use as referências do projeto se houver; não invente fonte nem DOI.
+- Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
+- Inclua "teacherGabarito" em formato didático, com um item por cenário. Para cálculos, copie os valores dos cenários e mostre soma das despesas e saldo final.
 - Não use emojis.
 - Não use reticências. Nenhum texto pode terminar cortado com "...".
 
@@ -413,7 +417,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "readyMaterials": [
     "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
     "CENÁRIO 2 - Imprevisto: restrição, falha ou mudança para comparar.",
-    "TABELA DE TESTE - Critério | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo | Melhoria Aplicada | Resultado Após Melhoria."
+    "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
   ],
   "stages": [
     {
@@ -455,7 +459,18 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     { "criterion": "Melhoria", "observation": "O grupo ajustou o protótipo após identificar falha?" },
     { "criterion": "Comunicação", "observation": "O grupo explicou solução, teste e melhoria?" }
   ],
-  "bibliography": ${JSON.stringify(project.bibliography?.length ? project.bibliography.slice(0, 3) : ['BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.'])},
+  "steamConnection": {
+    "science": "conceito ou fenômeno investigado na atividade.",
+    "technology": "recurso, ferramenta ou sistema utilizado.",
+    "engineering": "o que será construído, testado e melhorado.",
+    "art": "elemento visual, criativo ou comunicativo do protótipo.",
+    "mathematics": "cálculos, medidas ou comparação de dados."
+  },
+  "teacherGabarito": [
+    "Cenário 1: Resultado esperado com conclusão objetiva.",
+    "Cenário 2: Resultado do imprevisto com impacto observado; Sugestão de melhoria objetiva."
+  ],
+  "bibliography": ${JSON.stringify(project.bibliography?.length ? project.bibliography.slice(0, 2) : ['BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.'])},
   "bncc": ${JSON.stringify(project.bncc || [])}
 }`
 }

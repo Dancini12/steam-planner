@@ -53,8 +53,10 @@ export const LEARNING_EXPERIENCE_SECTIONS = [
   "Desenvolvimento e montagem da atividade",
   "Desafio Maker",
   "Produto final",
+  "Conexão STEAM + Maker",
   "Avaliação",
-  "Referências"
+  "Referências",
+  "Gabarito do professor"
 ];
 
 export function getLearningExperienceStageTitles() {
@@ -68,14 +70,31 @@ export function getPracticalAssemblyStepTitles() {
 function cleanText(value) {
   if (value == null) return "";
   return String(value)
+    .replace(/&lt;\s*br\s*\/?\s*&gt;/gi, ". ")
+    .replace(/&lt;[^&]+&gt;/gi, " ")
+    .replace(/<\s*br\s*\/?\s*>/gi, ". ")
+    .replace(/<\/\s*p\s*>/gi, ". ")
+    .replace(/<\s*p[^>]*>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;|&apos;/gi, "'")
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
     .replace(/[\uFE0F\u200D]/g, "")
     .replace(/\.{3,}|…/g, ".")
     .replace(/[Pp]ós-its?/g, "notas adesivas")
     .replace(/[Pp]ost-[Ii]ts?/g, "notas adesivas")
     .replace(/\b(tesouras?)(?!\s+sem\s+ponta)/gi, (m) => /s$/i.test(m) ? "Tesouras sem ponta" : "Tesoura sem ponta")
+    .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*\n]+)\*/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
     .replace(/^\s*\|.*\|\s*$/gm, "")
     .replace(/^\s*[-|: ]+\s*$/gm, "")
+    .replace(/\s+([.!?,;:])/g, "$1")
+    .replace(/([.!?])\s*([.!?])+/g, "$1")
     .replace(/[ \t]+/g, " ")
     .replace(/\s+\n/g, "\n")
     .replace(/\n\s+/g, "\n")
@@ -209,7 +228,7 @@ function buildDefaultReadyMaterials(theme) {
       "CENÁRIO 1 - Saldo positivo: renda R$ 3.500; aluguel R$ 900; alimentação R$ 800; transporte R$ 350; energia/água R$ 280; lazer R$ 200. Pergunta: quanto sobra?",
       "CENÁRIO 2 - Imprevisto: renda R$ 3.000; despesas fixas R$ 2.400; gasto médico R$ 600. Pergunta: ficou positivo ou negativo? O que ajustar?",
       "CENÁRIO 3 - Decisão: renda R$ 4.000; despesas R$ 3.200; celular R$ 1.200. Pergunta: comprar agora, parcelar ou adiar? Justifique.",
-      "TABELA DE TESTE - Critério | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo | Melhoria Aplicada | Resultado Após Melhoria."
+      "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
     ];
   }
 
@@ -383,7 +402,7 @@ function normalizeReferences(value, compact = false) {
   const references = toTextArray(value)
     .map(cleanText)
     .filter((item) => item && !/wikipedia/i.test(item));
-  const selected = (references.length ? references : [FALLBACK_REFERENCE]).slice(0, compact ? 2 : 3);
+  const selected = (references.length ? references : [FALLBACK_REFERENCE]).slice(0, 2);
   return selected.map((item) => finishSentence(item));
 }
 

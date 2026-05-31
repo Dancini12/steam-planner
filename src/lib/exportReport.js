@@ -39,10 +39,22 @@ function parseActivityManual(text) {
 }
 
 const STEAM_AREA_NAMES = { S: 'Ciências', T: 'Tecnologia', E: 'Engenharia', A: 'Artes', M: 'Matemática' };
+const FALLBACK_REFERENCE =
+  "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.";
 
 function stripDecorativeMarkers(text) {
   if (typeof text !== "string") return "";
   return text
+    .replace(/&lt;\s*br\s*\/?\s*&gt;/gi, ". ")
+    .replace(/&lt;[^&]+&gt;/gi, " ")
+    .replace(/<\s*br\s*\/?\s*>/gi, ". ")
+    .replace(/<\/\s*p\s*>/gi, ". ")
+    .replace(/<\s*p[^>]*>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;|&apos;/gi, "'")
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
     .replace(/[\uFE0F\u200D]/g, "")
     .replace(/\.{3,}|…/g, ".")
@@ -59,6 +71,8 @@ function stripDecorativeMarkers(text) {
     .replace(/[•●▪]/g, "-")
     .replace(/^\s*\|.*\|\s*$/gm, "")
     .replace(/^\s*[-|: ]+\s*$/gm, "")
+    .replace(/\s+([.!?,;:])/g, "$1")
+    .replace(/([.!?])\s*([.!?])+/g, "$1")
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n[ \t]+/g, "\n")
     .replace(/[ \t]{2,}/g, " ")
@@ -101,10 +115,11 @@ function renderParagraph(text) {
 function renderReferenceList(references) {
   const html = (references || [])
     .map((ref) => stripDecorativeMarkers(ref))
-    .filter(Boolean)
+    .filter((ref) => ref && !/wikipedia/i.test(ref))
+    .slice(0, 2)
     .map((ref) => `<p class="ref">${escapeHtml(ref)}</p>`)
     .join("");
-  return html || renderBlankLines(2);
+  return html || `<p class="ref">${escapeHtml(FALLBACK_REFERENCE)}</p>`;
 }
 
 function renderBnccCodes(bncc) {
@@ -329,10 +344,18 @@ function renderStudentMaterial(studentActivity, title) {
   </div>`;
 }
 
+function formatExperienceStageTitle(title, index) {
+  const cleaned = stripDecorativeMarkers(title || "");
+  const match = cleaned.match(/^ETAPA\s*(\d+)\s*[-—:]\s*(.*)$/i);
+  const number = match ? match[1] : String(index + 1);
+  const label = (match ? match[2] : cleaned).trim() || "Desenvolvimento";
+  return `ETAPA ${number} — ${label}`;
+}
+
 function renderExperienceStages(stages) {
   return (stages || [])
     .map((stage, index) => {
-      const title = stripDecorativeMarkers(stage?.title || `ETAPA ${index + 1}`);
+      const title = formatExperienceStageTitle(stage?.title || `ETAPA ${index + 1}`, index);
       const description = stripDecorativeMarkers(stage?.description || "");
       return `<div class="stage">
         <div class="stage-header">${escapeHtml(title)}</div>
@@ -480,9 +503,30 @@ function renderSteamConnection(steamConnection) {
   return items ? `<ul class="steam-connection">${items}</ul>` : "";
 }
 
+function renderSteamConnectionForExperience(experience) {
+  const rendered = renderSteamConnection(experience.steamConnection);
+  if (rendered) return rendered;
+  return `<p>A experiência integra investigação, construção, teste e melhoria: os estudantes analisam o problema, criam uma solução manipulável, registram evidências e comunicam o resultado com linguagem visual e dados.</p>`;
+}
+
 function renderTeacherOrientation(text) {
   if (!text) return "";
   return `<p class="teacher-note"><strong>Orientação ao professor:</strong> ${formatCleanMultiline(text)}</p>`;
+}
+
+const FINANCIAL_TEST_COLUMNS = [
+  "Cenário",
+  "Receita Total",
+  "Despesas Fixas",
+  "Despesas Variáveis",
+  "Saldo Inicial",
+  "Melhoria Aplicada",
+  "Saldo Final Após Melhoria"
+];
+
+function looksFinancialTest(items, columns = []) {
+  const text = [...items, ...columns].join(" ").toLowerCase();
+  return /r\$\s*[\d.]+|receita|renda|despesa|or[cç]amento|saldo|poupan[cç]a|investimento/.test(text);
 }
 
 function renderTestTable(readyMaterials) {
@@ -502,6 +546,11 @@ function renderTestTable(readyMaterials) {
     }
   }
 
+  const financial = looksFinancialTest(items, columns);
+  if (financial) {
+    columns = FINANCIAL_TEST_COLUMNS;
+  }
+
   const headers = columns.map((col) => `<th>${escapeHtml(col)}</th>`).join("");
   const rows = Array.from({ length: scenarioCount }, (_, i) => {
     const cells = columns.slice(1).map(() => `<td class="blank-cell"></td>`).join("");
@@ -510,22 +559,59 @@ function renderTestTable(readyMaterials) {
 
   return `<div class="test-table-wrapper">
     <p class="test-table-title"><strong>Tabela de Teste</strong></p>
-    <table class="test-table">
+    <table class="test-table${financial ? " financial-test-table" : ""}">
       <thead><tr>${headers}</tr></thead>
       <tbody>${rows}</tbody>
     </table>
   </div>`;
 }
 
-function renderTeacherGabarito(gabarito) {
+function finishGabaritoLine(line) {
+  const cleaned = stripDecorativeMarkers(line);
+  if (!cleaned) return "";
+  return /[.!?:;)]$/.test(cleaned) ? cleaned : `${cleaned}.`;
+}
+
+function splitGabaritoLines(item) {
+  const cleaned = stripDecorativeMarkers(item);
+  if (!cleaned) return [];
+
+  const [first, ...rest] = cleaned.split(/\n+/);
+  const firstMatch = first.match(/^(Cen[aá]rio\s*\d+|Sugest[aã]o de melhoria)\s*:\s*(.*)$/i);
+  const lines = [];
+
+  if (firstMatch) {
+    lines.push(`${firstMatch[1].replace(/^cen/i, "Cen")}:`);
+    if (firstMatch[2]) lines.push(firstMatch[2]);
+    lines.push(...rest);
+  } else {
+    lines.push(first, ...rest);
+  }
+
+  return lines
+    .flatMap((line) => line.split(/\s*;\s*/))
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index) => index === 0 && /:$/.test(line) ? line : finishGabaritoLine(line));
+}
+
+function renderTeacherGabaritoItems(gabarito) {
   if (!Array.isArray(gabarito) || !gabarito.length) return "";
-  const items = gabarito
-    .map((item) => `<p class="gabarito-item">${cleanHtml(stripDecorativeMarkers(item))}</p>`)
+  return gabarito
+    .map((item) => {
+      const lines = splitGabaritoLines(item);
+      if (!lines.length) return "";
+      const [heading, ...bodyLines] = lines;
+      const hasHeading = /:$/.test(heading) && /^(Cen[aá]rio\s*\d+|Sugest[aã]o de melhoria):/i.test(heading);
+      const body = (hasHeading ? bodyLines : lines)
+        .map((line) => `<p class="gabarito-line">${cleanHtml(line)}</p>`)
+        .join("");
+      return `<div class="gabarito-card">
+        ${hasHeading ? `<p class="gabarito-card-title">${cleanHtml(heading)}</p>` : ""}
+        ${body}
+      </div>`;
+    })
     .join("");
-  return `<div class="gabarito-section">
-    <p class="gabarito-title"><strong>Gabarito do Professor</strong></p>
-    ${items}
-  </div>`;
 }
 
 function renderAssessmentRubric(experience) {
@@ -553,7 +639,7 @@ const DANGLING = /\s+(e|ou|de|da|do|dos|das|com|para|que|se|em|na|no|nas|nos|a|o
 
 function fixDanglingText(text) {
   if (!text) return text;
-  let t = text.replace(/\.{3,}|…/g, ".").trim();
+  let t = stripDecorativeMarkers(text).replace(/\.{3,}|…/g, ".").trim();
   t = t.replace(DANGLING, "").trim();
   if (t && !/[.!?:;)\]"]$/.test(t)) t += ".";
   return t;
@@ -610,28 +696,143 @@ function fixGabaritoLanguage(teacherGabarito) {
   });
 }
 
+function formatCurrencyBRL(value) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2
+  }).format(value).replace(/\u00a0/g, " ");
+}
+
+function buildFinancialGabaritoFromReadyMaterials(readyMaterials) {
+  const scenarioItems = normalizeTextItems(readyMaterials || [])
+    .filter((item) => /^CEN[AÁ]RIO/i.test(item) && /R\$\s*[\d.]+/i.test(item));
+
+  if (!scenarioItems.length) return [];
+
+  const cards = scenarioItems
+    .map((item, index) => {
+      const amounts = extractBRLAmounts(item);
+      if (amounts.length < 2) return "";
+
+      const scenarioMatch = item.match(/^CEN[AÁ]RIO\s*(\d+)/i);
+      const scenarioNumber = scenarioMatch ? scenarioMatch[1] : String(index + 1);
+      const receita = amounts[0];
+      const expenses = amounts.slice(1);
+      const totalExpenses = expenses.reduce((sum, value) => sum + value, 0);
+      const saldo = receita - totalExpenses;
+      const expenseExpression = expenses.map(formatCurrencyBRL).join(" + ");
+
+      return [
+        `Cenário ${scenarioNumber}:`,
+        `Receita total: ${formatCurrencyBRL(receita)}.`,
+        `Despesas totais: ${expenseExpression} = ${formatCurrencyBRL(totalExpenses)}.`,
+        `Saldo final: ${formatCurrencyBRL(receita)} - ${formatCurrencyBRL(totalExpenses)} = ${formatCurrencyBRL(saldo)}.`,
+        saldo >= 0
+          ? `O saldo ainda é positivo, mas deve ser analisado para preservar parte da poupança.`
+          : `O saldo final é negativo; a equipe precisa propor uma reorganização das despesas.`
+      ].join("\n");
+    })
+    .filter(Boolean);
+
+  if (cards.length) {
+    cards.push("Sugestão de melhoria: A equipe pode reorganizar despesas variáveis, criar uma área de reserva de emergência ou ajustar prioridades para preservar parte da poupança.");
+  }
+
+  return cards;
+}
+
+function buildFallbackGabaritoFromReadyMaterials(readyMaterials) {
+  return normalizeTextItems(readyMaterials || [])
+    .filter((item) => /^CEN[AÁ]RIO/i.test(item))
+    .slice(0, 3)
+    .map((item, index) => {
+      const scenarioMatch = item.match(/^CEN[AÁ]RIO\s*(\d+)/i);
+      const scenarioNumber = scenarioMatch ? scenarioMatch[1] : String(index + 1);
+      return `Cenário ${scenarioNumber}: conferir se o protótipo foi testado, se a falha ou restrição foi registrada e se a melhoria proposta altera o resultado observado.`;
+    });
+}
+
 function autoFixExperience(experience) {
   const fix = fixDanglingText;
   const fixedReadyMaterials = fixScenarioQuestions((experience.readyMaterials || []).map(fix)).map(fixDecisionLanguage);
   const fixedGabarito = fixGabaritoLanguage((experience.teacherGabarito || []).map(fix));
+  const financialGabarito = buildFinancialGabaritoFromReadyMaterials(fixedReadyMaterials);
+  const fallbackGabarito = fixedGabarito.length ? fixedGabarito : buildFallbackGabaritoFromReadyMaterials(fixedReadyMaterials);
+  const teacherGabarito = financialGabarito.length ? financialGabarito : fallbackGabarito;
+  const bibliography = (experience.bibliography || [])
+    .map(fix)
+    .filter((item) => item && !/wikipedia/i.test(item))
+    .slice(0, 2);
+
   return {
     ...experience,
+    title: stripDecorativeMarkers(experience.title),
+    theme: stripDecorativeMarkers(experience.theme),
+    duration: stripDecorativeMarkers(experience.duration),
     objective: fix(experience.objective),
     problem: fix(experience.problem),
     mission: fix(experience.mission),
     makerChallenge: fix(experience.makerChallenge),
     finalProduct: fix(experience.finalProduct),
     teacherOrientation: experience.teacherOrientation ? fix(experience.teacherOrientation) : experience.teacherOrientation,
-    stages: (experience.stages || []).map((s) => ({ ...s, description: fixDecisionLanguage(fix(s.description)) })),
+    materials: (experience.materials || []).map(fix).map(fixMaterialSafety),
+    stages: (experience.stages || []).map((s) => ({ ...s, title: stripDecorativeMarkers(s.title), description: fixDecisionLanguage(fix(s.description)) })),
     materialFunctions: (experience.materialFunctions || []).map(fix).map(fixMaterialSafety),
     readyMaterials: fixedReadyMaterials,
-    teacherGabarito: fixedGabarito,
+    assessmentRubric: (experience.assessmentRubric || []).map((item) => ({
+      ...item,
+      criterion: fix(item.criterion || ""),
+      observation: fix(item.observation || item.description || "")
+    })),
+    bibliography: bibliography.length ? bibliography : [FALLBACK_REFERENCE],
+    steamConnection: Object.fromEntries(
+      Object.entries(experience.steamConnection || {}).map(([key, value]) => [key, fix(value)])
+    ),
+    teacherGabarito,
   };
 }
 
 function extractBRLAmounts(text) {
-  return [...(text || "").matchAll(/R\$\s*([\d.]+,\d{2})/g)]
-    .map((m) => parseFloat(m[1].replace(/\./g, "").replace(",", ".")));
+  return [...(text || "").matchAll(/R\$\s*([\d.]+(?:,\d{2})?)/g)]
+    .map((m) => {
+      const raw = m[1];
+      if (raw.includes(",")) {
+        return parseFloat(raw.replace(/\./g, "").replace(",", "."));
+      }
+      return parseFloat(raw.replace(/\./g, ""));
+    })
+    .filter((value) => Number.isFinite(value));
+}
+
+function hasVisibleTechnicalMarkup(text) {
+  if (!text) return false;
+  return /<\s*\/?\s*[a-z][^>]*>/i.test(text)
+    || /&lt;\s*\/?\s*[a-z][^&]*&gt;/i.test(text)
+    || /\*\*[^*]+\*\*/.test(text)
+    || /(^|\s)\*[^*\n]+\*(\s|$)/.test(text)
+    || /^\s*\|.*\|\s*$/m.test(text)
+    || /^\s*[-|: ]{3,}\s*$/m.test(text);
+}
+
+function collectExperienceText(experience) {
+  return [
+    experience.title,
+    experience.objective,
+    experience.problem,
+    experience.mission,
+    experience.makerChallenge,
+    experience.finalProduct,
+    experience.teacherOrientation,
+    ...(experience.materials || []),
+    ...(experience.materialFunctions || []),
+    ...(experience.readyMaterials || []),
+    ...(experience.bibliography || []),
+    ...(experience.teacherGabarito || []),
+    ...(experience.stages || []).flatMap((stage) => [stage.title, stage.description]),
+    ...(experience.assessmentRubric || []).flatMap((item) => [item.criterion, item.observation]),
+    ...Object.values(experience.steamConnection || {})
+  ].filter(Boolean);
 }
 
 function validateExportedExperience(experience) {
@@ -697,7 +898,14 @@ function validateExportedExperience(experience) {
 
   // Bibliography
   if (!experience.bibliography || experience.bibliography.length === 0) {
-    warnings.push("Referências bibliográficas ausentes.");
+    blocking.push("Referências bibliográficas ausentes.");
+  } else if ((experience.bibliography || []).some((ref) => /wikipedia/i.test(ref))) {
+    blocking.push("Referências não podem usar Wikipedia.");
+  }
+
+  // Markup/HTML hygiene
+  if (collectExperienceText(experience).some(hasVisibleTechnicalMarkup)) {
+    blocking.push("Há marcação HTML ou Markdown visível no conteúdo.");
   }
 
   return { blocking, warnings };
@@ -714,7 +922,7 @@ function buildExportErrorHTML(blocking, warnings) {
   .blocking{color:#DC2626} .warning{color:#D97706}
   .info{background:#FEF3C7;border:1px solid #F59E0B;padding:1rem;border-radius:6px;margin-top:1.5rem}
 </style></head><body>
-<h1>⚠️ Exportação bloqueada</h1>
+<h1>Exportação bloqueada</h1>
 <p>O documento apresenta problemas que precisam ser corrigidos antes da exportação:</p>
 ${blocking.length ? `<p><strong>Bloqueantes:</strong></p><ul>${li(blocking, "blocking")}</ul>` : ""}
 ${warnings.length ? `<p><strong>Avisos:</strong></p><ul>${li(warnings, "warning")}</ul>` : ""}
@@ -732,26 +940,30 @@ function buildActivityPrintHTMLFromExperience(experience) {
   <meta charset="UTF-8">
   <title>${cleanHtml(experience.title || 'Experiência STEAM Maker')}</title>
   <style>
-    @page { size: A4; margin: 0.85cm 0.95cm; }
+    @page { size: A4; margin: 1.05cm 1.15cm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 8.8pt;
-      line-height: 1.23;
+      font-size: 9.1pt;
+      line-height: 1.32;
       color: #000;
       background: #fff;
-      padding: 0.85cm 0.95cm;
+      padding: 1.05cm 1.15cm;
       max-width: 21cm;
       margin: 0 auto;
+      orphans: 3;
+      widows: 3;
     }
     .header {
       display: grid;
-      grid-template-columns: 0.55cm 1fr;
-      gap: 0.32cm;
+      grid-template-columns: 0.58cm 1fr;
+      gap: 0.36cm;
       align-items: start;
-      margin-bottom: 0.22cm;
+      margin-bottom: 0.34cm;
       border-bottom: 2px solid #111;
-      padding-bottom: 0.22cm;
+      padding-bottom: 0.28cm;
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
     .section-number {
       width: 0.48cm;
@@ -765,71 +977,111 @@ function buildActivityPrintHTMLFromExperience(experience) {
       margin-right: 0.16cm;
       flex: 0 0 auto;
     }
-    .doc-type { font-size: 7.8pt; font-weight: 700; text-transform: uppercase; color: #555; margin-bottom: 0.06cm; letter-spacing: 0.01cm; }
-    .header h1 { font-size: 14pt; font-weight: 700; line-height: 1.08; }
-    .section { margin-top: 0.18cm; page-break-inside: avoid; }
-    .section-heading { display: flex; align-items: center; border-bottom: 1px solid #777; padding-bottom: 0.06cm; margin-bottom: 0.09cm; }
+    .doc-type { font-size: 7.9pt; font-weight: 700; text-transform: uppercase; color: #555; margin-bottom: 0.08cm; letter-spacing: 0.01cm; }
+    .header h1 { font-size: 14.2pt; font-weight: 700; line-height: 1.12; }
+    .section { margin-top: 0.28cm; }
+    .protected-section,
+    .table-section,
+    .materials-table,
+    .test-table-wrapper,
+    .rubric-table,
+    .gabarito-card {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .section-heading {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #777;
+      padding-bottom: 0.08cm;
+      margin-bottom: 0.13cm;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
     .section-title {
-      font-size: 9pt;
+      font-size: 9.2pt;
       font-weight: 700;
     }
-    h3 { font-size: 8.4pt; font-weight: 700; margin-bottom: 0.04cm; }
-    p { text-align: left; margin-bottom: 0.08cm; }
-    ul, ol { padding-left: 0.42cm; margin-bottom: 0.05cm; }
-    li { margin-bottom: 0.03cm; text-align: left; }
-    .mission { border-left: 2px solid #111; padding-left: 0.22cm; margin-top: 0.1cm; }
-    .stages { display: grid; grid-template-columns: 1fr 1fr; gap: 0.14cm 0.22cm; }
-    .stage { page-break-inside: avoid; border: 1px solid #bbb; border-radius: 2px; overflow: hidden; }
-    .stage-header { background: #f0f0f0; font-weight: 700; font-size: 8pt; padding: 0.05cm 0.1cm; border-bottom: 1px solid #bbb; }
-    .stage-body { padding: 0.06cm 0.1cm; }
+    h3 { font-size: 8.6pt; font-weight: 700; margin-bottom: 0.06cm; }
+    p { text-align: left; margin-bottom: 0.11cm; }
+    ul, ol { padding-left: 0.46cm; margin-bottom: 0.08cm; }
+    li { margin-bottom: 0.05cm; text-align: left; }
+    .mission { border-left: 2px solid #111; padding-left: 0.24cm; margin-top: 0.12cm; }
+    .stages { display: grid; grid-template-columns: 1fr 1fr; gap: 0.18cm 0.24cm; }
+    .stage {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      border: 1px solid #aeb4bd;
+      border-radius: 3px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .stage-header { background: #f6f7f8; font-weight: 700; font-size: 8pt; padding: 0.08cm 0.12cm; border-bottom: 1px solid #aeb4bd; }
+    .stage-body { padding: 0.1cm 0.12cm; }
     .stage-body p { margin-bottom: 0; }
-    .ready-materials { margin-top: 0.08cm; border-left: 2px solid #777; padding-left: 0.18cm; }
-    .ready-materials strong { display: block; margin-bottom: 0.04cm; }
-    .materials-table { width: 100%; border-collapse: collapse; font-size: 8pt; margin-bottom: 0.06cm; }
-    .materials-table th { background: #eee; border: 1px solid #999; padding: 0.05cm 0.08cm; font-weight: 700; text-align: left; white-space: nowrap; }
-    .materials-table td { border: 1px solid #bbb; padding: 0.04cm 0.08cm; vertical-align: top; word-break: break-word; }
+    .ready-materials { margin-top: 0.12cm; border-left: 2px solid #777; padding-left: 0.2cm; }
+    .ready-materials strong { display: block; margin-bottom: 0.05cm; }
+    .materials-table { width: 100%; border-collapse: collapse; font-size: 8.1pt; margin-bottom: 0.11cm; table-layout: fixed; }
+    .materials-table th { background: #f1f1f1; border: 1px solid #888; padding: 0.07cm 0.09cm; font-weight: 700; text-align: left; white-space: nowrap; }
+    .materials-table td { border: 1px solid #aaa; padding: 0.07cm 0.09cm; vertical-align: top; word-break: break-word; }
+    .materials-table th:nth-child(1) { width: 21%; }
+    .materials-table th:nth-child(2) { width: 9%; }
+    .materials-table th:nth-child(3) { width: 18%; }
+    .materials-table th:nth-child(4) { width: 34%; }
+    .materials-table th:nth-child(5) { width: 18%; }
     .materials-table .mat-qty { text-align: center; white-space: nowrap; }
-    .rubric-table { width: 100%; border-collapse: collapse; font-size: 8.3pt; }
-    .rubric-table th, .rubric-table td { border: 1px solid #999; padding: 0.06cm 0.1cm; text-align: left; vertical-align: top; }
-    .rubric-table th { background: #eee; font-weight: 700; }
-    .ref { padding-left: 0.8cm; text-indent: -0.8cm; font-size: 8.8pt; line-height: 1.25; }
-    .teacher-note { margin-top: 0.1cm; padding: 0.07cm 0.18cm; border-left: 2px solid #555; background: #F9FAFB; font-style: italic; }
+    .rubric-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+    .rubric-table th, .rubric-table td { border: 1px solid #999; padding: 0.08cm 0.11cm; text-align: left; vertical-align: top; }
+    .rubric-table th { background: #f1f1f1; font-weight: 700; }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; page-break-inside: avoid; }
+    .ref { padding-left: 0.8cm; text-indent: -0.8cm; font-size: 8.8pt; line-height: 1.3; margin-bottom: 0.1cm; }
+    .teacher-note { margin-top: 0.12cm; padding: 0.1cm 0.2cm; border-left: 2px solid #555; background: #F9FAFB; font-style: italic; }
     .steam-connection { padding-left: 0.42cm; margin: 0; }
-    .steam-connection li { margin-bottom: 0.04cm; }
-    .duration-line { font-size: 8.4pt; color: #444; margin-top: 0.05cm; }
-    .test-table-wrapper { margin-top: 0.1cm; }
-    .test-table-title { margin-bottom: 0.05cm; }
-    .test-table { width: 100%; border-collapse: collapse; font-size: 7.8pt; }
-    .test-table th { background: #eee; border: 1px solid #999; padding: 0.05cm 0.08cm; text-align: left; font-weight: 700; }
-    .test-table td { border: 1px solid #bbb; padding: 0; height: 0.65cm; vertical-align: middle; }
-    .test-table td:first-child { padding: 0.04cm 0.08cm; font-weight: 600; white-space: nowrap; }
+    .steam-connection li { margin-bottom: 0.05cm; }
+    .duration-line { font-size: 8.5pt; color: #444; margin-top: 0.06cm; }
+    .test-table-wrapper { margin-top: 0.18cm; }
+    .test-table-title { margin-bottom: 0.07cm; }
+    .test-table { width: 100%; border-collapse: collapse; font-size: 7.7pt; table-layout: fixed; }
+    .test-table th { background: #f1f1f1; border: 1px solid #888; padding: 0.06cm 0.08cm; text-align: left; font-weight: 700; }
+    .test-table td { border: 1px solid #aaa; padding: 0; height: 0.82cm; vertical-align: middle; }
+    .test-table td:first-child { padding: 0.05cm 0.08cm; font-weight: 600; white-space: nowrap; }
+    .financial-test-table { font-size: 7.1pt; }
+    .financial-test-table th:first-child,
+    .financial-test-table td:first-child { width: 1.7cm; }
     .test-table .blank-cell { background: #fafafa; }
     .gabarito-page {
       page-break-before: always; break-before: page;
       height: auto !important; overflow: visible !important;
-      padding-top: 0.6cm;
-      font-size: 9pt !important; line-height: 1.3 !important;
+      padding-top: 0.3cm;
+      font-size: 9.4pt !important; line-height: 1.38 !important;
     }
-    .gabarito-page h2 { font-size: 12pt !important; font-weight: 700; border-bottom: 2px solid #111; padding-bottom: 0.18cm; margin-bottom: 0.12cm; }
-    .gabarito-subtitle { font-size: 7.8pt; color: #666; font-style: italic; margin-bottom: 0.4cm; }
-    .gabarito-item {
-      page-break-inside: auto; break-inside: auto;
-      height: auto !important; overflow: visible !important;
-      margin-bottom: 0.25cm; line-height: 1.35;
+    .gabarito-page h2 { font-size: 13pt !important; font-weight: 700; border-bottom: 2px solid #111; padding-bottom: 0.18cm; margin-bottom: 0.12cm; text-transform: uppercase; }
+    .gabarito-subtitle { font-size: 8.2pt; color: #555; font-style: italic; margin-bottom: 0.38cm; }
+    .gabarito-card { border: 1px solid #aaa; border-radius: 3px; padding: 0.22cm 0.26cm; margin-bottom: 0.22cm; background: #fff; }
+    .gabarito-card-title { font-weight: 700; margin-bottom: 0.1cm; }
+    .gabarito-line { margin-bottom: 0.07cm; }
+    .gabarito-line:last-child { margin-bottom: 0; }
+    body.tight { font-size: 8.7pt; line-height: 1.24; padding: 0.85cm 0.95cm; }
+    body.tight .header h1 { font-size: 13pt; }
+    body.tight .section { margin-top: 0.2cm; }
+    body.tight .stages { gap: 0.12cm 0.18cm; }
+    body.tight .stage-header { padding: 0.06cm 0.1cm; font-size: 7.8pt; }
+    body.tight .stage-body { padding: 0.08cm 0.1cm; }
+    body.ultra-tight { font-size: 8.2pt; line-height: 1.18; padding: 0.72cm 0.82cm; }
+    body.ultra-tight .section { margin-top: 0.16cm; }
+    body.ultra-tight .header { margin-bottom: 0.22cm; padding-bottom: 0.2cm; }
+    body.ultra-tight .stages { gap: 0.1cm 0.14cm; }
+    body.ultra-tight .stage-header { padding: 0.05cm 0.08cm; font-size: 7.6pt; }
+    body.ultra-tight .stage-body { padding: 0.06cm 0.08cm; }
+    @media print {
+      body { padding: 0; }
+      .section-heading { page-break-after: avoid; break-after: avoid; }
+      .protected-section, .table-section, .stage, .materials-table, .test-table-wrapper, .rubric-table, .gabarito-card {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
     }
-    body.tight { font-size: 8.1pt; line-height: 1.16; padding: 0.65cm 0.78cm; }
-    body.tight .header h1 { font-size: 12.5pt; }
-    body.tight .section { margin-top: 0.12cm; }
-    body.tight .stages { gap: 0.08cm 0.14cm; }
-    body.tight .stage-header { padding: 0.03cm 0.08cm; font-size: 7.8pt; }
-    body.tight .stage-body { padding: 0.04cm 0.08cm; }
-    body.ultra-tight { font-size: 7.5pt; line-height: 1.1; padding: 0.5cm 0.65cm; }
-    body.ultra-tight .section { margin-top: 0.08cm; }
-    body.ultra-tight .header { margin-bottom: 0.12cm; padding-bottom: 0.12cm; }
-    body.ultra-tight .stages { gap: 0.05cm 0.1cm; }
-    body.ultra-tight .stage-header { padding: 0.02cm 0.06cm; font-size: 7.5pt; }
-    body.ultra-tight .stage-body { padding: 0.03cm 0.06cm; }
-    @media print { body { padding: 0; } .section, .stage { page-break-inside: avoid; } .section-title { page-break-after: avoid; } }
   </style>
 </head>
 <body>
@@ -845,7 +1097,7 @@ function buildActivityPrintHTMLFromExperience(experience) {
     </div>
   </div>
 
-  <div class="section">
+  <div class="section protected-section">
     <div class="section-heading"><span class="section-number">2</span><div class="section-title">Objetivo geral</div></div>
     <p>${formatCleanMultiline(experience.objective)}</p>
   </div>
@@ -857,7 +1109,7 @@ function buildActivityPrintHTMLFromExperience(experience) {
     ${renderTeacherOrientation(experience.teacherOrientation)}
   </div>
 
-  <div class="section">
+  <div class="section table-section">
     <div class="section-heading"><span class="section-number">4</span><div class="section-title">Materiais</div></div>
     ${renderMaterialsForExperience(experience)}
   </div>
@@ -868,37 +1120,37 @@ function buildActivityPrintHTMLFromExperience(experience) {
     ${renderTestTable(experience.readyMaterials)}
   </div>
 
-  <div class="section">
+  <div class="section protected-section">
     <div class="section-heading"><span class="section-number">6</span><div class="section-title">Desafio Maker</div></div>
     <p>${formatCleanMultiline(experience.makerChallenge)}</p>
   </div>
 
-  <div class="section">
+  <div class="section protected-section">
     <div class="section-heading"><span class="section-number">7</span><div class="section-title">Produto final</div></div>
     <p>${formatCleanMultiline(experience.finalProduct)}</p>
   </div>
 
-  ${renderSteamConnection(experience.steamConnection) ? `<div class="section">
+  <div class="section protected-section">
     <div class="section-heading"><span class="section-number">8</span><div class="section-title">Conexão STEAM + Maker</div></div>
-    ${renderSteamConnection(experience.steamConnection)}
-  </div>` : ""}
+    ${renderSteamConnectionForExperience(experience)}
+  </div>
 
-  <div class="section">
-    <div class="section-heading"><span class="section-number">${experience.steamConnection && Object.values(experience.steamConnection).some(Boolean) ? 9 : 8}</span><div class="section-title">Avaliação</div></div>
+  <div class="section protected-section table-section">
+    <div class="section-heading"><span class="section-number">9</span><div class="section-title">Avaliação</div></div>
     ${renderAssessmentRubric(experience)}
   </div>
 
-  <div class="section">
-    <div class="section-heading"><span class="section-number">${experience.steamConnection && Object.values(experience.steamConnection).some(Boolean) ? 10 : 9}</span><div class="section-title">Referências</div></div>
+  <div class="section protected-section references-section">
+    <div class="section-heading"><span class="section-number">10</span><div class="section-title">Referências</div></div>
     ${renderReferenceList(experience.bibliography)}
   </div>
 
 </div><!-- end #activity-content -->
 
   ${(Array.isArray(experience.teacherGabarito) && experience.teacherGabarito.length) ? `<div class="gabarito-page">
-    <h2>Gabarito do Professor</h2>
-    <p class="gabarito-subtitle">Material exclusivo do professor — não distribuir aos alunos</p>
-    ${experience.teacherGabarito.map((item) => `<p class="gabarito-item">${formatCleanMultiline(stripDecorativeMarkers(item))}</p>`).join("")}
+    <h2>GABARITO DO PROFESSOR</h2>
+    <p class="gabarito-subtitle">Material exclusivo do professor — não distribuir aos alunos.</p>
+    ${renderTeacherGabaritoItems(experience.teacherGabarito)}
   </div>` : ""}
 
   <script>
@@ -927,6 +1179,10 @@ function buildActivityPrintHTMLFromExperience(experience) {
 
 function buildActivityPrintHTML(activity) {
   const experience = autoFixExperience(normalizeLearningExperience(activity));
+  const { blocking, warnings } = validateExportedExperience(experience);
+  if (blocking.length > 0) {
+    return buildExportErrorHTML(blocking, warnings);
+  }
   return buildActivityPrintHTMLFromExperience(experience);
 }
 
