@@ -342,6 +342,12 @@ function renderExperienceStages(stages) {
     .join("");
 }
 
+function looksLikeQuantity(text) {
+  if (!text) return false;
+  // Valid quantity: starts with digit OR known qty keyword
+  return /^\d/.test(text) || /^(quantidade|variada?|conforme\s+disponibilidade)/i.test(text);
+}
+
 function parseMaterialItem(item) {
   const cleaned = stripDecorativeMarkers(item).replace(/\.\s*$/, "").trim();
   if (!cleaned) return null;
@@ -365,9 +371,17 @@ function parseMaterialItem(item) {
 
   // Split rest on em-dash: qty_unit — use — obs (up to 3 parts)
   const parts = rest ? rest.split(/\s+[—–]\s+/) : [];
-  const qtyUnit = (parts[0] || "").trim();
-  const useText = (parts[1] || "").trim();
+  let qtyUnit = (parts[0] || "").trim();
+  let useText = (parts[1] || "").trim();
   const obsText = (parts[2] || "").trim();
+
+  // If first part is not a quantity (it's a description), shift everything to use
+  if (!looksLikeQuantity(qtyUnit)) {
+    useText = parts.length >= 2
+      ? [qtyUnit, useText].filter(Boolean).join(" — ")
+      : qtyUnit;
+    qtyUnit = "";
+  }
 
   // Parse qty (numeral) and unit (type + distribution context)
   let qty = "1";
@@ -378,19 +392,16 @@ function parseMaterialItem(item) {
     if (distMatch) {
       const distribution = distMatch[1].trim();
       const before = qtyUnit.slice(0, distMatch.index).trim();
-      // Extract leading numeral: "1", "2 a 4", "20 a 30", etc.
       const numMatch = before.match(/^(\d+(?:\s+a\s+\d+)?)/);
       if (numMatch) {
         qty = numMatch[1].trim();
         const typeStr = before.slice(numMatch[0].length).trim();
         unit = typeStr ? `${typeStr} ${distribution}` : distribution;
       } else {
-        // Non-numeric qty like "quantidade variada"
         qty = before || "—";
         unit = distribution;
       }
     } else {
-      // No distribution keyword — extract leading number if present
       const numMatch = qtyUnit.match(/^(\d+(?:\s+a\s+\d+)?)/);
       if (numMatch) {
         qty = numMatch[1].trim();
@@ -401,6 +412,12 @@ function parseMaterialItem(item) {
     }
   }
 
+  // Remove "use como / usar para" prefix left over from old format
+  const use = (useText || "—")
+    .replace(/^use[rs]?\s+como\s+/i, "")
+    .replace(/^use[rs]?\s+para\s+/i, "")
+    || "—";
+
   // Observation: use explicit third segment, or derive from material name
   let obs = obsText;
   if (!obs) {
@@ -409,7 +426,7 @@ function parseMaterialItem(item) {
     else obs = "—";
   }
 
-  return { name: name || cleaned, qty, unit, use: useText || "—", obs };
+  return { name: name || cleaned, qty, unit, use, obs };
 }
 
 function renderMaterialsForExperience(experience) {

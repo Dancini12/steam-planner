@@ -935,7 +935,7 @@ const retroCss = `
       right: 0;
     }
 
-    .speech-box {
+22    .speech-box {
       padding: 15px;
     }
   }
