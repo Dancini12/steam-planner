@@ -476,12 +476,14 @@ function normalizeMaterialQuantityUnit(qty, unit) {
       .trim();
   }
 
-  if (!/\b(por\s+grupo|por\s+aluno|por\s+turma|para\s+a\s+turma|conforme\s+disponibilidade)\b/i.test(normalizedUnit)) {
-    const unitDistribution = normalizedUnit.match(/\b(por\s+grupo|por\s+aluno|por\s+turma|para\s+a\s+turma|conforme\s+disponibilidade)\b/i);
-    if (unitDistribution) {
-      normalizedQty = [normalizedQty, normalizedUnit.slice(0, unitDistribution.index).trim()].filter(Boolean).join(" ");
-      normalizedUnit = unitDistribution[1];
+  // Always split unit into optional type-prefix + distribution (e.g. "folha por grupo" → qty+="folha", unit="por grupo")
+  const unitDistribution = normalizedUnit.match(/\b(por\s+grupo|por\s+aluno|por\s+turma|para\s+a\s+turma|conforme\s+disponibilidade)\b/i);
+  if (unitDistribution) {
+    const typePrefix = normalizedUnit.slice(0, unitDistribution.index).trim();
+    if (typePrefix) {
+      normalizedQty = [normalizedQty, typePrefix].filter(Boolean).join(" ");
     }
+    normalizedUnit = unitDistribution[1];
   }
 
   if (/^\d+(?:\s+a\s+\d+)?$/.test(normalizedQty)) {
@@ -1033,6 +1035,10 @@ function classifyFinancialEntry({ label, currentSection, afterClause }) {
   if (IMPROVEMENT_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (currentSection === FINANCIAL_ENTRY_TYPE.MELHORIA) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (UNEXPECTED_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.IMPREVISTO) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
+  // When the scenario explicitly declares a fixed or variable section, that context wins
+  // over keyword-based classification (e.g. "farmácia" under "Despesas Variáveis" stays variable).
+  if (currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_FIXA && (FIXED_EXPENSE_RE.test(labelOnly) || VARIABLE_EXPENSE_RE.test(labelOnly) || EXPENSE_RE.test(labelOnly))) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
+  if (currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL && (FIXED_EXPENSE_RE.test(labelOnly) || VARIABLE_EXPENSE_RE.test(labelOnly) || EXPENSE_RE.test(labelOnly))) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
   if (FIXED_EXPENSE_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_FIXA) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
   if (VARIABLE_EXPENSE_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
   if (EXPENSE_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
