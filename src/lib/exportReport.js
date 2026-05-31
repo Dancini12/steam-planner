@@ -831,6 +831,21 @@ function fixDanglingText(text) {
   return t;
 }
 
+function fixReadyMaterialText(text) {
+  if (!text) return text;
+  return reviewText(text, { preserveLineBreaks: true })
+    .split(/\n+/)
+    .map((line) => {
+      let t = line.replace(/\.{3,}|…/g, ".").trim();
+      t = t.replace(DANGLING, "").trim();
+      if (!t) return "";
+      if (/^CEN[AÁ]RIO\s*\d+$/i.test(t) || /:$/.test(t) || /[.!?)]$/.test(t)) return t;
+      return `${t}.`;
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
 function reviewGabaritoText(text) {
   const reviewed = reviewText(text, { preserveLineBreaks: true });
   if (!reviewed) return "";
@@ -962,10 +977,11 @@ const EXPENSE_TOTAL_RE = /\b(?:novo\s+)?total\s+de\s+despesas\b|\bdespesas?\s+to
 const REVENUE_TOTAL_RE = /\b(?:receita|renda)\s+total\b|\btotal\s+de\s+(?:receitas?|rendas?)\b/i;
 const BALANCE_RE = /\b(saldo|sobra\s+mensal|resultado\s+final)\b/i;
 const UNEXPECTED_RE = /\b(imprevisto|emerg[eê]ncia|emergencial|conserto|reparo|aumento|acr[eé]scimo|acrescimo|novo\s+gasto|gasto\s+extra|custo\s+extra|m[eé]dic[oa]|rem[eé]dio|consulta|carro|manuten[cç][aã]o)\b/i;
-const FIXED_EXPENSE_RE = /\b(despesas?\s+fixas?|aluguel|escola|mensalidade|internet|[aá]gua|luz|energia|condom[ií]nio|telefone|celular|plano|presta[cç][aã]o|financiamento|seguro|educa[cç][aã]o|sa[uú]de|farm[aá]cia)\b/i;
-const VARIABLE_EXPENSE_RE = /\b(despesas?\s+vari[aá]veis?|alimenta[cç][aã]o|mercado|transporte|lazer|compras?|roupas?|passeio|restaurante|lanche|combust[ií]vel|gastos?\s+vari[aá]veis?)\b/i;
+const FIXED_EXPENSE_RE = /\b(despesas?\s+fixas?|gastos?\s+fixos?|custos?\s+fixos?|aluguel|escola|mensalidade|internet|[aá]gua|luz|energia|condom[ií]nio|telefone|celular|plano|presta[cç][aã]o|financiamento|seguro|educa[cç][aã]o|sa[uú]de|farm[aá]cia)\b/i;
+const VARIABLE_EXPENSE_RE = /\b(despesas?\s+vari[aá]veis?|gastos?\s+vari[aá]veis?|custos?\s+vari[aá]veis?|alimenta[cç][aã]o|mercado|transporte|lazer|compras?|roupas?|passeio|restaurante|lanche|combust[ií]vel)\b/i;
 const EXPENSE_RE = /\b(despesas?|gastos?|custos?|contas?|pagamentos?)\b/i;
 const FAMILY_REVENUE_RE = /\b(pai|m[aã]e|respons[aá]vel(?:\s+\d+)?|cuidador(?:a)?)\b/i;
+const BRL_MATCH_RE = /-?\s*R\$\s*(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{2})?/g;
 
 function buildEmptyStructuredBudget() {
   return {
@@ -1006,25 +1022,33 @@ function getCurrentFinancialSection(before) {
 }
 
 function classifyFinancialEntry({ label, currentSection, afterClause }) {
+  const labelOnly = (label || "").replace(/\s+/g, " ").trim();
   const local = `${label} ${afterClause}`.replace(/\s+/g, " ").trim();
 
   if (PRIOR_EXPENSE_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_ANTERIOR;
   if (EXPENSE_TOTAL_RE.test(label) || EXPENSE_TOTAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_TOTAL;
-  if (REVENUE_TOTAL_RE.test(label) || REVENUE_TOTAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.RECEITA_TOTAL;
-  if (BALANCE_RE.test(label) && !IMPROVEMENT_RE.test(local)) return FINANCIAL_ENTRY_TYPE.SALDO;
-  if (IMPROVEMENT_RE.test(local)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
+  // REVENUE_TOTAL_RE moved after expense checks: a label containing both revenue-total
+  // and expense keywords (e.g. "receita total com aluguel") must classify as expense first.
+  if (BALANCE_RE.test(labelOnly) && !IMPROVEMENT_RE.test(local)) return FINANCIAL_ENTRY_TYPE.SALDO;
+  if (IMPROVEMENT_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (currentSection === FINANCIAL_ENTRY_TYPE.MELHORIA) return FINANCIAL_ENTRY_TYPE.MELHORIA;
-  if (UNEXPECTED_RE.test(local) || currentSection === FINANCIAL_ENTRY_TYPE.IMPREVISTO) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
-  if (FIXED_EXPENSE_RE.test(local) || currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_FIXA) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
-  if (VARIABLE_EXPENSE_RE.test(local) || currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
-  if (EXPENSE_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
-  if (REVENUE_RE.test(local) || FAMILY_REVENUE_RE.test(local) || currentSection === FINANCIAL_ENTRY_TYPE.RECEITA) return FINANCIAL_ENTRY_TYPE.RECEITA;
+  if (UNEXPECTED_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.IMPREVISTO) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
+  if (FIXED_EXPENSE_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_FIXA) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
+  if (VARIABLE_EXPENSE_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
+  if (EXPENSE_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
+  if (REVENUE_TOTAL_RE.test(label) || REVENUE_TOTAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.RECEITA_TOTAL;
+  if (REVENUE_RE.test(labelOnly) || FAMILY_REVENUE_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.RECEITA) return FINANCIAL_ENTRY_TYPE.RECEITA;
+  if (IMPROVEMENT_RE.test(local)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
+  if (UNEXPECTED_RE.test(local)) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
+  if (FIXED_EXPENSE_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
+  if (VARIABLE_EXPENSE_RE.test(local) || EXPENSE_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
+  if (REVENUE_RE.test(local) || FAMILY_REVENUE_RE.test(local)) return FINANCIAL_ENTRY_TYPE.RECEITA;
   return FINANCIAL_ENTRY_TYPE.OUTRO;
 }
 
 function parseFinancialEntries(text) {
   const sourceText = text || "";
-  const matches = [...sourceText.matchAll(/-?\s*R\$\s*[\d.]+(?:,\d{2})?/g)];
+  const matches = [...sourceText.matchAll(BRL_MATCH_RE)];
   return matches
     .map((match) => {
       const amount = extractBRLAmounts(match[0])[0];
@@ -1452,7 +1476,7 @@ function cleanCriterionName(value) {
 
 function autoFixExperience(experience) {
   const fix = fixDanglingText;
-  const fixedReadyMaterials = fixScenarioQuestions((experience.readyMaterials || []).map(fix)).map(fixDecisionLanguage);
+  const fixedReadyMaterials = fixScenarioQuestions((experience.readyMaterials || []).map(fixReadyMaterialText)).map(fixDecisionLanguage);
   const fixedGabarito = fixGabaritoLanguage((experience.teacherGabarito || []).map(reviewGabaritoText));
   const financialGabarito = buildFinancialGabaritoFromReadyMaterials(fixedReadyMaterials);
   const fallbackGabarito = fixedGabarito.length ? fixedGabarito : buildFallbackGabaritoFromReadyMaterials(fixedReadyMaterials);
@@ -1684,8 +1708,12 @@ function buildInternalValidationReport(experience) {
   ];
 
   const blocking = [];
-  if (hasFinancialBudget && receitaEmDespesa) blocking.push("Receita apareceu dentro da classificação de despesas.");
-  if (hasFinancialBudget && despesaEmReceita) blocking.push("Despesa apareceu dentro da classificação de receitas.");
+  const internalWarnings = [];
+  // Cross-classification text checks are heuristic and prone to false positives
+  // when the AI embeds expense/revenue keywords in contextual clauses — downgraded to warnings.
+  if (hasFinancialBudget && receitaEmDespesa) internalWarnings.push("Receita apareceu dentro da classificação de despesas.");
+  if (hasFinancialBudget && despesaEmReceita) internalWarnings.push("Despesa apareceu dentro da classificação de receitas.");
+  // These checks are reliable and remain blocking.
   if (hasFinancialBudget && melhoriaEmDespesa) blocking.push("Valor de economia ou melhoria apareceu como despesa.");
   if (hasFinancialBudget && imprevistoComReceitaOuMelhoria) blocking.push("Imprevisto foi misturado com receita ou melhoria.");
   if (hasFinancialBudget && duplicatedValues) blocking.push("Há valor financeiro duplicado na estrutura de cálculo.");
@@ -1695,7 +1723,8 @@ function buildInternalValidationReport(experience) {
   return {
     checks,
     finalStatus: pdfApproved ? "OK" : "BLOCKED",
-    blocking
+    blocking,
+    warnings: internalWarnings
   };
 }
 
@@ -1791,6 +1820,7 @@ function validateExportedExperience(experience) {
 
   const validationReport = buildInternalValidationReport(experience);
   validationReport.blocking.forEach((item) => blocking.push(item));
+  (validationReport.warnings || []).forEach((item) => warnings.push(item));
 
   return { blocking, warnings };
 }
@@ -1834,7 +1864,7 @@ function repairTextBeforeExport(experience) {
       description: fixDecisionLanguage(fix(stage.description))
     })),
     materialFunctions: (experience.materialFunctions || []).map(fix).map(fixMaterialSafety),
-    readyMaterials: (experience.readyMaterials || []).map(fix).map(fixDecisionLanguage),
+    readyMaterials: (experience.readyMaterials || []).map(fixReadyMaterialText).map(fixDecisionLanguage),
     assessmentRubric: (experience.assessmentRubric || []).map((item) => ({
       ...item,
       criterion: cleanCriterionName(item.criterion || ""),
