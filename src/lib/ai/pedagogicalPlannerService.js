@@ -129,6 +129,8 @@ Regras de conteúdo:
 - Em cenários: se o saldo final for positivo, não use "déficit". Use "reorganização", "impacto no saldo" ou "preservação da poupança".
 - No "teacherGabarito": se o saldo final for positivo, não usar "déficit", "prejuízo" ou "saldo negativo". Usar: "O saldo ainda é positivo, mas foi reduzido. Sugerir reorganização para preservar poupança."
 - GABARITO MATEMÁTICO OBRIGATÓRIO: em "teacherGabarito", para cada cenário com valores numéricos, copie EXATAMENTE os valores do readyMaterials correspondente (sem inventar valores), some as despesas mostrando a conta (ex: R$ 1.200 + R$ 250 = R$ 1.450), calcule saldo = receita − total_despesas. Formato: "Cenário 1: Receita total: R$ X; Despesas totais: R$ A + R$ B = R$ Y; Saldo final: R$ X − R$ Y = R$ Z." Se um cenário depende do anterior, mostre as despesas do cenário anterior e o novo total. O resultado deve ser matematicamente correto.
+- COERÊNCIA ENTRE CENÁRIO E PERGUNTA: se um gasto reduzir o saldo, mas o saldo continuar positivo, nunca pergunte como agir "sem impactar negativamente o saldo" ou "sem impacto no saldo". Use: "Como esse gasto afeta o saldo e que ajuste poderia ser feito para preservar parte da poupança?".
+- Use "déficit", "saldo negativo", "entrar no vermelho", "prejuízo" ou "orçamento negativo" apenas quando o cálculo realmente resultar em saldo final negativo.
 - Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
 
 ${verifiedSources.length > 0
@@ -396,6 +398,8 @@ ${stageTitles}
 - Referências: preferencialmente 2 itens, mínimo 1. Use as referências do projeto se houver relação direta com o tema; não invente fonte nem DOI. É melhor usar uma referência correta do que duas com uma fora do assunto.
 - Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
 - Inclua "teacherGabarito" em formato didático, com resposta para TODOS os cenários. Para cálculos, copie os valores dos cenários e mostre soma das despesas e saldo final.
+- Em cenários financeiros, se um gasto reduzir o saldo, mas o saldo continuar positivo, nunca pergunte como agir "sem impactar negativamente o saldo". Use pergunta sobre impacto no saldo, reorganização de despesas e preservação de parte da poupança.
+- Use "déficit", "saldo negativo", "entrar no vermelho", "prejuízo" ou "orçamento negativo" apenas quando o cálculo realmente resultar em saldo final negativo.
 - Não use emojis.
 - Não use reticências. Nenhum texto pode terminar cortado com "...".
 

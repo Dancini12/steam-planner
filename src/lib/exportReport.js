@@ -100,6 +100,22 @@ function polishText(text) {
     .replace(/\s+([.!?,;:])/g, "$1")
     .replace(/([.!?])\s*([.!?])+/g, "$1")
     .replace(/(^|[.!?]\s+)([a-záàâãéêíóôõúç])/g, (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`)
+    .replace(/\b([A-Za-zÀ-ÿ]{3,})\s+\1\b/gi, "$1")
+    .trim();
+}
+
+function reviewText(text, { preserveLineBreaks = false } = {}) {
+  if (text == null) return "";
+
+  if (!preserveLineBreaks) {
+    return polishText(text);
+  }
+
+  return stripDecorativeMarkers(text)
+    .split(/\n+/)
+    .map((line) => polishText(line))
+    .filter(Boolean)
+    .join("\n")
     .trim();
 }
 
@@ -563,7 +579,13 @@ function parseMaterialItem(item) {
   qty = normalized.qty;
   unit = normalized.unit;
 
-  return { name: name || cleaned, qty, unit, use, obs };
+  return {
+    name: reviewText(name || cleaned),
+    qty: reviewText(qty),
+    unit: reviewText(unit),
+    use: reviewText(use),
+    obs: reviewText(obs)
+  };
 }
 
 function renderMaterialsForExperience(experience) {
@@ -708,7 +730,7 @@ function finishGabaritoLine(line) {
 }
 
 function splitGabaritoLines(item) {
-  const cleaned = stripDecorativeMarkers(item);
+  const cleaned = reviewText(item, { preserveLineBreaks: true });
   if (!cleaned) return [];
 
   const [first, ...rest] = cleaned.split(/\n+/);
@@ -774,27 +796,76 @@ const DANGLING = /\s+(e|ou|de|da|do|dos|das|com|para|que|se|em|na|no|nas|nos|a|o
 
 function fixDanglingText(text) {
   if (!text) return text;
-  let t = polishText(text).replace(/\.{3,}|…/g, ".").trim();
+  let t = reviewText(text).replace(/\.{3,}|…/g, ".").trim();
   t = t.replace(DANGLING, "").trim();
   if (t && !/[.!?:;)\]"]$/.test(t)) t += ".";
   return t;
 }
 
+function reviewGabaritoText(text) {
+  const reviewed = reviewText(text, { preserveLineBreaks: true });
+  if (!reviewed) return "";
+  return reviewed
+    .split(/\n+/)
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return "";
+      if (/^(Cen[aá]rio\s*\d+|Sugest[aã]o de melhoria|Outra possibilidade):$/i.test(trimmed)) {
+        return trimmed.replace(/^(cen)/i, "Cen");
+      }
+      return /[.!?:;)]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+const POSITIVE_BALANCE_QUESTION =
+  "Como esse gasto afeta o saldo e que ajuste poderia ser feito para preservar parte da poupança?";
+
+function replaceScenarioQuestion(text, question) {
+  if (/pergunta\s*:/i.test(text)) {
+    return text.replace(/(pergunta\s*:\s*)[^?!.]*(?:[?!.]|$)/i, `$1${question}`);
+  }
+
+  if (/\?/.test(text)) {
+    return text.replace(/[^.?!]*\?(\s*)$/, `${question}$1`);
+  }
+
+  return `${text.replace(/[.?!]?\s*$/, ".")} Pergunta: ${question}`;
+}
+
+function removePositiveBalanceContradictions(text) {
+  return text
+    .replace(/\bsem\s+impactar\s+negativamente\s+(?:o\s+)?saldo\b/gi, "preservando parte da poupança")
+    .replace(/\bsem\s+impacto\s+(?:negativo\s+)?(?:no|sobre\s+o)\s+saldo\b/gi, "com menor impacto no saldo")
+    .replace(/\bsem\s+reduzir\s+(?:o\s+)?saldo\b/gi, "reduzindo o impacto no saldo")
+    .replace(/\b(?:d[eé]ficit|saldo negativo|entrar no vermelho|or[cç]amento negativo|preju[ií]zo)\b/gi, "impacto no saldo");
+}
+
 function fixScenarioQuestions(readyMaterials) {
-  return readyMaterials.map((item) => {
+  const reviewed = normalizeTextItems(readyMaterials || []);
+  const scenarioData = buildFinancialDataForScenarios(getScenarioItems(reviewed));
+  const byNumber = new Map(scenarioData.map((data) => [data.scenario.number, data]));
+
+  return reviewed.map((item) => {
     if (!/^CEN[AÁ]RIO/i.test(item)) return item;
-    if (!/d[eé]ficit/i.test(item)) return item;
 
-    const amounts = extractBRLAmounts(item);
-    if (amounts.length < 3) return item;
+    const number = Number(item.match(/^CEN[AÁ]RIO\s*(\d+)/i)?.[1]);
+    const data = byNumber.get(number);
+    let fixed = item;
 
-    // First amount = receita, rest = despesas; positive saldo means no real deficit
-    const receita = amounts[0];
-    const totalDespesas = amounts.slice(1).reduce((a, b) => a + b, 0);
-    if (receita - totalDespesas > 0) {
-      return item.replace(/d[eé]ficit/gi, "reorganização do saldo");
+    if (data && Number.isFinite(data.saldo) && data.saldo >= 0) {
+      const contradictoryQuestion = /sem\s+impactar\s+negativamente|sem\s+impacto\s+(?:negativo\s+)?(?:no|sobre\s+o)\s+saldo|sem\s+reduzir\s+(?:o\s+)?saldo/i.test(fixed);
+      const invalidNegativeTerms = /\b(?:d[eé]ficit|saldo negativo|entrar no vermelho|or[cç]amento negativo|preju[ií]zo)\b/i.test(fixed);
+
+      fixed = removePositiveBalanceContradictions(fixed);
+
+      if (contradictoryQuestion || invalidNegativeTerms) {
+        fixed = replaceScenarioQuestion(fixed, POSITIVE_BALANCE_QUESTION);
+      }
     }
-    return item;
+
+    return fixed;
   });
 }
 
@@ -818,7 +889,7 @@ function fixDecisionLanguage(text) {
 }
 
 function fixGabaritoLanguage(teacherGabarito) {
-  const negTerms = /\b(d[eé]ficit|preju[ií]zo|saldo negativo|crise financeira)\b/gi;
+  const negTerms = /\b(d[eé]ficit|preju[ií]zo|saldo negativo|entrar no vermelho|or[cç]amento negativo|crise financeira)\b/gi;
   return teacherGabarito.map((item) => {
     if (!negTerms.test(item)) return item;
     negTerms.lastIndex = 0;
@@ -1061,7 +1132,7 @@ function filterReferencesByTheme(references, experience) {
 }
 
 function cleanCriterionName(value) {
-  return stripDecorativeMarkers(value || "")
+  return reviewText(value || "")
     .replace(/[.!?:;]+$/g, "")
     .trim();
 }
@@ -1069,21 +1140,21 @@ function cleanCriterionName(value) {
 function autoFixExperience(experience) {
   const fix = fixDanglingText;
   const fixedReadyMaterials = fixScenarioQuestions((experience.readyMaterials || []).map(fix)).map(fixDecisionLanguage);
-  const fixedGabarito = fixGabaritoLanguage((experience.teacherGabarito || []).map(fix));
+  const fixedGabarito = fixGabaritoLanguage((experience.teacherGabarito || []).map(reviewGabaritoText));
   const financialGabarito = buildFinancialGabaritoFromReadyMaterials(fixedReadyMaterials);
   const fallbackGabarito = fixedGabarito.length ? fixedGabarito : buildFallbackGabaritoFromReadyMaterials(fixedReadyMaterials);
   const teacherGabarito = completeGabaritoForScenarios(
     financialGabarito.length ? financialGabarito : fallbackGabarito,
     fixedReadyMaterials
-  ).map(fix);
+  ).map(reviewGabaritoText);
   const orderedGabarito = orderGabaritoItems(teacherGabarito);
   const bibliography = filterReferencesByTheme(experience.bibliography || [], experience);
 
   return {
     ...experience,
-    title: stripDecorativeMarkers(experience.title),
-    theme: stripDecorativeMarkers(experience.theme),
-    duration: stripDecorativeMarkers(experience.duration),
+    title: reviewText(experience.title),
+    theme: reviewText(experience.theme),
+    duration: reviewText(experience.duration),
     objective: fix(experience.objective),
     problem: fix(experience.problem),
     mission: fix(experience.mission),
@@ -1091,7 +1162,7 @@ function autoFixExperience(experience) {
     finalProduct: fix(experience.finalProduct),
     teacherOrientation: experience.teacherOrientation ? fix(experience.teacherOrientation) : experience.teacherOrientation,
     materials: (experience.materials || []).map(fix).map(fixMaterialSafety),
-    stages: (experience.stages || []).map((s) => ({ ...s, title: stripDecorativeMarkers(s.title), description: fixDecisionLanguage(fix(s.description)) })),
+    stages: (experience.stages || []).map((s) => ({ ...s, title: reviewText(s.title), description: fixDecisionLanguage(fix(s.description)) })),
     materialFunctions: (experience.materialFunctions || []).map(fix).map(fixMaterialSafety),
     readyMaterials: fixedReadyMaterials,
     assessmentRubric: (experience.assessmentRubric || []).map((item) => ({
@@ -1128,6 +1199,26 @@ function hasVisibleTechnicalMarkup(text) {
     || /^\s*\|.*\|\s*$/m.test(text)
     || /^\s*[-|: ]{3,}\s*$/m.test(text)
     || /\b(?:blob:|https?:\/\/|localhost|127\.0\.0\.1)\b/i.test(text);
+}
+
+function hasLowercaseAfterSentence(text) {
+  if (!text) return false;
+  return /[.!?]\s+[a-záàâãéêíóôõúç]/.test(stripDecorativeMarkers(text));
+}
+
+function hasPoorSpacing(text) {
+  if (!text) return false;
+  return / {2,}|[ \t]+\n|\n[ \t]+/.test(String(text));
+}
+
+function hasScenarioBalanceContradiction(experience) {
+  const scenarios = getScenarioItems(experience.readyMaterials || []);
+  const scenarioData = buildFinancialDataForScenarios(scenarios);
+
+  return scenarioData.some((data) => {
+    if (!Number.isFinite(data.saldo) || data.saldo < 0) return false;
+    return /sem\s+impactar\s+negativamente|sem\s+impacto\s+(?:negativo\s+)?(?:no|sobre\s+o)\s+saldo|sem\s+reduzir\s+(?:o\s+)?saldo|\b(?:d[eé]ficit|saldo negativo|entrar no vermelho|or[cç]amento negativo|preju[ií]zo)\b/i.test(data.scenario.text);
+  });
 }
 
 function collectExperienceText(experience) {
@@ -1244,6 +1335,18 @@ function validateExportedExperience(experience) {
   // Markup/HTML hygiene
   if (collectExperienceText(experience).some(hasVisibleTechnicalMarkup)) {
     blocking.push("Há marcação HTML ou Markdown visível no conteúdo.");
+  }
+
+  if (collectExperienceText(experience).some(hasLowercaseAfterSentence)) {
+    blocking.push("Há frase iniciando com letra minúscula após ponto final.");
+  }
+
+  if (collectExperienceText(experience).some(hasPoorSpacing)) {
+    blocking.push("Há espaços duplicados ou quebras de linha inadequadas no texto.");
+  }
+
+  if (hasScenarioBalanceContradiction(experience)) {
+    blocking.push("Há pergunta de cenário financeiro incoerente com saldo positivo.");
   }
 
   return { blocking, warnings };
