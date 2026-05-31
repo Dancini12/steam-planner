@@ -335,8 +335,8 @@ function renderExperienceStages(stages) {
       const title = stripDecorativeMarkers(stage?.title || `ETAPA ${index + 1}`);
       const description = stripDecorativeMarkers(stage?.description || "");
       return `<div class="stage">
-        <h3>${escapeHtml(title)}</h3>
-        <p>${formatCleanMultiline(description)}</p>
+        <div class="stage-header">${escapeHtml(title)}</div>
+        <div class="stage-body"><p>${formatCleanMultiline(description)}</p></div>
       </div>`;
     })
     .join("");
@@ -778,8 +778,11 @@ function buildActivityPrintHTMLFromExperience(experience) {
     ul, ol { padding-left: 0.42cm; margin-bottom: 0.05cm; }
     li { margin-bottom: 0.03cm; text-align: left; }
     .mission { border-left: 2px solid #111; padding-left: 0.22cm; margin-top: 0.1cm; }
-    .stages { display: grid; grid-template-columns: 1fr 1fr; gap: 0.1cm 0.24cm; }
-    .stage { page-break-inside: avoid; }
+    .stages { display: grid; grid-template-columns: 1fr 1fr; gap: 0.14cm 0.22cm; }
+    .stage { page-break-inside: avoid; border: 1px solid #bbb; border-radius: 2px; overflow: hidden; }
+    .stage-header { background: #f0f0f0; font-weight: 700; font-size: 8pt; padding: 0.05cm 0.1cm; border-bottom: 1px solid #bbb; }
+    .stage-body { padding: 0.06cm 0.1cm; }
+    .stage-body p { margin-bottom: 0; }
     .ready-materials { margin-top: 0.08cm; border-left: 2px solid #777; padding-left: 0.18cm; }
     .ready-materials strong { display: block; margin-bottom: 0.04cm; }
     .materials-table { width: 100%; border-collapse: collapse; font-size: 8pt; margin-bottom: 0.06cm; }
@@ -817,10 +820,15 @@ function buildActivityPrintHTMLFromExperience(experience) {
     body.tight { font-size: 8.1pt; line-height: 1.16; padding: 0.65cm 0.78cm; }
     body.tight .header h1 { font-size: 12.5pt; }
     body.tight .section { margin-top: 0.12cm; }
-    body.tight .stages { gap: 0.06cm 0.18cm; }
+    body.tight .stages { gap: 0.08cm 0.14cm; }
+    body.tight .stage-header { padding: 0.03cm 0.08cm; font-size: 7.8pt; }
+    body.tight .stage-body { padding: 0.04cm 0.08cm; }
     body.ultra-tight { font-size: 7.5pt; line-height: 1.1; padding: 0.5cm 0.65cm; }
     body.ultra-tight .section { margin-top: 0.08cm; }
     body.ultra-tight .header { margin-bottom: 0.12cm; padding-bottom: 0.12cm; }
+    body.ultra-tight .stages { gap: 0.05cm 0.1cm; }
+    body.ultra-tight .stage-header { padding: 0.02cm 0.06cm; font-size: 7.5pt; }
+    body.ultra-tight .stage-body { padding: 0.03cm 0.06cm; }
     @media print { body { padding: 0; } .section, .stage { page-break-inside: avoid; } .section-title { page-break-after: avoid; } }
   </style>
 </head>
