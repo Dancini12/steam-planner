@@ -666,15 +666,44 @@ function looksFinancialTest(items, columns = []) {
 }
 
 function getScenarioItems(readyMaterials) {
-  return normalizeTextItems(readyMaterials || [])
-    .filter((item) => /^CEN[AÁ]RIO/i.test(item))
-    .map((item, index) => {
-      const match = item.match(/^CEN[AÁ]RIO\s*(\d+)/i);
-      return {
-        number: match ? Number(match[1]) : index + 1,
-        text: item
+  const items = normalizeTextItems(readyMaterials || []);
+  const scenarios = [];
+  let current = null;
+
+  const finishCurrent = () => {
+    if (current) {
+      scenarios.push({
+        number: current.number || scenarios.length + 1,
+        text: current.lines.join("\n")
+      });
+    }
+    current = null;
+  };
+
+  items.forEach((item) => {
+    const scenarioMatch = item.match(/^CEN[AÁ]RIO\s*(\d+)?/i);
+
+    if (scenarioMatch) {
+      finishCurrent();
+      current = {
+        number: scenarioMatch[1] ? Number(scenarioMatch[1]) : scenarios.length + 1,
+        lines: [item]
       };
-    });
+      return;
+    }
+
+    if (/^tabela\s+de\s+teste/i.test(item)) {
+      finishCurrent();
+      return;
+    }
+
+    if (current) {
+      current.lines.push(item);
+    }
+  });
+
+  finishCurrent();
+  return scenarios;
 }
 
 function getScenarioNumbersFromGabarito(gabarito) {
@@ -1002,9 +1031,9 @@ function parseFinancialEntries(text) {
       if (!Number.isFinite(amount)) return null;
 
       const before = stripDecorativeMarkers(sourceText.slice(Math.max(0, match.index - 120), match.index)).toLowerCase();
-      const after = stripDecorativeMarkers(sourceText.slice(match.index + match[0].length, match.index + match[0].length + 90)).toLowerCase();
+      const rawAfter = sourceText.slice(match.index + match[0].length, match.index + match[0].length + 90).toLowerCase();
       const label = before
-        .split(/[.;:]/)
+        .split(/[.;:\n]/)
         .map((part) => part
           .replace(/[-–—]/g, " ")
           .replace(/\s+/g, " ")
@@ -1016,8 +1045,7 @@ function parseFinancialEntries(text) {
         .replace(/\s+/g, " ")
         .trim();
       const currentSection = getCurrentFinancialSection(before);
-      const afterClause = after
-        .split(/[.;:]/)[0]
+      const afterClause = stripDecorativeMarkers(rawAfter.split(/[.;:\n]/)[0])
         .replace(/[-–—]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
@@ -1166,7 +1194,8 @@ function buildFinancialDataForScenarios(scenarios) {
         : [])
     ].map((item) => ({ amount: item.valor, label: item.descricao, isRevenue: false, isExpense: true, isImprovement: false, isPriorExpense: item.type === FINANCIAL_ENTRY_TYPE.DESPESA_ANTERIOR }));
     const improvements = structured.melhorias.map((item) => ({ amount: item.valor, label: item.descricao, isImprovement: true }));
-    const isBudgetScenario = /receita|renda|sal[aá]rio|despesa|or[cç]amento|saldo|imprevisto|economia|melhoria/i.test(scenario.text);
+    const isBudgetScenario = /receita|renda|sal[aá]rio|despesa|gasto|custo|or[cç]amento|saldo|imprevisto|economi[az]ar|economia|melhoria|conserto|reparo|aluguel|alimenta[cç][aã]o/i.test(scenario.text)
+      || (receitaTotal !== null && totalExpenses > 0);
     const data = {
       scenario,
       entries,
