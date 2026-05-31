@@ -59,9 +59,10 @@ ${stageTitles}
 20. GABARITO MATEMÁTICO OBRIGATÓRIO: em "teacherGabarito", para cada cenário com valores numéricos, copie EXATAMENTE os valores do readyMaterials correspondente (sem inventar valores), some as despesas mostrando a conta (ex: R$ 1.200 + R$ 250 + R$ 100 = R$ 1.550), calcule saldo = receita − total_despesas. O resultado deve ser matematicamente correto. Formato: "Cenário 1: Receita total: R$ X; Despesas totais: R$ A + R$ B = R$ Y; Saldo final: R$ X − R$ Y = R$ Z." Se um cenário depende do anterior, mostre as despesas do cenário anterior e o novo total.
 21. COERÊNCIA ENTRE CENÁRIO E PERGUNTA: se um gasto reduzir o saldo, mas o saldo continuar positivo, nunca pergunte como agir "sem impactar negativamente o saldo" ou "sem impacto no saldo". Use: "Como esse gasto afeta o saldo e que ajuste poderia ser feito para preservar parte da poupança?".
 22. Use "déficit", "saldo negativo", "entrar no vermelho", "prejuízo" ou "orçamento negativo" apenas quando o cálculo realmente resultar em saldo final negativo.
-23. Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
-24. Sempre que listar materiais com tesoura, use "Tesouras sem ponta" em vez de "Tesouras". Exemplo correto: "Tesouras sem ponta: 1 por grupo".
-25. Em cenários financeiros, nunca escreva como se a decisão já fosse tomada automaticamente. Use "a família avalia comprar" ou "a família considera comprar", nunca "a família decide comprar".
+23. Valores citados como economia, corte, redução, ajuste, melhoria, reorganização ou valor que poderia ser economizado NÃO são despesas reais. Não some esses valores às despesas iniciais; use-os apenas em "Economia sugerida", "Melhoria sugerida" ou "Resultado após melhoria".
+24. Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
+25. Sempre que listar materiais com tesoura, use "Tesouras sem ponta" em vez de "Tesouras". Exemplo correto: "Tesouras sem ponta: 1 por grupo".
+26. Em cenários financeiros, nunca escreva como se a decisão já fosse tomada automaticamente. Use "a família avalia comprar" ou "a família considera comprar", nunca "a família decide comprar".
 
 Responda APENAS com JSON válido:
 

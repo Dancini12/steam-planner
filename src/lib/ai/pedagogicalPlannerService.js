@@ -131,6 +131,7 @@ Regras de conteúdo:
 - GABARITO MATEMÁTICO OBRIGATÓRIO: em "teacherGabarito", para cada cenário com valores numéricos, copie EXATAMENTE os valores do readyMaterials correspondente (sem inventar valores), some as despesas mostrando a conta (ex: R$ 1.200 + R$ 250 = R$ 1.450), calcule saldo = receita − total_despesas. Formato: "Cenário 1: Receita total: R$ X; Despesas totais: R$ A + R$ B = R$ Y; Saldo final: R$ X − R$ Y = R$ Z." Se um cenário depende do anterior, mostre as despesas do cenário anterior e o novo total. O resultado deve ser matematicamente correto.
 - COERÊNCIA ENTRE CENÁRIO E PERGUNTA: se um gasto reduzir o saldo, mas o saldo continuar positivo, nunca pergunte como agir "sem impactar negativamente o saldo" ou "sem impacto no saldo". Use: "Como esse gasto afeta o saldo e que ajuste poderia ser feito para preservar parte da poupança?".
 - Use "déficit", "saldo negativo", "entrar no vermelho", "prejuízo" ou "orçamento negativo" apenas quando o cálculo realmente resultar em saldo final negativo.
+- Valores citados como economia, corte, redução, ajuste, melhoria, reorganização ou valor que poderia ser economizado NÃO são despesas reais. Não some esses valores às despesas iniciais; use-os apenas em "Economia sugerida", "Melhoria sugerida" ou "Resultado após melhoria".
 - Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
 
 ${verifiedSources.length > 0
@@ -400,6 +401,7 @@ ${stageTitles}
 - Inclua "teacherGabarito" em formato didático, com resposta para TODOS os cenários. Para cálculos, copie os valores dos cenários e mostre soma das despesas e saldo final.
 - Em cenários financeiros, se um gasto reduzir o saldo, mas o saldo continuar positivo, nunca pergunte como agir "sem impactar negativamente o saldo". Use pergunta sobre impacto no saldo, reorganização de despesas e preservação de parte da poupança.
 - Use "déficit", "saldo negativo", "entrar no vermelho", "prejuízo" ou "orçamento negativo" apenas quando o cálculo realmente resultar em saldo final negativo.
+- Valores citados como economia, corte, redução, ajuste, melhoria, reorganização ou valor que poderia ser economizado NÃO são despesas reais. Não some esses valores às despesas iniciais; use-os apenas em "Economia sugerida", "Melhoria sugerida" ou "Resultado após melhoria".
 - Não use emojis.
 - Não use reticências. Nenhum texto pode terminar cortado com "...".
 

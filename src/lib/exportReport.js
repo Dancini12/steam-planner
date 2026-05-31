@@ -920,19 +920,27 @@ function parseFinancialEntries(text) {
       const amount = extractBRLAmounts(match[0])[0];
       if (!Number.isFinite(amount)) return null;
 
-      const before = stripDecorativeMarkers(text.slice(Math.max(0, match.index - 70), match.index)).toLowerCase();
+      const before = stripDecorativeMarkers(text.slice(Math.max(0, match.index - 90), match.index)).toLowerCase();
+      const after = stripDecorativeMarkers(text.slice(match.index + match[0].length, match.index + match[0].length + 90)).toLowerCase();
       const label = before
         .split(/[.;:]/)
         .pop()
         .replace(/[-–—]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
+      const afterClause = after
+        .split(/[.;:]/)[0]
+        .replace(/[-–—]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 
       const isRevenue = /receita|renda|sal[aá]rio|ganho|entrada/.test(label);
-      const isExpense = /despesa|gasto|aluguel|alimenta[cç][aã]o|transporte|energia|[aá]gua|lazer|conserto|m[eé]dico|m[eé]dica|celular|compra|internet|educa[cç][aã]o|sa[uú]de|conta|custo|imprevisto/.test(label);
+      const improvementContext = `${label} ${afterClause}`;
+      const isImprovement = !isRevenue && /\b(economizar|economizad[oa]s?|economia|poupar|poupan[cç]a|reduzir|redu[cç][aã]o|cortar|corte|ajustar|ajuste|melhoria|melhorar|reorganizar|reorganiza[cç][aã]o|preservar|reserva|saldo ap[oó]s melhoria|ap[oó]s melhoria|poderiam economizar|poderia economizar|valor que poderia ser economizado)\b/.test(improvementContext);
+      const isExpense = !isImprovement && /despesa|gasto|aluguel|alimenta[cç][aã]o|transporte|energia|[aá]gua|lazer|conserto|m[eé]dico|m[eé]dica|celular|compra|internet|educa[cç][aã]o|sa[uú]de|conta|custo|imprevisto|reparo/.test(label);
       const isPriorExpense = /despesas?\s+do\s+cen[aá]rio|despesas?\s+anteriores?|total\s+de\s+despesas/.test(label);
 
-      return { amount, label, isRevenue, isExpense, isPriorExpense };
+      return { amount, label, isRevenue, isExpense, isPriorExpense, isImprovement };
     })
     .filter(Boolean);
 }
@@ -954,7 +962,8 @@ function buildFinancialDataForScenarios(scenarios) {
     }
 
     const revenue = revenueEntry?.amount ?? previous?.revenue ?? null;
-    const expenses = entries.filter((entry) => entry !== revenueEntry);
+    const improvements = entries.filter((entry) => entry.isImprovement);
+    const expenses = entries.filter((entry) => entry !== revenueEntry && !entry.isImprovement);
 
     if (
       previous?.totalExpenses
@@ -967,7 +976,9 @@ function buildFinancialDataForScenarios(scenarios) {
 
     const totalExpenses = expenses.reduce((sum, entry) => sum + entry.amount, 0);
     const saldo = revenue !== null ? revenue - totalExpenses : null;
-    const data = { scenario, entries, revenue, expenses, totalExpenses, saldo };
+    const improvementTotal = improvements.reduce((sum, entry) => sum + entry.amount, 0);
+    const saldoAfterImprovement = saldo !== null && improvementTotal > 0 ? saldo + improvementTotal : null;
+    const data = { scenario, entries, revenue, expenses, improvements, improvementTotal, totalExpenses, saldo, saldoAfterImprovement };
     result.push(data);
 
     if (revenue !== null && totalExpenses > 0) {
@@ -987,6 +998,16 @@ function buildScenarioFallbackGabarito(scenario) {
 }
 
 function buildImprovementSuggestion(financialData) {
+  const explicitImprovement = financialData.find((item) => item.improvementTotal > 0 && Number.isFinite(item.saldo));
+  if (explicitImprovement) {
+    return [
+      "Melhoria sugerida:",
+      `Economizar ${formatCurrencyBRL(explicitImprovement.improvementTotal)} em uma despesa variável, como lazer ou compras não essenciais.`,
+      "Resultado após melhoria:",
+      `${formatCurrencyBRL(explicitImprovement.saldo)} + ${formatCurrencyBRL(explicitImprovement.improvementTotal)} = ${formatCurrencyBRL(explicitImprovement.saldoAfterImprovement)}.`
+    ].join("\n");
+  }
+
   const negative = financialData.find((item) => Number.isFinite(item.saldo) && item.saldo < 0);
   if (!negative) {
     return "Sugestão de melhoria: A equipe pode reservar parte do saldo positivo para uma emergência, comparar prioridades e justificar como preservaria a poupança.";
@@ -1019,10 +1040,13 @@ function buildFinancialGabaritoFromReadyMaterials(readyMaterials) {
         `Receita total: ${formatCurrencyBRL(data.revenue)}.`,
         `Despesas totais: ${formatExpenseExpression(data.expenses)} = ${formatCurrencyBRL(data.totalExpenses)}.`,
         `Saldo final: ${formatCurrencyBRL(data.revenue)} - ${formatCurrencyBRL(data.totalExpenses)} = ${formatCurrencyBRL(data.saldo)}.`,
+        data.improvementTotal > 0
+          ? `Economia sugerida: ${formatCurrencyBRL(data.improvementTotal)}.`
+          : "",
         data.saldo >= 0
           ? `O saldo ainda é positivo, mas deve ser analisado para preservar parte da poupança.`
           : `O saldo final é negativo; a equipe precisa propor uma reorganização das despesas.`
-      ].join("\n");
+      ].filter(Boolean).join("\n");
     })
     .filter(Boolean);
 
@@ -1254,8 +1278,11 @@ function validateGabaritoMath(item) {
     if (!/saldo\s+(?:final|antes|ap[oó]s)/i.test(line) || !/=/.test(line)) return true;
     const amounts = extractBRLAmounts(line);
     if (amounts.length < 3) return true;
-    const [revenue, expenses, result] = amounts.slice(-3);
-    return Math.abs((revenue - expenses) - result) < 0.01;
+    const [base, adjustment, result] = amounts.slice(-3);
+    if (/\b(?:melhoria|economia|corte|redu[cç][aã]o|ajuste)\b/i.test(line) && /\+/.test(line)) {
+      return Math.abs((base + adjustment) - result) < 0.01;
+    }
+    return Math.abs((base - adjustment) - result) < 0.01;
   });
 }
 
