@@ -132,6 +132,7 @@ Regras de conteúdo:
 - COERÊNCIA ENTRE CENÁRIO E PERGUNTA: se um gasto reduzir o saldo, mas o saldo continuar positivo, nunca pergunte como agir "sem impactar negativamente o saldo" ou "sem impacto no saldo". Use: "Como esse gasto afeta o saldo e que ajuste poderia ser feito para preservar parte da poupança?".
 - Use "déficit", "saldo negativo", "entrar no vermelho", "prejuízo" ou "orçamento negativo" apenas quando o cálculo realmente resultar em saldo final negativo.
 - Valores citados como economia, corte, redução, ajuste, melhoria, reorganização ou valor que poderia ser economizado NÃO são despesas reais. Não some esses valores às despesas iniciais; use-os apenas em "Economia sugerida", "Melhoria sugerida" ou "Resultado após melhoria".
+- Em cenários financeiros, separe explicitamente "Receitas", "Despesas fixas", "Despesas variáveis", "Imprevistos" e "Melhorias". Salário, renda, receita do pai ou receita da mãe nunca podem aparecer como despesa.
 - Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
 
 ${verifiedSources.length > 0
@@ -402,6 +403,7 @@ ${stageTitles}
 - Em cenários financeiros, se um gasto reduzir o saldo, mas o saldo continuar positivo, nunca pergunte como agir "sem impactar negativamente o saldo". Use pergunta sobre impacto no saldo, reorganização de despesas e preservação de parte da poupança.
 - Use "déficit", "saldo negativo", "entrar no vermelho", "prejuízo" ou "orçamento negativo" apenas quando o cálculo realmente resultar em saldo final negativo.
 - Valores citados como economia, corte, redução, ajuste, melhoria, reorganização ou valor que poderia ser economizado NÃO são despesas reais. Não some esses valores às despesas iniciais; use-os apenas em "Economia sugerida", "Melhoria sugerida" ou "Resultado após melhoria".
+- Em cenários financeiros, separe explicitamente "Receitas", "Despesas fixas", "Despesas variáveis", "Imprevistos" e "Melhorias". Salário, renda, receita do pai ou receita da mãe nunca podem aparecer como despesa.
 - Não use emojis.
 - Não use reticências. Nenhum texto pode terminar cortado com "...".
 

@@ -60,9 +60,10 @@ ${stageTitles}
 21. COERÊNCIA ENTRE CENÁRIO E PERGUNTA: se um gasto reduzir o saldo, mas o saldo continuar positivo, nunca pergunte como agir "sem impactar negativamente o saldo" ou "sem impacto no saldo". Use: "Como esse gasto afeta o saldo e que ajuste poderia ser feito para preservar parte da poupança?".
 22. Use "déficit", "saldo negativo", "entrar no vermelho", "prejuízo" ou "orçamento negativo" apenas quando o cálculo realmente resultar em saldo final negativo.
 23. Valores citados como economia, corte, redução, ajuste, melhoria, reorganização ou valor que poderia ser economizado NÃO são despesas reais. Não some esses valores às despesas iniciais; use-os apenas em "Economia sugerida", "Melhoria sugerida" ou "Resultado após melhoria".
-24. Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
-25. Sempre que listar materiais com tesoura, use "Tesouras sem ponta" em vez de "Tesouras". Exemplo correto: "Tesouras sem ponta: 1 por grupo".
-26. Em cenários financeiros, nunca escreva como se a decisão já fosse tomada automaticamente. Use "a família avalia comprar" ou "a família considera comprar", nunca "a família decide comprar".
+24. Em cenários financeiros, separe explicitamente "Receitas", "Despesas fixas", "Despesas variáveis", "Imprevistos" e "Melhorias". Salário, renda, receita do pai ou receita da mãe nunca podem aparecer como despesa.
+25. Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
+26. Sempre que listar materiais com tesoura, use "Tesouras sem ponta" em vez de "Tesouras". Exemplo correto: "Tesouras sem ponta: 1 por grupo".
+27. Em cenários financeiros, nunca escreva como se a decisão já fosse tomada automaticamente. Use "a família avalia comprar" ou "a família considera comprar", nunca "a família decide comprar".
 
 Responda APENAS com JSON válido:
 
