@@ -27,6 +27,10 @@ const DEFAULT_ASSESSMENT = [
 
 const FALLBACK_REFERENCE =
   "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.";
+const FINANCIAL_REFERENCES = [
+  "BANCO CENTRAL DO BRASIL. Caderno de educação financeira: gestão de finanças pessoais. Brasília: Banco Central do Brasil, 2013.",
+  "BRASIL. Decreto nº 10.393, de 9 de junho de 2020. Institui a nova Estratégia Nacional de Educação Financeira - ENEF e o Fórum Brasileiro de Educação Financeira - FBEF. Diário Oficial da União: Brasília, DF, 10 jun. 2020."
+];
 
 const LIMITS = {
   title: 80,
@@ -194,6 +198,17 @@ function getMaterialName(material) {
   return cleanText(material).split(/\s[-–—]\s/)[0].trim();
 }
 
+function inferMaterialQuantity(materialName, fallback = "1 por grupo") {
+  const name = cleanText(materialName).toLowerCase();
+  if (/cartolina|papel[-\s]?cart[aã]o|papel[aã]o|folha\s+a3|folha\s+a4/.test(name)) return "1 folha por grupo";
+  if (/ficha|cart[aã]o|cartao|tarjeta/.test(name)) return "8 a 12 por grupo";
+  if (/canetinha|marcador|l[aá]pis\s+colorido/.test(name)) return "1 conjunto por grupo";
+  if (/nota[s]?\s+adesiva|adesivo/.test(name)) return "1 bloco por grupo";
+  if (/tesoura/.test(name)) return "1 por grupo";
+  if (/cola\s+bast[aã]o|cola branca|fita adesiva|fita crepe|r[eé]gua|trena|fita m[eé]trica/.test(name)) return "1 por grupo";
+  return fallback;
+}
+
 function buildDefaultMaterialFunctions(materials) {
   const roles = [
     "base ou superfície principal do protótipo",
@@ -207,8 +222,8 @@ function buildDefaultMaterialFunctions(materials) {
   return materials.map((material, index) => {
     const full = cleanText(material);
     const qtyMatch = full.match(/[:\-–—]\s*(\d[\w\s]*?(?:por\s+grupo|por\s+equipe|para\s+a\s+turma|por\s+turma))/i);
-    const qty = qtyMatch ? qtyMatch[1].trim() : "1 por grupo";
     const materialName = getMaterialName(material) || `Material ${index + 1}`;
+    const qty = inferMaterialQuantity(materialName, qtyMatch ? qtyMatch[1].trim() : "1 por grupo");
     const role = roles[index] || "parte funcional do protótipo";
     return `${materialName}: ${qty} — ${role}.`;
   });
@@ -218,6 +233,14 @@ function isBudgetTheme(theme) {
   return /or[cç]amento|financeir|renda|despesa|dinheiro|fam[ií]lia/.test(
     cleanText(theme).toLowerCase()
   );
+}
+
+function isFinancialReference(reference) {
+  return /educa[cç][aã]o\s+financeira|finan[cç]as|financeir|or[cç]amento|renda|despesa|dinheiro|poupan[cç]a|investimento|banco\s+central|enef|ocde|oecd|matem[aá]tica\s+financeira|gest[aã]o\s+de\s+finan[cç]as/i.test(reference);
+}
+
+function isMethodologyReference(reference) {
+  return /steam|maker|metodologias?\s+ativas?|aprendizagem\s+baseada\s+em\s+projetos?|project\s+based|cultura\s+maker|prototip|bncc|base\s+nacional\s+comum\s+curricular/i.test(reference);
 }
 
 function buildDefaultReadyMaterials(theme) {
@@ -294,6 +317,10 @@ function parseRubricItem(item) {
     criterion: text.split(/\s+/).slice(0, 3).join(" "),
     observation: finishSentence(text)
   };
+}
+
+function cleanCriterionName(value) {
+  return cleanText(value).replace(/[.!?:;]+$/g, "").trim();
 }
 
 function isGenericAssemblyText(text) {
@@ -393,16 +420,23 @@ function normalizeAssessmentRubric(activity, compact = false) {
   const rubric = (items.length ? items : fallback).slice(0, 4);
 
   return rubric.map((item) => ({
-    criterion: limitText(item.criterion, 28),
+    criterion: cleanCriterionName(limitText(item.criterion, 28)),
     observation: limitText(item.observation, compact ? 90 : LIMITS.assessment)
   }));
 }
 
-function normalizeReferences(value, compact = false) {
+function normalizeReferences(value, compact = false, theme = "") {
   const references = toTextArray(value)
     .map(cleanText)
     .filter((item) => item && !/wikipedia/i.test(item));
-  const selected = (references.length ? references : [FALLBACK_REFERENCE]).slice(0, 2);
+  const budget = isBudgetTheme(theme);
+  const aligned = references.filter((item) => (
+    budget
+      ? isFinancialReference(item) || /steam|maker|metodologias?\s+ativas?|aprendizagem\s+baseada\s+em\s+projetos?|project\s+based|cultura\s+maker|prototip/i.test(item)
+      : isMethodologyReference(item) || cleanText(theme).split(/\s+/).some((token) => token.length >= 4 && item.toLowerCase().includes(token.toLowerCase()))
+  ));
+  const fallback = budget ? FINANCIAL_REFERENCES : [FALLBACK_REFERENCE];
+  const selected = (aligned.length ? aligned : fallback).slice(0, 2);
   return selected.map((item) => finishSentence(item));
 }
 
@@ -530,7 +564,7 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
 
   let assessmentRubric = normalizeAssessmentRubric(activity);
   let assessment = assessmentRubric.map((item) => `${item.criterion} | ${item.observation}`);
-  let bibliography = normalizeReferences(activity.bibliography || activity.references);
+  let bibliography = normalizeReferences(activity.bibliography || activity.references, false, theme);
   const steamConnection = normalizeSteamConnection(activity);
   const teacherGabarito = normalizeTeacherGabarito(activity);
   const teacherOrientation = normalizeTeacherOrientation(activity);
@@ -580,7 +614,7 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
     readyMaterials = normalizeReadyMaterials(activity, theme, true);
     assessmentRubric = normalizeAssessmentRubric(activity, true);
     assessment = assessmentRubric.map((item) => `${item.criterion} | ${item.observation}`);
-    bibliography = normalizeReferences(activity.bibliography || activity.references, true);
+    bibliography = normalizeReferences(activity.bibliography || activity.references, true, theme);
     normalized = {
       ...normalized,
       problem: limitText(problem, 460),

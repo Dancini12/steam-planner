@@ -41,6 +41,10 @@ function parseActivityManual(text) {
 const STEAM_AREA_NAMES = { S: 'Ciências', T: 'Tecnologia', E: 'Engenharia', A: 'Artes', M: 'Matemática' };
 const FALLBACK_REFERENCE =
   "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.";
+const FINANCIAL_REFERENCES = [
+  "BANCO CENTRAL DO BRASIL. Caderno de educação financeira: gestão de finanças pessoais. Brasília: Banco Central do Brasil, 2013.",
+  "BRASIL. Decreto nº 10.393, de 9 de junho de 2020. Institui a nova Estratégia Nacional de Educação Financeira - ENEF e o Fórum Brasileiro de Educação Financeira - FBEF. Diário Oficial da União: Brasília, DF, 10 jun. 2020."
+];
 
 function stripDecorativeMarkers(text) {
   if (typeof text !== "string") return "";
@@ -85,6 +89,18 @@ function cleanHtml(text) {
 
 function formatCleanMultiline(text) {
   return cleanHtml(text).replace(/\n/g, "<br>");
+}
+
+function polishText(text) {
+  const cleaned = stripDecorativeMarkers(text);
+  if (!cleaned) return "";
+
+  return cleaned
+    .replace(/\s+/g, " ")
+    .replace(/\s+([.!?,;:])/g, "$1")
+    .replace(/([.!?])\s*([.!?])+/g, "$1")
+    .replace(/(^|[.!?]\s+)([a-záàâãéêíóôõúç])/g, (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`)
+    .trim();
 }
 
 function splitTextItems(text) {
@@ -132,6 +148,12 @@ function normalizeTextItems(value) {
     return value.map((item) => stripDecorativeMarkers(item)).filter(Boolean);
   }
   return splitTextItems(value);
+}
+
+function isFinancialThemeText(text) {
+  return /or[cç]amento|educa[cç][aã]o financeira|financeir|finan[cç]as|renda|despesa|dinheiro|poupan[cç]a|investimento|fam[ií]lia|sal[aá]rio/i.test(
+    stripDecorativeMarkers(text || "")
+  );
 }
 
 function normalizeVocabulary(value) {
@@ -371,6 +393,91 @@ function looksLikeQuantity(text) {
   return /^\d/.test(text) || /^(quantidade|variada?|conforme\s+disponibilidade)/i.test(text);
 }
 
+function getPreciseMaterialQuantity(name, qty, unit) {
+  const normalizedName = stripDecorativeMarkers(name || "").toLowerCase();
+  const current = `${qty || ""} ${unit || ""}`.toLowerCase();
+  const isGeneric = !qty
+    || !unit
+    || current === "1 por grupo"
+    || current === "1 unidade por grupo"
+    || /quantidade|variad|conforme/.test(current);
+  const qtyNeedsType = /^\d+(?:\s+a\s+\d+)?$/.test(stripDecorativeMarkers(qty || ""));
+
+  if (!isGeneric && qtyNeedsType) {
+    if (/cartolina|papel[-\s]?cart[aã]o|papel[aã]o|folha\s+a3|folha\s+a4/.test(normalizedName)) {
+      return { qty: `${qty} folha`, unit };
+    }
+    if (/ficha|cart[aã]o|cartao|tarjeta/.test(normalizedName)) {
+      return { qty: `${qty} fichas`, unit };
+    }
+    if (/canetinha|marcador|l[aá]pis\s+colorido/.test(normalizedName)) {
+      return { qty: `${qty} conjunto`, unit };
+    }
+    if (/nota[s]?\s+adesiva|adesivo/.test(normalizedName)) {
+      return { qty: `${qty} bloco`, unit };
+    }
+    if (/tesoura|cola\s+bast[aã]o|cola branca|fita adesiva|fita crepe|r[eé]gua|trena|fita m[eé]trica/.test(normalizedName)) {
+      return { qty: `${qty} unidade`, unit };
+    }
+  }
+
+  if (!isGeneric) return { qty, unit };
+
+  if (/cartolina|papel[-\s]?cart[aã]o|papel[aã]o|folha\s+a3|folha\s+a4/.test(normalizedName)) {
+    return { qty: "1 folha", unit: "por grupo" };
+  }
+  if (/ficha|cart[aã]o|cartao|tarjeta/.test(normalizedName)) {
+    return { qty: "8 a 12 fichas", unit: "por grupo" };
+  }
+  if (/canetinha|marcador|l[aá]pis\s+colorido/.test(normalizedName)) {
+    return { qty: "1 conjunto", unit: "por grupo" };
+  }
+  if (/nota[s]?\s+adesiva|adesivo/.test(normalizedName)) {
+    return { qty: "1 bloco", unit: "por grupo" };
+  }
+  if (/tesoura/.test(normalizedName)) {
+    return { qty: "1 unidade", unit: "por grupo" };
+  }
+  if (/cola\s+bast[aã]o|cola branca|fita adesiva|fita crepe/.test(normalizedName)) {
+    return { qty: "1 unidade", unit: "por grupo" };
+  }
+  if (/r[eé]gua|trena|fita m[eé]trica/.test(normalizedName)) {
+    return { qty: "1 unidade", unit: "por grupo" };
+  }
+
+  return { qty: qty || "1", unit: unit || "por grupo" };
+}
+
+function normalizeMaterialQuantityUnit(qty, unit) {
+  let normalizedQty = stripDecorativeMarkers(qty || "").trim() || "1 unidade";
+  let normalizedUnit = stripDecorativeMarkers(unit || "").trim() || "por grupo";
+  const distributionMatch = normalizedQty.match(/\b(por\s+grupo|por\s+aluno|por\s+turma|para\s+a\s+turma|conforme\s+disponibilidade)\b/i);
+
+  if (distributionMatch) {
+    normalizedUnit = distributionMatch[1];
+    normalizedQty = normalizedQty
+      .replace(distributionMatch[0], "")
+      .trim();
+  }
+
+  if (!/\b(por\s+grupo|por\s+aluno|por\s+turma|para\s+a\s+turma|conforme\s+disponibilidade)\b/i.test(normalizedUnit)) {
+    const unitDistribution = normalizedUnit.match(/\b(por\s+grupo|por\s+aluno|por\s+turma|para\s+a\s+turma|conforme\s+disponibilidade)\b/i);
+    if (unitDistribution) {
+      normalizedQty = [normalizedQty, normalizedUnit.slice(0, unitDistribution.index).trim()].filter(Boolean).join(" ");
+      normalizedUnit = unitDistribution[1];
+    }
+  }
+
+  if (/^\d+(?:\s+a\s+\d+)?$/.test(normalizedQty)) {
+    normalizedQty = `${normalizedQty} unidade`;
+  }
+
+  return {
+    qty: normalizedQty.replace(/\s+/g, " ").trim(),
+    unit: normalizedUnit.replace(/\s+/g, " ").trim()
+  };
+}
+
 function parseMaterialItem(item) {
   const cleaned = stripDecorativeMarkers(item).replace(/\.\s*$/, "").trim();
   if (!cleaned) return null;
@@ -448,6 +555,13 @@ function parseMaterialItem(item) {
     else if (/\bcola\s+quente\b|\bestilete\b|\bsolda\b|\bferro\s+de\s+soldar\b/i.test(name)) obs = "Supervisão do professor";
     else obs = "—";
   }
+
+  const precise = getPreciseMaterialQuantity(name, qty, unit);
+  qty = precise.qty;
+  unit = precise.unit;
+  const normalized = normalizeMaterialQuantityUnit(qty, unit);
+  qty = normalized.qty;
+  unit = normalized.unit;
 
   return { name: name || cleaned, qty, unit, use, obs };
 }
@@ -529,10 +643,31 @@ function looksFinancialTest(items, columns = []) {
   return /r\$\s*[\d.]+|receita|renda|despesa|or[cç]amento|saldo|poupan[cç]a|investimento/.test(text);
 }
 
+function getScenarioItems(readyMaterials) {
+  return normalizeTextItems(readyMaterials || [])
+    .filter((item) => /^CEN[AÁ]RIO/i.test(item))
+    .map((item, index) => {
+      const match = item.match(/^CEN[AÁ]RIO\s*(\d+)/i);
+      return {
+        number: match ? Number(match[1]) : index + 1,
+        text: item
+      };
+    });
+}
+
+function getScenarioNumbersFromGabarito(gabarito) {
+  return new Set(
+    normalizeTextItems(gabarito || [])
+      .map((item) => item.match(/Cen[aá]rio\s*(\d+)/i)?.[1])
+      .filter(Boolean)
+      .map(Number)
+  );
+}
+
 function renderTestTable(readyMaterials) {
   const items = normalizeTextItems(readyMaterials || []);
-  const scenarioCount = items.filter((item) => /^CEN[AÁ]RIO/i.test(item)).length;
-  if (!scenarioCount) return "";
+  const scenarios = getScenarioItems(items);
+  if (!scenarios.length) return "";
 
   // Extract column headers from the TABELA DE TESTE item, if present
   const tableItem = items.find((item) => /tabela de teste/i.test(item));
@@ -552,9 +687,9 @@ function renderTestTable(readyMaterials) {
   }
 
   const headers = columns.map((col) => `<th>${escapeHtml(col)}</th>`).join("");
-  const rows = Array.from({ length: scenarioCount }, (_, i) => {
+  const rows = scenarios.map((scenario) => {
     const cells = columns.slice(1).map(() => `<td class="blank-cell"></td>`).join("");
-    return `<tr><td>Cenário ${i + 1}</td>${cells}</tr>`;
+    return `<tr><td>Cenário ${scenario.number}</td>${cells}</tr>`;
   }).join("");
 
   return `<div class="test-table-wrapper">
@@ -629,7 +764,7 @@ function renderAssessmentRubric(experience) {
 
   return `<table class="rubric-table">
     <thead><tr><th>Critério</th><th>O que observar</th></tr></thead>
-    <tbody>${rubric.map((item) => `<tr><td>${cleanHtml(item.criterion || "Critério")}</td><td>${cleanHtml(item.observation || item.description || "")}</td></tr>`).join("")}</tbody>
+    <tbody>${rubric.map((item) => `<tr><td>${cleanHtml(cleanCriterionName(item.criterion || "Critério"))}</td><td>${cleanHtml(item.observation || item.description || "")}</td></tr>`).join("")}</tbody>
   </table>`;
 }
 
@@ -639,7 +774,7 @@ const DANGLING = /\s+(e|ou|de|da|do|dos|das|com|para|que|se|em|na|no|nas|nos|a|o
 
 function fixDanglingText(text) {
   if (!text) return text;
-  let t = stripDecorativeMarkers(text).replace(/\.{3,}|…/g, ".").trim();
+  let t = polishText(text).replace(/\.{3,}|…/g, ".").trim();
   t = t.replace(DANGLING, "").trim();
   if (t && !/[.!?:;)\]"]$/.test(t)) t += ".";
   return t;
@@ -697,6 +832,9 @@ function fixGabaritoLanguage(teacherGabarito) {
 }
 
 function formatCurrencyBRL(value) {
+  if (value < 0) {
+    return `-${formatCurrencyBRL(Math.abs(value))}`;
+  }
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
@@ -704,31 +842,113 @@ function formatCurrencyBRL(value) {
   }).format(value).replace(/\u00a0/g, " ");
 }
 
+function parseFinancialEntries(text) {
+  const matches = [...(text || "").matchAll(/R\$\s*([\d.]+(?:,\d{2})?)/g)];
+  return matches
+    .map((match) => {
+      const amount = extractBRLAmounts(match[0])[0];
+      if (!Number.isFinite(amount)) return null;
+
+      const before = stripDecorativeMarkers(text.slice(Math.max(0, match.index - 70), match.index)).toLowerCase();
+      const label = before
+        .split(/[.;:]/)
+        .pop()
+        .replace(/[-–—]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const isRevenue = /receita|renda|sal[aá]rio|ganho|entrada/.test(label);
+      const isExpense = /despesa|gasto|aluguel|alimenta[cç][aã]o|transporte|energia|[aá]gua|lazer|conserto|m[eé]dico|m[eé]dica|celular|compra|internet|educa[cç][aã]o|sa[uú]de|conta|custo|imprevisto/.test(label);
+      const isPriorExpense = /despesas?\s+do\s+cen[aá]rio|despesas?\s+anteriores?|total\s+de\s+despesas/.test(label);
+
+      return { amount, label, isRevenue, isExpense, isPriorExpense };
+    })
+    .filter(Boolean);
+}
+
+function buildFinancialDataForScenarios(scenarios) {
+  const result = [];
+  let previous = null;
+
+  scenarios.forEach((scenario) => {
+    const entries = parseFinancialEntries(scenario.text);
+    if (!entries.length) {
+      result.push({ scenario, entries, revenue: previous?.revenue, expenses: [], totalExpenses: previous?.totalExpenses || 0, saldo: null });
+      return;
+    }
+
+    let revenueEntry = entries.find((entry) => entry.isRevenue);
+    if (!revenueEntry && !previous?.revenue && entries.length > 1 && !entries[0].isExpense && !entries[0].isPriorExpense) {
+      revenueEntry = entries[0];
+    }
+
+    const revenue = revenueEntry?.amount ?? previous?.revenue ?? null;
+    const expenses = entries.filter((entry) => entry !== revenueEntry);
+
+    if (
+      previous?.totalExpenses
+      && !revenueEntry
+      && !expenses.some((entry) => entry.isPriorExpense)
+      && /imprevisto|aumento|acréscimo|acrescimo|novo gasto|conserto|m[eé]dico|compra/i.test(scenario.text)
+    ) {
+      expenses.unshift({ amount: previous.totalExpenses, label: `despesas do Cenário ${previous.scenario.number}`, isPriorExpense: true });
+    }
+
+    const totalExpenses = expenses.reduce((sum, entry) => sum + entry.amount, 0);
+    const saldo = revenue !== null ? revenue - totalExpenses : null;
+    const data = { scenario, entries, revenue, expenses, totalExpenses, saldo };
+    result.push(data);
+
+    if (revenue !== null && totalExpenses > 0) {
+      previous = data;
+    }
+  });
+
+  return result;
+}
+
+function formatExpenseExpression(expenses) {
+  return expenses.map((entry) => formatCurrencyBRL(entry.amount)).join(" + ");
+}
+
+function buildScenarioFallbackGabarito(scenario) {
+  return `Cenário ${scenario.number}: conferir se o protótipo foi testado, se a falha ou restrição foi registrada e se a melhoria proposta altera o resultado observado.`;
+}
+
+function buildImprovementSuggestion(financialData) {
+  const negative = financialData.find((item) => Number.isFinite(item.saldo) && item.saldo < 0);
+  if (!negative) {
+    return "Sugestão de melhoria: A equipe pode reservar parte do saldo positivo para uma emergência, comparar prioridades e justificar como preservaria a poupança.";
+  }
+
+  const deficit = Math.abs(negative.saldo);
+  return [
+    "Sugestão de melhoria:",
+    `A equipe pode reduzir ${formatCurrencyBRL(deficit)} em despesas variáveis ou gastos adiáveis para equilibrar o orçamento, chegando a saldo final de R$ 0,00.`,
+    "Outra possibilidade: dividir o ajuste entre lazer, alimentação fora de casa ou compras não essenciais, mantendo as necessidades básicas preservadas."
+  ].join("\n");
+}
+
 function buildFinancialGabaritoFromReadyMaterials(readyMaterials) {
-  const scenarioItems = normalizeTextItems(readyMaterials || [])
-    .filter((item) => /^CEN[AÁ]RIO/i.test(item) && /R\$\s*[\d.]+/i.test(item));
+  const scenarios = getScenarioItems(readyMaterials);
+  if (!scenarios.length) return [];
 
-  if (!scenarioItems.length) return [];
+  const financialData = buildFinancialDataForScenarios(scenarios);
+  const hasFinancialScenario = financialData.some((data) => data.entries.some((entry) => Number.isFinite(entry.amount)));
+  if (!hasFinancialScenario) return [];
 
-  const cards = scenarioItems
-    .map((item, index) => {
-      const amounts = extractBRLAmounts(item);
-      if (amounts.length < 2) return "";
-
-      const scenarioMatch = item.match(/^CEN[AÁ]RIO\s*(\d+)/i);
-      const scenarioNumber = scenarioMatch ? scenarioMatch[1] : String(index + 1);
-      const receita = amounts[0];
-      const expenses = amounts.slice(1);
-      const totalExpenses = expenses.reduce((sum, value) => sum + value, 0);
-      const saldo = receita - totalExpenses;
-      const expenseExpression = expenses.map(formatCurrencyBRL).join(" + ");
+  const cards = financialData
+    .map((data) => {
+      if (data.revenue === null || !data.expenses.length || data.saldo === null) {
+        return buildScenarioFallbackGabarito(data.scenario);
+      }
 
       return [
-        `Cenário ${scenarioNumber}:`,
-        `Receita total: ${formatCurrencyBRL(receita)}.`,
-        `Despesas totais: ${expenseExpression} = ${formatCurrencyBRL(totalExpenses)}.`,
-        `Saldo final: ${formatCurrencyBRL(receita)} - ${formatCurrencyBRL(totalExpenses)} = ${formatCurrencyBRL(saldo)}.`,
-        saldo >= 0
+        `Cenário ${data.scenario.number}:`,
+        `Receita total: ${formatCurrencyBRL(data.revenue)}.`,
+        `Despesas totais: ${formatExpenseExpression(data.expenses)} = ${formatCurrencyBRL(data.totalExpenses)}.`,
+        `Saldo final: ${formatCurrencyBRL(data.revenue)} - ${formatCurrencyBRL(data.totalExpenses)} = ${formatCurrencyBRL(data.saldo)}.`,
+        data.saldo >= 0
           ? `O saldo ainda é positivo, mas deve ser analisado para preservar parte da poupança.`
           : `O saldo final é negativo; a equipe precisa propor uma reorganização das despesas.`
       ].join("\n");
@@ -736,21 +956,114 @@ function buildFinancialGabaritoFromReadyMaterials(readyMaterials) {
     .filter(Boolean);
 
   if (cards.length) {
-    cards.push("Sugestão de melhoria: A equipe pode reorganizar despesas variáveis, criar uma área de reserva de emergência ou ajustar prioridades para preservar parte da poupança.");
+    cards.push(buildImprovementSuggestion(financialData));
   }
 
   return cards;
 }
 
 function buildFallbackGabaritoFromReadyMaterials(readyMaterials) {
-  return normalizeTextItems(readyMaterials || [])
-    .filter((item) => /^CEN[AÁ]RIO/i.test(item))
-    .slice(0, 3)
-    .map((item, index) => {
-      const scenarioMatch = item.match(/^CEN[AÁ]RIO\s*(\d+)/i);
-      const scenarioNumber = scenarioMatch ? scenarioMatch[1] : String(index + 1);
-      return `Cenário ${scenarioNumber}: conferir se o protótipo foi testado, se a falha ou restrição foi registrada e se a melhoria proposta altera o resultado observado.`;
-    });
+  return getScenarioItems(readyMaterials).map(buildScenarioFallbackGabarito);
+}
+
+function completeGabaritoForScenarios(gabarito, readyMaterials) {
+  const scenarios = getScenarioItems(readyMaterials);
+  if (!scenarios.length) return gabarito;
+
+  const answered = getScenarioNumbersFromGabarito(gabarito);
+  const missing = scenarios
+    .filter((scenario) => !answered.has(scenario.number))
+    .map(buildScenarioFallbackGabarito);
+
+  return [...gabarito, ...missing];
+}
+
+function orderGabaritoItems(gabarito) {
+  const scenarioItems = [];
+  const otherItems = [];
+
+  (gabarito || []).forEach((item, index) => {
+    const number = item.match(/Cen[aá]rio\s*(\d+)/i)?.[1];
+    if (number) {
+      scenarioItems.push({ item, index, number: Number(number) });
+    } else {
+      otherItems.push({ item, index });
+    }
+  });
+
+  scenarioItems.sort((a, b) => a.number - b.number || a.index - b.index);
+  return [...scenarioItems.map(({ item }) => item), ...otherItems.map(({ item }) => item)];
+}
+
+function normalizeSearchText(text) {
+  return stripDecorativeMarkers(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function getTopicTokens(text) {
+  const stopwords = new Set([
+    "para", "com", "uma", "dos", "das", "que", "como", "sobre", "atividade", "experiencia",
+    "aprendizagem", "projeto", "alunos", "estudantes", "ensino", "fundamental", "serie", "ano"
+  ]);
+  return [...new Set(normalizeSearchText(text).split(/[^a-z0-9]+/).filter((token) => token.length >= 4 && !stopwords.has(token)))];
+}
+
+function isMethodologyReference(refText) {
+  return /steam|maker|metodologias?\s+ativas?|aprendizagem\s+baseada\s+em\s+projetos?|project\s+based|cultura\s+maker|prototip|bncc|base\s+nacional\s+comum\s+curricular/i.test(refText);
+}
+
+function isFinancialReference(refText) {
+  return /educa[cç][aã]o\s+financeira|finan[cç]as|financeir|or[cç]amento|renda|despesa|dinheiro|poupan[cç]a|investimento|banco\s+central|enef|ocde|oecd|matem[aá]tica\s+financeira|gest[aã]o\s+de\s+finan[cç]as/i.test(refText);
+}
+
+function getReferenceFallbacks(experience) {
+  const context = [
+    experience.title,
+    experience.theme,
+    experience.objective,
+    experience.problem,
+    experience.makerChallenge,
+    experience.finalProduct
+  ].join(" ");
+  return isFinancialThemeText(context) ? FINANCIAL_REFERENCES : [FALLBACK_REFERENCE];
+}
+
+function filterReferencesByTheme(references, experience) {
+  const context = [
+    experience.title,
+    experience.theme,
+    experience.objective,
+    experience.problem,
+    experience.makerChallenge,
+    experience.finalProduct,
+    experience.discipline
+  ].join(" ");
+  const financial = isFinancialThemeText(context);
+  const topicTokens = getTopicTokens(context);
+  const cleaned = (references || [])
+    .map(fixDanglingText)
+    .filter((ref) => ref && !/wikipedia/i.test(ref));
+
+  const aligned = cleaned.filter((ref) => {
+    const normalizedRef = normalizeSearchText(ref);
+    if (financial) {
+      return isFinancialReference(ref)
+        || /steam|maker|metodologias?\s+ativas?|aprendizagem\s+baseada\s+em\s+projetos?|project\s+based|cultura\s+maker|prototip/i.test(ref);
+    }
+    return isMethodologyReference(ref)
+      || topicTokens.some((token) => normalizedRef.includes(token));
+  });
+
+  const selected = aligned.length ? aligned : getReferenceFallbacks(experience);
+  return selected.slice(0, 2);
+}
+
+function cleanCriterionName(value) {
+  return stripDecorativeMarkers(value || "")
+    .replace(/[.!?:;]+$/g, "")
+    .trim();
 }
 
 function autoFixExperience(experience) {
@@ -759,11 +1072,12 @@ function autoFixExperience(experience) {
   const fixedGabarito = fixGabaritoLanguage((experience.teacherGabarito || []).map(fix));
   const financialGabarito = buildFinancialGabaritoFromReadyMaterials(fixedReadyMaterials);
   const fallbackGabarito = fixedGabarito.length ? fixedGabarito : buildFallbackGabaritoFromReadyMaterials(fixedReadyMaterials);
-  const teacherGabarito = financialGabarito.length ? financialGabarito : fallbackGabarito;
-  const bibliography = (experience.bibliography || [])
-    .map(fix)
-    .filter((item) => item && !/wikipedia/i.test(item))
-    .slice(0, 2);
+  const teacherGabarito = completeGabaritoForScenarios(
+    financialGabarito.length ? financialGabarito : fallbackGabarito,
+    fixedReadyMaterials
+  ).map(fix);
+  const orderedGabarito = orderGabaritoItems(teacherGabarito);
+  const bibliography = filterReferencesByTheme(experience.bibliography || [], experience);
 
   return {
     ...experience,
@@ -782,25 +1096,25 @@ function autoFixExperience(experience) {
     readyMaterials: fixedReadyMaterials,
     assessmentRubric: (experience.assessmentRubric || []).map((item) => ({
       ...item,
-      criterion: fix(item.criterion || ""),
+      criterion: cleanCriterionName(item.criterion || ""),
       observation: fix(item.observation || item.description || "")
     })),
     bibliography: bibliography.length ? bibliography : [FALLBACK_REFERENCE],
     steamConnection: Object.fromEntries(
       Object.entries(experience.steamConnection || {}).map(([key, value]) => [key, fix(value)])
     ),
-    teacherGabarito,
+    teacherGabarito: orderedGabarito,
   };
 }
 
 function extractBRLAmounts(text) {
-  return [...(text || "").matchAll(/R\$\s*([\d.]+(?:,\d{2})?)/g)]
+  return [...(text || "").matchAll(/(-)?R\$\s*([\d.]+(?:,\d{2})?)/g)]
     .map((m) => {
-      const raw = m[1];
-      if (raw.includes(",")) {
-        return parseFloat(raw.replace(/\./g, "").replace(",", "."));
-      }
-      return parseFloat(raw.replace(/\./g, ""));
+      const raw = m[2];
+      const value = raw.includes(",")
+        ? parseFloat(raw.replace(/\./g, "").replace(",", "."))
+        : parseFloat(raw.replace(/\./g, ""));
+      return m[1] ? -value : value;
     })
     .filter((value) => Number.isFinite(value));
 }
@@ -812,7 +1126,8 @@ function hasVisibleTechnicalMarkup(text) {
     || /\*\*[^*]+\*\*/.test(text)
     || /(^|\s)\*[^*\n]+\*(\s|$)/.test(text)
     || /^\s*\|.*\|\s*$/m.test(text)
-    || /^\s*[-|: ]{3,}\s*$/m.test(text);
+    || /^\s*[-|: ]{3,}\s*$/m.test(text)
+    || /\b(?:blob:|https?:\/\/|localhost|127\.0\.0\.1)\b/i.test(text);
 }
 
 function collectExperienceText(experience) {
@@ -833,6 +1148,24 @@ function collectExperienceText(experience) {
     ...(experience.assessmentRubric || []).flatMap((item) => [item.criterion, item.observation]),
     ...Object.values(experience.steamConnection || {})
   ].filter(Boolean);
+}
+
+function hasIncompleteGabaritoCoverage(experience) {
+  const scenarios = getScenarioItems(experience.readyMaterials || []);
+  if (!scenarios.length) return false;
+  const answered = getScenarioNumbersFromGabarito(experience.teacherGabarito || []);
+  return scenarios.some((scenario) => !answered.has(scenario.number));
+}
+
+function validateGabaritoMath(item) {
+  const lines = String(item || "").split(/\n+/);
+  return lines.every((line) => {
+    if (!/saldo\s+(?:final|antes|ap[oó]s)/i.test(line) || !/=/.test(line)) return true;
+    const amounts = extractBRLAmounts(line);
+    if (amounts.length < 3) return true;
+    const [revenue, expenses, result] = amounts.slice(-3);
+    return Math.abs((revenue - expenses) - result) < 0.01;
+  });
 }
 
 function validateExportedExperience(experience) {
@@ -862,6 +1195,8 @@ function validateExportedExperience(experience) {
   // Gabarito
   if (!experience.teacherGabarito || experience.teacherGabarito.length === 0) {
     blocking.push("Gabarito do professor ausente.");
+  } else if (hasIncompleteGabaritoCoverage(experience)) {
+    blocking.push("Gabarito do professor não contempla todos os cenários da atividade.");
   } else {
     experience.teacherGabarito.forEach((item, i) => {
       if (!item || item.trim().length < 15) {
@@ -884,6 +1219,9 @@ function validateExportedExperience(experience) {
       // Ellipses
       if (/\.{3,}|…/.test(t)) {
         blocking.push(`Gabarito cenário ${i + 1}: contém reticências — texto cortado.`);
+      }
+      if (!validateGabaritoMath(t)) {
+        blocking.push(`Gabarito cenário ${i + 1}: cálculo financeiro inconsistente.`);
       }
       // "déficit" but last BRL value is positive
       if (/d[eé]ficit/i.test(t)) {
@@ -938,10 +1276,13 @@ function buildActivityPrintHTMLFromExperience(experience) {
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>${cleanHtml(experience.title || 'Experiência STEAM Maker')}</title>
+  <title></title>
   <style>
-    @page { size: A4; margin: 1.05cm 1.15cm; }
+    @page { size: A4; margin: 0; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html {
+      background: #fff;
+    }
     body {
       font-family: Arial, Helvetica, sans-serif;
       font-size: 9.1pt;
@@ -953,6 +1294,8 @@ function buildActivityPrintHTMLFromExperience(experience) {
       margin: 0 auto;
       orphans: 3;
       widows: 3;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
     }
     .header {
       display: grid;
@@ -1075,7 +1418,12 @@ function buildActivityPrintHTMLFromExperience(experience) {
     body.ultra-tight .stage-header { padding: 0.05cm 0.08cm; font-size: 7.6pt; }
     body.ultra-tight .stage-body { padding: 0.06cm 0.08cm; }
     @media print {
-      body { padding: 0; }
+      body {
+        padding: 1.05cm 1.15cm;
+        max-width: none;
+        width: 100%;
+        min-height: 100vh;
+      }
       .section-heading { page-break-after: avoid; break-after: avoid; }
       .protected-section, .table-section, .stage, .materials-table, .test-table-wrapper, .rubric-table, .gabarito-card {
         page-break-inside: avoid;
@@ -1154,6 +1502,7 @@ function buildActivityPrintHTMLFromExperience(experience) {
   </div>` : ""}
 
   <script>
+    document.title = '';
     window.addEventListener('load', function() {
       setTimeout(function() {
         var body = document.body;
@@ -1187,15 +1536,14 @@ function buildActivityPrintHTML(activity) {
 }
 
 function openBlob(html) {
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const win = window.open(url, "_blank");
+  const win = window.open("", "_blank");
   if (!win) {
     alert("Não foi possível abrir o PDF. Verifique se o navegador está bloqueando pop-ups e tente novamente.");
-    URL.revokeObjectURL(url);
     return false;
   }
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
   return true;
 }
 

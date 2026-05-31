@@ -108,14 +108,14 @@ Regras de conteúdo:
 - "objective": 1 frase, até 20 palavras.
 - "problem": problema real, concreto e contextualizado, até 45 palavras.
 - "mission": frase curta começando com "Sua equipe deverá..." ou equivalente individual.
-- "materials": máximo 6 itens acessíveis, com quantidade por grupo.
+- "materials": máximo 6 itens acessíveis, com quantidade precisa por grupo sempre que possível. Exemplos: cartolina: 1 folha por grupo; fichas de papel: 8 a 12 por grupo; canetinhas coloridas: 1 conjunto por grupo; notas adesivas coloridas: 1 bloco por grupo; tesoura sem ponta: 1 por grupo; cola bastão: 1 por grupo.
 - "materialFunctions": explique a função prática de cada material listado, em 1 frase curta por material.
 - "readyMaterials": entregue os cenários, fichas, cartões, tabela de teste, perguntas ou dados citados. Nunca cite material complementar sem gerar o conteúdo pronto. Para atividades com cálculo financeiro, orçamento familiar, renda, despesas, poupança ou investimento, use exatamente: "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
 - "stages": exatamente 6 etapas de desenvolvimento e montagem, na ordem obrigatória acima. Cada etapa deve explicar como preparar base, dividir materiais, construir, interagir, testar, ajustar ou apresentar.
 - "makerChallenge": deve dizer claramente o que construir, como testar e o que melhorar.
 - "finalProduct": protótipo ou produto concreto final.
-- "assessmentRubric": mini rubrica com "criterion" e "observation", máximo 4 linhas.
-- "bibliography": use fontes verificadas abaixo quando houver. Nunca use Wikipedia. Se não houver fonte específica, inclua apenas a BNCC como referência oficial.
+- "assessmentRubric": mini rubrica com "criterion" e "observation", máximo 4 linhas. Não use ponto final no nome do critério.
+- "bibliography": use fontes verificadas abaixo quando houver relação direta com o tema. Nunca use Wikipedia. Nunca use referência fora do assunto apenas para preencher espaço. Se não houver fonte específica adequada, inclua apenas a BNCC como referência oficial.
 - "bncc": use APENAS códigos da lista offline acima; não invente códigos.
 - Não use emojis, slogans, texto promocional ou linguagem de apostila.
 - Não escreva frases genéricas como "faça um protótipo", "use os materiais disponíveis", "teste a solução" ou "melhore o projeto" sem explicar exatamente como.
@@ -123,12 +123,12 @@ Regras de conteúdo:
 - Não use reticências. Nenhuma frase pode terminar cortada com "...".
 - Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
 - Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
-- Inclua "teacherGabarito": resultados esperados de cada cenário em formato didático. Use um item por cenário, com linhas curtas separadas por ponto e vírgula.
+- Inclua "teacherGabarito": resultados esperados de TODOS os cenários de "readyMaterials" em formato didático. Se houver Cenário 1, Cenário 2 e Cenário 3, o gabarito deve conter os três. Use um item por cenário, com linhas curtas separadas por ponto e vírgula.
 - Em cenários financeiros, nunca escreva apenas "Economia: R$ X". Use "Sobra mensal prevista: R$ X" ou "Saldo disponível para poupança/investimento: R$ X".
 - Nunca use tabelas markdown (| col | col | ou --- | --- | ---) em nenhum campo JSON. Em "readyMaterials", use apenas uma linha de texto simples: "TABELA DE TESTE - Col1 | Col2 | Col3." sem barras verticais extras ou linhas separadoras.
 - Em cenários: se o saldo final for positivo, não use "déficit". Use "reorganização", "impacto no saldo" ou "preservação da poupança".
 - No "teacherGabarito": se o saldo final for positivo, não usar "déficit", "prejuízo" ou "saldo negativo". Usar: "O saldo ainda é positivo, mas foi reduzido. Sugerir reorganização para preservar poupança."
-- GABARITO MATEMÁTICO OBRIGATÓRIO: em "teacherGabarito", para cada cenário com valores numéricos, copie EXATAMENTE os valores do readyMaterials correspondente (sem inventar valores), some as despesas mostrando a conta (ex: R$ 1.200 + R$ 250 = R$ 1.450), calcule saldo = receita − total_despesas. Formato: "Cenário 1: Receita total: R$ X; Despesas totais: R$ A + R$ B = R$ Y; Saldo final: R$ X − R$ Y = R$ Z." O resultado deve ser matematicamente correto.
+- GABARITO MATEMÁTICO OBRIGATÓRIO: em "teacherGabarito", para cada cenário com valores numéricos, copie EXATAMENTE os valores do readyMaterials correspondente (sem inventar valores), some as despesas mostrando a conta (ex: R$ 1.200 + R$ 250 = R$ 1.450), calcule saldo = receita − total_despesas. Formato: "Cenário 1: Receita total: R$ X; Despesas totais: R$ A + R$ B = R$ Y; Saldo final: R$ X − R$ Y = R$ Z." Se um cenário depende do anterior, mostre as despesas do cenário anterior e o novo total. O resultado deve ser matematicamente correto.
 - Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
 
 ${verifiedSources.length > 0
@@ -147,12 +147,14 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "mission": "Sua equipe deverá desenvolver uma solução prática para o problema.",
   "bncc": ${JSON.stringify(getBnccCodes(bnccSuggestions))},
   "materials": [
-    "Material 1 - quantidade por grupo",
-    "Material 2 - quantidade por grupo"
+    "Cartolina - 1 folha por grupo",
+    "Fichas de papel - 8 a 12 por grupo",
+    "Canetinhas coloridas - 1 conjunto por grupo"
   ],
   "materialFunctions": [
-    "Material 1: função prática no protótipo.",
-    "Material 2: função prática no mecanismo, teste ou registro."
+    "Cartolina: 1 folha por grupo — base do protótipo.",
+    "Fichas de papel: 8 a 12 por grupo — cartões de simulação.",
+    "Canetinhas coloridas: 1 conjunto por grupo — registro visual."
   ],
   "readyMaterials": [
     "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
@@ -386,14 +388,14 @@ Regras:
 ${stageTitles}
 - Cada etapa: máximo 3 frases curtas.
 - Materiais: máximo 6 itens acessíveis.
-- "materialFunctions" deve explicar a função de cada material no protótipo.
+- "materialFunctions" deve explicar a função de cada material no protótipo e usar quantidades precisas sempre que possível.
 - "readyMaterials" deve entregar cenários, fichas, cartões, tabela de teste, perguntas ou dados citados.
 - "stages" deve explicar como preparar base, dividir materiais, construir, manipular, testar, ajustar e apresentar. Não use frases genéricas.
 - Inclua 2 testes concretos: um cenário esperado e um cenário com imprevisto, restrição ou falha.
-- Avaliação: mini rubrica com "criterion" e "observation", máximo 4 linhas.
-- Referências: preferencialmente 2 itens, mínimo 1. Use as referências do projeto se houver; não invente fonte nem DOI.
+- Avaliação: mini rubrica com "criterion" e "observation", máximo 4 linhas. Não use ponto final no nome do critério.
+- Referências: preferencialmente 2 itens, mínimo 1. Use as referências do projeto se houver relação direta com o tema; não invente fonte nem DOI. É melhor usar uma referência correta do que duas com uma fora do assunto.
 - Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
-- Inclua "teacherGabarito" em formato didático, com um item por cenário. Para cálculos, copie os valores dos cenários e mostre soma das despesas e saldo final.
+- Inclua "teacherGabarito" em formato didático, com resposta para TODOS os cenários. Para cálculos, copie os valores dos cenários e mostre soma das despesas e saldo final.
 - Não use emojis.
 - Não use reticências. Nenhum texto pode terminar cortado com "...".
 
@@ -407,12 +409,14 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "problem": "Problema real que inicia a atividade.",
   "mission": "Sua equipe deverá construir e melhorar uma solução.",
   "materials": [
-    "material 1 - quantidade por grupo",
-    "material 2 - quantidade por grupo"
+    "Cartolina - 1 folha por grupo",
+    "Fichas de papel - 8 a 12 por grupo",
+    "Canetinhas coloridas - 1 conjunto por grupo"
   ],
   "materialFunctions": [
-    "material 1: função prática no protótipo.",
-    "material 2: função prática no mecanismo, teste ou registro."
+    "Cartolina: 1 folha por grupo — base do protótipo.",
+    "Fichas de papel: 8 a 12 por grupo — cartões de simulação.",
+    "Canetinhas coloridas: 1 conjunto por grupo — registro visual."
   ],
   "readyMaterials": [
     "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
