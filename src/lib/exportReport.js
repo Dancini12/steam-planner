@@ -116,6 +116,21 @@ function sanitizeReferenceText(reference) {
   return /[.!?]$/.test(withDoiPrefix) ? withDoiPrefix : `${withDoiPrefix}.`;
 }
 
+function sanitizeDoiText(text) {
+  return String(text || "").replace(/\b(?:doi\s*[:.]?\s*)?(10\.\d{4,9}\/[^\s<,;]+)/gi, (_, doi) => {
+    const safeDoi = doi
+      .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
+      .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
+      .replace(/[\u0000-\u001F\u007F<>()[\]{}"']+/g, "")
+      .replace(/[*_`]+/g, "")
+      .replace(/\s+/g, "")
+      .replace(/-{2,}/g, "-")
+      .replace(/-+$/g, "")
+      .replace(/[.,;:]+$/g, "");
+    return /^10\.\d{4,9}\/\S+$/.test(safeDoi) ? `DOI: ${safeDoi}.` : "";
+  });
+}
+
 function cleanHtml(text) {
   return escapeHtml(stripDecorativeMarkers(text));
 }
@@ -820,7 +835,7 @@ function renderTeacherGabaritoItems(gabarito) {
   if (!Array.isArray(gabarito) || !gabarito.length) return "";
   return gabarito
     .map((item) => {
-      const lines = splitGabaritoLines(item);
+      const lines = splitGabaritoLines(sanitizeAnswerKeyText(item));
       if (!lines.length) return "";
       const [heading, ...bodyLines] = lines;
       const hasHeading = /:$/.test(heading) && /^(Cen[aá]rio\s*\d+|Sugest[aã]o de melhoria):/i.test(heading);
@@ -1197,6 +1212,21 @@ function cleanFinancialItemLabel(label, category = "") {
   if (normalizedCategory === "imprevisto") return formatUnexpectedExpenseLabel(label);
   if (normalizedCategory === "melhoria") return formatImprovementLabel(label);
   return cleanGenericFinancialLabel(label);
+}
+
+function sanitizeAnswerKeyText(answerKeyText) {
+  if (!answerKeyText) return "";
+  return reviewGabaritoText(answerKeyText)
+    .replace(/\bImprevisto com\s+(?:um|uma|o|a)?\s*([^:\n.]+):\s*(R\$\s*-?[\d.]+(?:,\d{2})?)\.?/gi, (_, label, amount) => {
+      const cleanLabel = cleanFinancialItemLabel(label, FINANCIAL_ENTRY_TYPE.IMPREVISTO)
+        .replace(/^(?:um|uma|o|a)\s+/i, "")
+        .trim();
+      return `${upperFirst(cleanLabel || "Imprevisto")}: ${amount}.`;
+    })
+    .replace(/\bMeta de poupan[cç]a para\s+h[aá]\b/gi, "Meta de poupança planejada")
+    .replace(/\bImprevisto com\s+(?:surge|surgiu|apareceu|h[aá])\s+/gi, "Imprevisto: ")
+    .replace(/\bGasto com\s+(?:apareceu|surge|surgiu)\s+/gi, "Gasto com ")
+    .replace(/\bO saldo final é negativo\.\s+a equipe\b/gi, "O saldo final é negativo. A equipe");
 }
 
 function hasExplicitSavingsGoalContext(text) {
@@ -1744,6 +1774,11 @@ function formatBudgetLine(label, items, total) {
 function lowerFirst(value) {
   if (!value) return value;
   return `${value.charAt(0).toLowerCase()}${value.slice(1)}`;
+}
+
+function upperFirst(value) {
+  if (!value) return value;
+  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 }
 
 function formatContextualBudgetLine(defaultLabel, pluralLabel, items, total) {
@@ -3097,11 +3132,72 @@ ${warnings.length ? `<p><strong>Avisos:</strong></p><ul>${li(warnings, "warning"
 </body></html>`;
 }
 
+function sanitizeExperienceForFinalRender(experience) {
+  return {
+    ...experience,
+    bibliography: (experience.bibliography || [])
+      .map(sanitizeReferenceText)
+      .filter(Boolean),
+    teacherGabarito: (experience.teacherGabarito || [])
+      .map(sanitizeAnswerKeyText)
+      .filter(Boolean)
+  };
+}
+
+function sanitizeFinalRenderedHTML(html) {
+  return sanitizeDoiText(String(html || ""))
+    .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
+    .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
+}
+
+function extractRenderedTextFromHTML(html) {
+  return String(html || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;|&apos;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasDoiWithoutPrefix(text) {
+  const source = String(text || "");
+  const doiMatches = [...source.matchAll(/\b10\.\d{4,9}\/\S+/g)];
+  return doiMatches.some((match) => !/DOI:\s*$/i.test(source.slice(Math.max(0, match.index - 8), match.index)));
+}
+
+function validateFinalRenderedHTML(html) {
+  const blocking = [];
+  const text = extractRenderedTextFromHTML(html);
+  if (/[\uFFFE\uFFFF\u200B\u200C\u200D\uFEFF]/.test(html)) {
+    blocking.push("HTML final contém caractere invisível ou corrompido.");
+  }
+  if (hasVisibleTechnicalMarkup(text)) {
+    blocking.push("HTML final contém HTML, Markdown ou URL interna visível.");
+  }
+  if (hasDoiWithoutPrefix(text)) {
+    blocking.push("HTML final contém DOI sem prefixo DOI:.");
+  }
+  if (/blob:http|localhost|127\.0\.0\.1/i.test(text)) {
+    blocking.push("HTML final contém URL interna ou marcador de navegador.");
+  }
+  if (/Imprevisto com\s+(?:surge|surgiu|uma\s+m[eé]dica)|Meta de poupan[cç]a para\s+h[aá]/i.test(text)) {
+    blocking.push("HTML final contém rótulo financeiro malformado.");
+  }
+  return { ok: blocking.length === 0, blocking };
+}
+
 // ── HTML builder ──────────────────────────────────────────────────────────────
 
 function buildActivityPrintHTMLFromExperience(experience) {
+  experience = sanitizeExperienceForFinalRender(experience);
 
-  return `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -3353,6 +3449,9 @@ function buildActivityPrintHTMLFromExperience(experience) {
   </script>
 </body>
 </html>`;
+  const finalHtml = sanitizeFinalRenderedHTML(html);
+  const finalValidation = validateFinalRenderedHTML(finalHtml);
+  return finalValidation.ok ? finalHtml : buildExportErrorHTML(finalValidation.blocking, []);
 }
 
 function buildActivityPrintHTML(activity) {
