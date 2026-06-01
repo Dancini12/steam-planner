@@ -1297,28 +1297,71 @@ function formatRevenueLine(data) {
 }
 
 function buildImprovementSuggestion(financialData) {
+  const fmt = formatCurrencyBRL;
+
+  // Case 1: explicit improvement values extracted from the scenario text
   const explicitImprovement = financialData.find((item) => item.melhoriasTotal > 0 && Number.isFinite(item.saldo));
   if (explicitImprovement) {
     return [
       "Melhoria sugerida:",
-      `Economizar ${formatCurrencyBRL(explicitImprovement.melhoriasTotal)} em uma despesa variável, como lazer ou compras não essenciais.`,
+      `Reduzir ${fmt(explicitImprovement.melhoriasTotal)} em despesas variáveis, como lazer, transporte ou compras não essenciais.`,
       "Resultado após melhoria:",
-      `${formatCurrencyBRL(explicitImprovement.saldo)} + ${formatCurrencyBRL(explicitImprovement.melhoriasTotal)} = ${formatCurrencyBRL(explicitImprovement.saldoAfterImprovement)}.`
+      `${fmt(explicitImprovement.saldo)} + ${fmt(explicitImprovement.melhoriasTotal)} = ${fmt(explicitImprovement.saldoAfterImprovement)}.`,
+      "Interpretação:",
+      "A melhoria aumenta o saldo final e ajuda a preservar parte da poupança."
     ].join("\n");
   }
 
+  // Case 2: negative saldo — suggest minimum reduction to zero the deficit
   const negative = financialData.find((item) => Number.isFinite(item.saldo) && item.saldo < 0);
-  if (!negative) {
-    return "Sugestão de melhoria: A equipe pode reservar parte do saldo positivo para uma emergência, comparar prioridades e justificar como preservaria a poupança.";
+  if (negative) {
+    const deficit = Math.abs(negative.saldo);
+    return [
+      "Melhoria sugerida:",
+      `Reduzir pelo menos ${fmt(deficit)} em despesas variáveis, como lazer, transporte ou compras não essenciais.`,
+      "Resultado após melhoria:",
+      `${fmt(negative.saldo)} + ${fmt(deficit)} = ${fmt(0)}.`,
+      "Interpretação:",
+      "Com esse ajuste, o orçamento fica equilibrado."
+    ].join("\n");
   }
 
-  const deficit = Math.abs(negative.saldo);
-  return [
-    "Sugestão de melhoria:",
-    `Reduzir pelo menos ${formatCurrencyBRL(deficit)} em despesas variáveis para zerar o déficit.`,
-    "Resultado após melhoria:",
-    `${formatCurrencyBRL(negative.saldo)} + ${formatCurrencyBRL(deficit)} = ${formatCurrencyBRL(0)}.`
-  ].join("\n");
+  // Case 3: positive saldo — structured numeric suggestion
+  const positive = [...financialData]
+    .reverse()
+    .find((item) => Number.isFinite(item.saldo) && item.saldo > 0 && item.isBudgetScenario);
+
+  if (positive) {
+    const saldo = positive.saldo;
+    const primaryAmount = saldo; // reducing by the current saldo doubles the savings
+    const primaryResult = saldo + primaryAmount;
+
+    const lines = [
+      "Melhoria sugerida:",
+      `Reduzir ${fmt(primaryAmount)} em despesas variáveis, como lazer, transporte, alimentação fora de casa ou compras não essenciais.`,
+      "Resultado após melhoria:",
+      `${fmt(saldo)} + ${fmt(primaryAmount)} = ${fmt(primaryResult)}.`,
+      "Interpretação:",
+      "A melhoria aumenta o saldo final e ajuda a preservar parte da poupança."
+    ];
+
+    // Secondary: if there was an imprevisto, offer option to fully restore previous saldo
+    if (positive.imprevistosTotal > 0 && positive.imprevistosTotal !== primaryAmount) {
+      const restoreAmount = positive.imprevistosTotal;
+      const restoredSaldo = saldo + restoreAmount;
+      lines.push(
+        "\nPossibilidade para recuperar o saldo anterior:",
+        `Reduzir ${fmt(restoreAmount)} em despesas variáveis.`,
+        `Resultado: ${fmt(saldo)} + ${fmt(restoreAmount)} = ${fmt(restoredSaldo)}.`,
+        "Interpretação:",
+        "Com esse ajuste, a família recupera o saldo do cenário anterior."
+      );
+    }
+
+    return lines.join("\n");
+  }
+
+  return "Melhoria sugerida: A equipe deve identificar quais despesas podem ser reduzidas e calcular o novo saldo após os ajustes.";
 }
 
 function buildStructuredScenarioGabarito(data) {
