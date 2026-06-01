@@ -117,7 +117,12 @@ function sanitizeReferenceText(reference) {
 }
 
 function sanitizeDoiText(text) {
-  return String(text || "").replace(/\b(?:doi\s*[:.]?\s*)?(10\.\d{4,9}\/[^\s<,;]+)/gi, (_, doi) => {
+  const source = String(text || "")
+    .replace(/\s*[\uFFFE\uFFFF\uFFFD]+\s*/g, "-")
+    .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
+
+  return source.replace(/\b(?:doi\s*[:.]?\s*)?(10\.\d{4,9}\/[^\s<,;]+)/gi, (_, doi) => {
     const safeDoi = doi
       .replace(/\s*[\uFFFE\uFFFF\uFFFD]+\s*/g, "-")
       .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
@@ -1218,7 +1223,7 @@ function cleanFinancialItemLabel(label, category = "") {
 
 function sanitizeAnswerKeyText(answerKeyText) {
   if (!answerKeyText) return "";
-  return reviewGabaritoText(answerKeyText)
+  return sanitizeDoiText(reviewGabaritoText(answerKeyText))
     .replace(/\bImprevisto com\s+(?:um|uma|o|a)?\s*([^:\n.]+):\s*(R\$\s*-?[\d.]+(?:,\d{2})?)\.?/gi, (_, label, amount) => {
       const cleanLabel = cleanFinancialItemLabel(label, FINANCIAL_ENTRY_TYPE.IMPREVISTO)
         .replace(/^(?:um|uma|o|a)\s+/i, "")
