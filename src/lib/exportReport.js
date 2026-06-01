@@ -91,7 +91,7 @@ function sanitizeReferenceText(reference) {
     .replace(/&lt;\/?\s*p[^&]*&gt;/gi, " ")
     .replace(/<\/?\s*p[^>]*>/gi, " ");
   const cleaned = stripDecorativeMarkers(source)
-    .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
+    .replace(/\s*[\uFFFE\uFFFF\uFFFD]+\s*/g, "-")
     .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
     .replace(/-{2,}/g, "-")
@@ -101,7 +101,7 @@ function sanitizeReferenceText(reference) {
 
   const withDoiPrefix = cleaned.replace(/\b(?:doi\s*[:.]?\s*)?(10\.\d{4,9}\/[^\s,;]+)/gi, (_, doi) => {
     const safeDoi = doi
-      .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
+      .replace(/\s*[\uFFFE\uFFFF\uFFFD]+\s*/g, "-")
       .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
       .replace(/[\u0000-\u001F\u007F<>()[\]{}"']+/g, "")
       .replace(/[*_`]+/g, "")
@@ -119,7 +119,7 @@ function sanitizeReferenceText(reference) {
 function sanitizeDoiText(text) {
   return String(text || "").replace(/\b(?:doi\s*[:.]?\s*)?(10\.\d{4,9}\/[^\s<,;]+)/gi, (_, doi) => {
     const safeDoi = doi
-      .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
+      .replace(/\s*[\uFFFE\uFFFF\uFFFD]+\s*/g, "-")
       .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
       .replace(/[\u0000-\u001F\u007F<>()[\]{}"']+/g, "")
       .replace(/[*_`]+/g, "")
@@ -1094,6 +1094,8 @@ const BALANCE_RE = /\b(saldo|sobra\s+mensal|resultado\s+final)\b/i;
 const UNEXPECTED_RE = /\b(imprevisto|inesperad[oa]s?|emerg[eê]ncia|emergencial|conserto|reparo|aumento|acr[eé]scimo|acrescimo|novo\s+gasto|gasto\s+(?:extra|inesperado)|despesa\s+inesperada|custo\s+extra|m[eé]dic[oa]s?|rem[eé]dios?|consulta|carro|manuten[cç][aã]o)\b/i;
 const FIXED_EXPENSE_RE = /\b(despesas?\s+fixas?|gastos?\s+fixos?|custos?\s+fixos?|aluguel|escola|mensalidade|internet|[aá]gua|luz|energia|condom[ií]nio|telefone|celular|plano|presta[cç][aã]o|financiamento|seguro|educa[cç][aã]o|sa[uú]de|farm[aá]cia)\b/i;
 const VARIABLE_EXPENSE_RE = /\b(despesas?\s+vari[aá]veis?|gastos?\s+vari[aá]veis?|custos?\s+vari[aá]veis?|alimenta[cç][aã]o|mercado|transporte|lazer|compras?|roupas?|passeio|restaurante|lanche|combust[ií]vel)\b/i;
+const FIXED_SECTION_LABEL_RE = /\b(?:despesas?|gastos?|custos?)\s+fixas?\b|\bfixas?\b/i;
+const VARIABLE_SECTION_LABEL_RE = /\b(?:despesas?|gastos?|custos?)\s+vari[aá]veis?\b|\bvari[aá]veis?\b/i;
 const EXPENSE_RE = /\b(despesas?|gastos?|custos?|contas?|pagamentos?)\b/i;
 const FAMILY_REVENUE_RE = /\b(pai|m[aã]e|respons[aá]vel(?:\s+\d+)?|cuidador(?:a)?)\b/i;
 const BRL_MATCH_RE = /-?\s*R\$\s*(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{2})?/g;
@@ -1229,12 +1231,28 @@ function sanitizeAnswerKeyText(answerKeyText) {
     .replace(/\bO saldo final é negativo\.\s+a equipe\b/gi, "O saldo final é negativo. A equipe");
 }
 
+function isPriorSavingsAllocationContext(text) {
+  const normalized = stripDecorativeMarkers(text || "")
+    .replace(BRL_MATCH_RE, " R$ ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!normalized) return false;
+
+  const priorScenarioSavings = /\b(?:do|da)\s+cen[aá]rio\s*\d+\b[^.?!;]{0,90}\b(?:foi|foram|ficou|ficaram|vai|v[aã]o|destinad[oa]s?|separad[oa]s?)\b[^.?!;]{0,70}\bpoupan[cç]a\b/i;
+  const priorBalanceSavings = /\b(?:saldo|sobra)\b[^.?!;]{0,90}\b(?:foi|foram|ficou|ficaram|vai|v[aã]o|destinad[oa]s?|separad[oa]s?)\b[^.?!;]{0,70}\bpoupan[cç]a\b/i;
+  return priorScenarioSavings.test(normalized) || priorBalanceSavings.test(normalized);
+}
+
 function hasExplicitSavingsGoalContext(text) {
   const normalized = stripDecorativeMarkers(text || "")
     .replace(BRL_MATCH_RE, " R$ ")
     .replace(/\s+/g, " ")
     .trim();
   if (!normalized) return false;
+
+  if (isPriorSavingsAllocationContext(normalized)) {
+    return false;
+  }
 
   if (/\b(?:preservar|manter|recuperar|aumentar)\s+(?:parte\s+da\s+)?poupan[cç]a\b/i.test(normalized)) {
     return false;
@@ -1381,11 +1399,14 @@ function classifyFinancialEntry({ label, currentSection, afterClause }) {
   // REVENUE_TOTAL_RE moved after expense checks: a label containing both revenue-total
   // and expense keywords (e.g. "receita total com aluguel") must classify as expense first.
   if (BALANCE_RE.test(labelOnly) && !IMPROVEMENT_RE.test(local)) return FINANCIAL_ENTRY_TYPE.SALDO;
+  if (isPriorSavingsAllocationContext(local)) return FINANCIAL_ENTRY_TYPE.SALDO;
   if (hasExplicitSavingsGoalContext(local)) return FINANCIAL_ENTRY_TYPE.META_POUPANCA;
   if (SAVINGS_GOAL_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.META_POUPANCA;
   if (IMPROVEMENT_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (currentSection === FINANCIAL_ENTRY_TYPE.MELHORIA) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (UNEXPECTED_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.IMPREVISTO) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
+  if (VARIABLE_SECTION_LABEL_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
+  if (FIXED_SECTION_LABEL_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
   // When the scenario explicitly declares a fixed or variable section, that context wins
   // over keyword-based classification (e.g. "farmácia" under "Despesas Variáveis" stays variable).
   if (currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_FIXA && (FIXED_EXPENSE_RE.test(labelOnly) || VARIABLE_EXPENSE_RE.test(labelOnly) || EXPENSE_RE.test(labelOnly))) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
@@ -1395,7 +1416,7 @@ function classifyFinancialEntry({ label, currentSection, afterClause }) {
   if (EXPENSE_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
   if (REVENUE_TOTAL_RE.test(label) || REVENUE_TOTAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.RECEITA_TOTAL;
   if (REVENUE_RE.test(labelOnly) || FAMILY_REVENUE_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.RECEITA) return FINANCIAL_ENTRY_TYPE.RECEITA;
-  if (hasExplicitSavingsGoalContext(local) || SAVINGS_GOAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.META_POUPANCA;
+  if (hasExplicitSavingsGoalContext(local)) return FINANCIAL_ENTRY_TYPE.META_POUPANCA;
   if (IMPROVEMENT_RE.test(local)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (UNEXPECTED_RE.test(local)) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
   if (FIXED_EXPENSE_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
@@ -3146,7 +3167,7 @@ function sanitizeExperienceForFinalRender(experience) {
 
 function sanitizeFinalRenderedHTML(html) {
   return sanitizeDoiText(String(html || ""))
-    .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
+    .replace(/\s*[\uFFFE\uFFFF\uFFFD]+\s*/g, "-")
     .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
 }

@@ -306,6 +306,64 @@ test.describe("validação financeira da exportação", () => {
     expect(text).toContain("Saldo final: R$ 4.300,00 - R$ 1.400,00 = R$ 2.900,00.");
   });
 
+  test("poupança vinda do cenário anterior não vira meta nova", () => {
+    const api = loadExportInternals();
+    const readyMaterials = [
+      "CENÁRIO 1",
+      "Receita total: R$ 3.500,00.",
+      "Despesas fixas: R$ 1.800,00.",
+      "Despesas variáveis: R$ 1.200,00.",
+      "CENÁRIO 2",
+      "Os R$ 500,00 do Cenário 1 foram para poupança. Surge um imprevisto de saúde de R$ 400,00. Para compensar, a família decide reduzir R$ 150,00 do lazer."
+    ];
+    const scenarios = api.extractFinancialScenarioData({ readyMaterials });
+    const gabarito = api.buildFinancialGabaritoFromReadyMaterials(readyMaterials).join("\n");
+    const { text } = captureExportText(buildActivity({
+      readyMaterials,
+      teacherGabarito: [
+        "Cenário 1: cálculo antigo.",
+        "Cenário 2: Meta de poupança planejada: R$ 500,00. Resultado após melhoria: -R$ 400,00 + R$ 150,00 = -R$ 250,00."
+      ]
+    }));
+
+    expect(scenarios[0].despesasFixasTotal).toBe(1800);
+    expect(scenarios[0].despesasVariaveisTotal).toBe(1200);
+    expect(scenarios[0].saldo).toBe(500);
+    expect(scenarios[1].metasPoupancaTotal).toBe(0);
+    expect(scenarios[1].imprevistosTotal).toBe(400);
+    expect(scenarios[1].melhoriasTotal).toBe(150);
+    expect(scenarios[1].compromissoTotal).toBe(3400);
+    expect(scenarios[1].saldo).toBe(100);
+    expect(scenarios[1].saldoAfterImprovement).toBe(250);
+    expect(gabarito).toContain("Despesas fixas: R$ 1.800,00.");
+    expect(gabarito).toContain("Despesas variáveis: R$ 1.200,00.");
+    expect(gabarito).toContain("Despesas totais: R$ 1.800,00 + R$ 1.200,00 = R$ 3.000,00.");
+    expect(gabarito).toContain("Despesas do Cenário 1: R$ 3.000,00.");
+    expect(gabarito).toContain("Despesa médica inesperada: R$ 400,00.");
+    expect(gabarito).toContain("Compromisso total: R$ 3.000,00 + R$ 400,00 = R$ 3.400,00.");
+    expect(gabarito).toContain("Saldo antes da melhoria: R$ 3.500,00 - R$ 3.400,00 = R$ 100,00.");
+    expect(gabarito).toContain("Resultado após melhoria:\nR$ 100,00 + R$ 150,00 = R$ 250,00.");
+    expect(gabarito).not.toContain("Meta de poupança planejada: R$ 500,00.");
+    expect(text).not.toContain("Exportação bloqueada");
+    expect(text).toContain("Resultado após melhoria: R$ 100,00 + R$ 150,00 = R$ 250,00.");
+  });
+
+  test("preserva despesas fixas e variáveis em frase compactada", () => {
+    const api = loadExportInternals();
+    const [scenario] = api.extractFinancialScenarioData({
+      readyMaterials: [
+        "CENÁRIO 1",
+        "Receita total: R$ 3.500,00. Despesas fixas: R$ 1.800,00 e variáveis: R$ 1.200,00."
+      ]
+    });
+
+    expect(scenario.receitaTotal).toBe(3500);
+    expect(scenario.despesasFixasTotal).toBe(1800);
+    expect(scenario.despesasVariaveisTotal).toBe(1200);
+    expect(scenario.metasPoupancaTotal).toBe(0);
+    expect(scenario.saldo).toBe(500);
+  });
+
   test("exportação autocorrige gabarito financeiro antes de bloquear", () => {
     const { html, text } = captureExportText(buildActivity({
       finalProduct: "Painel de orçamento revisado com os resultados dos cenários e as.",

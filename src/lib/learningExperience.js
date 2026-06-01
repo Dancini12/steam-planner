@@ -301,13 +301,13 @@ function sanitizeReferenceText(reference) {
     .replace(/&lt;\/?\s*p[^&]*&gt;/gi, " ")
     .replace(/<\/?\s*p[^>]*>/gi, " ");
   const cleaned = cleanText(source)
-    .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
+    .replace(/\s*[\uFFFE\uFFFF\uFFFD]+\s*/g, "-")
     .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
     .replace(/-{2,}/g, "-")
     .replace(/\b(?:doi\s*[:.]?\s*)?(10\.\d{4,9}\/[^\s,;]+)/gi, (_, doi) => {
       const safeDoi = doi
-      .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
+      .replace(/\s*[\uFFFE\uFFFF\uFFFD]+\s*/g, "-")
       .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
       .replace(/[\u0000-\u001F\u007F<>()[\]{}"']+/g, "")
       .replace(/[*_`]+/g, "")
