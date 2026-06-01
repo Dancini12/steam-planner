@@ -83,6 +83,30 @@ function stripDecorativeMarkers(text) {
     .trim();
 }
 
+function sanitizeReferenceText(reference) {
+  if (reference == null) return "";
+  const cleaned = stripDecorativeMarkers(String(reference))
+    .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
+    .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+    .replace(/-{2,}/g, "-")
+    .replace(/\s+([.!?,;:])/g, "$1")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+
+  return cleaned.replace(/\b(?:doi\s*[:.]?\s*)?(10\.\d{4,9}\/[^\s,;]+)/gi, (_, doi) => {
+    const safeDoi = doi
+      .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
+      .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
+      .replace(/[\u0000-\u001F\u007F<>()[\]{}"']+/g, "")
+      .replace(/[*_`]+/g, "")
+      .replace(/\s+/g, "")
+      .replace(/-{2,}/g, "-")
+      .replace(/-+$/g, "");
+    return /^10\.\d{4,9}\/\S+$/.test(safeDoi) ? safeDoi : "";
+  }).replace(/[ \t]{2,}/g, " ").trim();
+}
+
 function cleanHtml(text) {
   return escapeHtml(stripDecorativeMarkers(text));
 }
@@ -146,7 +170,7 @@ function renderParagraph(text) {
 
 function renderReferenceList(references) {
   const html = (references || [])
-    .map((ref) => stripDecorativeMarkers(ref))
+    .map((ref) => sanitizeReferenceText(ref))
     .filter((ref) => ref && !/wikipedia/i.test(ref))
     .slice(0, 2)
     .map((ref) => `<p class="ref">${escapeHtml(ref)}</p>`)
@@ -867,7 +891,14 @@ function fixReadyMaterialText(text) {
 function fixAnswerKeyText(answerKey) {
   if (!answerKey) return "";
   return reviewText(answerKey, { preserveLineBreaks: true })
+    .replace(/\bMeta de poupan[cç]a para\s+(?:h[aá]|existe|ocorre)\b/gi, "Meta de poupança planejada")
+    .replace(/\bMeta(?: de poupan[cç]a)?\s+com\s+(?:deseja|quer|pretende)\s+(?:guardar|poupar|economizar)\s+/gi, "Meta de poupança planejada ")
+    .replace(/\bMeta\s+para\s+(?:quer|deseja|pretende)\s+/gi, "Meta de poupança planejada ")
+    .replace(/\bImprevisto com\s+(?:uma\s+)?m[eé]dica\s+inesperada\b/gi, "Despesa médica inesperada")
+    .replace(/\bImprevisto com\s+(?:surge|surgiu|apareceu|h[aá])\s+(?:uma?\s+)?despesa\s+m[eé]dica\s+inesperada\b/gi, "Despesa médica inesperada")
     .replace(/\b(Imprevisto com|Gasto(?: inesperado)? com)\s+(?:surge|surgiu)\s+(?:um\s+)?(?:gasto\s+inesperado\s+com\s+)?/gi, "$1 ")
+    .replace(/\bImprevisto com\s+(?:uma?\s+)?despesa\s+m[eé]dica\s+inesperada\b/gi, "Despesa médica inesperada")
+    .replace(/\bDespesa com\s+(?:apareceu|surge|surgiu|h[aá])\s+/gi, "Despesa ")
     .replace(/\bMeta(?: de poupan[cç]a)? com\s+(?:deseja|desejam)\s+guardar\s+/gi, "Meta de poupança para ")
     .replace(/\bRedu[cç][aã]o com\s+(?:decidiu|decide)\s+/gi, "Redução: ")
     .replace(/\bO saldo final é negativo\.\s+a equipe\b/gi, "O saldo final é negativo. A equipe")
@@ -881,9 +912,14 @@ function fixAnswerKeyText(answerKey) {
 function validateAnswerKeyText(answerKey) {
   const text = Array.isArray(answerKey) ? answerKey.join("\n") : String(answerKey || "");
   const invalidPatterns = [
+    /Meta de poupan[cç]a para\s+h[aá]/i,
+    /Meta com\s+deseja/i,
+    /Meta para\s+quer/i,
     /Imprevisto com\s+surge/i,
     /Imprevisto com\s+surgiu/i,
+    /Imprevisto com\s+uma\s+m[eé]dica/i,
     /Gasto com\s+surge/i,
+    /Despesa com\s+apareceu/i,
     /Meta com\s+deseja/i,
     /Redu[cç][aã]o com\s+decid/i,
     /O saldo final é negativo\.\s+a equipe/i,
@@ -1074,13 +1110,20 @@ function normalizeFinancialLabel(value) {
     .trim();
 }
 
-function cleanFinancialItemLabel(label) {
+function normalizeFinancialCategory(category) {
+  const value = String(category || "").toLowerCase();
+  if (/meta|poupanca|poupan/.test(value)) return "meta_poupanca";
+  if (/imprevisto|unexpected/.test(value)) return "imprevisto";
+  if (/melhoria|improvement/.test(value)) return "melhoria";
+  return value;
+}
+
+function cleanGenericFinancialLabel(label) {
   return reviewText(label || "")
     .replace(BRL_MATCH_RE, " ")
     .replace(/\bal[eé]m\s+das?\s+despesas?\s+do\s+cen[aá]rio\s*\d+\s*,?\s*/gi, " ")
-    .replace(/\b(?:surge|surgiu)\s+um\s+gasto\s+inesperado\s+com\s+/gi, " ")
-    .replace(/\bgastos?\s+inesperados?\s+com\s+/gi, " ")
-    .replace(/\bdespesas?\s+inesperadas?\s+com\s+/gi, " ")
+    .replace(/\b(?:surge|surgiu|apareceu|h[aá])\s+(?:uma?|um)\s+/gi, " ")
+    .replace(/\b(?:gastos?|despesas?)\s+inesperad[oa]s?\s+(?:com|de)\s+/gi, " ")
     .replace(/\bdespesas?\s+extras?\s+com\s+/gi, " ")
     .replace(/\bprecis(?:a|ou|am)\s+comprar\s+/gi, " ")
     .replace(/\b(?:de|no)\s+valor\s+de\b/gi, " ")
@@ -1091,6 +1134,60 @@ function cleanFinancialItemLabel(label) {
     .replace(/^[\s:,-]+|[\s:,-]+$/g, "")
     .replace(/\b(?:de|com)\s*$/i, "")
     .trim();
+}
+
+function formatSavingsGoalLabel(label) {
+  const source = reviewText(label || "");
+  if (/\bviagem\b/i.test(source)) return "Meta de poupança para viagem";
+  if (/\breserva\b/i.test(source)) return "Meta de reserva financeira";
+  if (/\binvestimento\b/i.test(source)) return "Meta de investimento planejada";
+  return "Meta de poupança planejada";
+}
+
+function formatUnexpectedExpenseLabel(label) {
+  const source = reviewText(label || "");
+  const generic = cleanGenericFinancialLabel(source);
+
+  if (/despesa\s+m[eé]dica\s+inesperada|m[eé]dic[ao]s?|consulta|sa[uú]de/i.test(source)) {
+    return "Despesa médica inesperada";
+  }
+  if (/rem[eé]dios?|medicamentos?/i.test(source)) {
+    return "Gasto inesperado com remédios";
+  }
+  if (/conserto|reparo|manuten[cç][aã]o/i.test(source) && generic) {
+    return generic;
+  }
+  if (/gasto\s+inesperado\s+com/i.test(source) && generic) {
+    return `Gasto inesperado com ${lowerFirst(generic)}`;
+  }
+  if (/despesa\s+inesperada/i.test(source) && generic) {
+    return `Despesa inesperada com ${lowerFirst(generic)}`;
+  }
+  return generic || "Imprevisto";
+}
+
+function formatImprovementLabel(label) {
+  const source = reviewText(label || "");
+  const match = source.match(/\b(reduzir|cortar|economizar|diminuir)\s+R\$\s*([\d.]+(?:,\d{2})?|\d+)(?:\s+(do|da|de|em)\s+([^.,;?]+))?/i);
+  if (!match) return cleanGenericFinancialLabel(source);
+
+  const action = normalizeImprovementAction(match[1]);
+  const value = parseFinancialAmount(match[2]);
+  const target = cleanImprovementTarget(match[4] || "");
+  if (!Number.isFinite(value)) return cleanGenericFinancialLabel(source);
+  if (!target) return `${action} ${formatCurrencyBRL(value)} em despesas variáveis`;
+  if (/reduzir|cortar|diminuir/i.test(action)) {
+    return `${action} ${formatCurrencyBRL(value)} do gasto com ${target}`;
+  }
+  return `${action} ${formatCurrencyBRL(value)} em ${target}`;
+}
+
+function cleanFinancialItemLabel(label, category = "") {
+  const normalizedCategory = normalizeFinancialCategory(category);
+  if (normalizedCategory === "meta_poupanca") return formatSavingsGoalLabel(label);
+  if (normalizedCategory === "imprevisto") return formatUnexpectedExpenseLabel(label);
+  if (normalizedCategory === "melhoria") return formatImprovementLabel(label);
+  return cleanGenericFinancialLabel(label);
 }
 
 function hasExplicitSavingsGoalContext(text) {
@@ -1121,27 +1218,7 @@ function hasExplicitSavingsGoalContext(text) {
 }
 
 function cleanSavingsGoalLabel(label) {
-  const source = reviewText(label || "");
-
-  if (/reserva\s+de\s+emerg[eê]ncia/i.test(source)) return "reserva de emergência";
-  if (/\bviagem\b/i.test(source)) return "viagem";
-  if (/\binvestimento\b/i.test(source)) return "investimento";
-  if (/\bobjetivo\s+financeiro\b/i.test(source)) return "objetivo financeiro";
-
-  const purpose = source.match(/\b(?:para|pra)\s+(?:uma?|o|a)?\s*([^.,;?]+)/i)?.[1] || "";
-  const cleanedPurpose = cleanFinancialItemLabel(purpose)
-    .replace(/\b(?:uma?|o|a|os|as|de|da|do)\b/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-  if (cleanedPurpose) return cleanedPurpose;
-
-  return cleanFinancialItemLabel(source)
-    .replace(/\b(?:guardar|poupar|economizar|reservar|juntar|separar|destinar|investir|deseja|quer|pretende|meta(?:\s+de\s+poupan[cç]a)?|poupan[cç]a|reserva|investimento)\b/gi, " ")
-    .replace(/\b(?:para|pra|uma?|o|a|os|as|de|da|do)\b/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase() || "objetivo financeiro";
+  return cleanFinancialItemLabel(label, FINANCIAL_ENTRY_TYPE.META_POUPANCA);
 }
 
 function parseFinancialAmount(rawValue) {
@@ -1352,7 +1429,7 @@ function toBudgetItem(entry) {
   return {
     descricao: entry.type === FINANCIAL_ENTRY_TYPE.META_POUPANCA
       ? cleanSavingsGoalLabel(labelContext)
-      : cleanFinancialItemLabel(entry.description) || entry.description,
+      : cleanFinancialItemLabel(`${entry.description || ""} ${entry.afterClause || ""}`, entry.type) || entry.description,
     valor: entry.amount,
     sourceIndex: entry.id,
     type: entry.type,
@@ -1664,7 +1741,11 @@ function formatContextualBudgetLine(defaultLabel, pluralLabel, items, total) {
   if (!items.length) return "";
   if (items.length > 1) return formatBudgetLine(pluralLabel, items, total);
 
-  const description = cleanFinancialItemLabel(items[0].descricao || "");
+  const item = items[0];
+  const description = cleanFinancialItemLabel(item.descricao || item.rawLabel || "", item.type);
+  if (/^(Meta de|Despesa|Gasto inesperado|Conserto|Reparo|Imprevisto)/i.test(description)) {
+    return `${description}: ${formatCurrencyBRL(total)}.`;
+  }
   const connector = /meta\s+de\s+poupan[cç]a/i.test(defaultLabel) ? " para " : " com ";
   const label = description && !new RegExp(`^${defaultLabel}`, "i").test(description)
     ? `${defaultLabel}${connector}${lowerFirst(description)}`
@@ -1673,6 +1754,9 @@ function formatContextualBudgetLine(defaultLabel, pluralLabel, items, total) {
 }
 
 function formatExplicitImprovementSentence(improvement) {
+  const rawLabel = `${improvement?.action || ""} ${formatCurrencyBRL(improvement?.value || 0)} ${improvement?.target ? `do gasto com ${improvement.target}` : ""}`;
+  const cleaned = cleanFinancialItemLabel(rawLabel, FINANCIAL_ENTRY_TYPE.MELHORIA);
+  if (cleaned) return `${cleaned}.`;
   const action = normalizeImprovementAction(improvement?.action);
   const value = formatCurrencyBRL(improvement?.value || 0);
   const target = cleanImprovementTarget(improvement?.target || "");
@@ -1952,6 +2036,7 @@ function filterReferencesByTheme(references, experience) {
   const financial = isFinancialThemeText(context);
   const topicTokens = getTopicTokens(context);
   const cleaned = (references || [])
+    .map(sanitizeReferenceText)
     .map(fixDanglingText)
     .filter((ref) => ref && !/wikipedia/i.test(ref));
 
@@ -2324,12 +2409,13 @@ function validateFinalProductSemantics(experience) {
 }
 
 function validateReferenceSemantics(experience) {
-  const refs = normalizeTextItems(experience.bibliography || []);
+  const refs = normalizeTextItems(experience.bibliography || []).map(sanitizeReferenceText);
   const blocking = [];
   if (!refs.length) blocking.push("Referências bibliográficas ausentes.");
   if (refs.some((ref) => /wikipedia/i.test(ref))) blocking.push("Referências não podem usar Wikipedia.");
   if (refs.some(hasVisibleTechnicalMarkup)) blocking.push("Referências com HTML ou Markdown visível.");
   if (refs.some((ref) => /doi:\s*10\.\?+|DOI\s+inexistente/i.test(ref))) blocking.push("Referência contém DOI inválido ou inventado.");
+  if (refs.some((ref) => /[\uFFFE\uFFFF\u200B\u200C\u200D\uFEFF]/.test(ref))) blocking.push("Referência contém caractere invisível ou inválido.");
   return { ok: blocking.length === 0, blocking };
 }
 

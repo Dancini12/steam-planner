@@ -113,3 +113,39 @@ Todos os comandos exigidos passaram antes de 05:00. A suite roda sem IA, com fix
 
 - Manter as fixtures locais como contrato de regressao.
 - Acrescentar novos casos sempre que aparecer um novo padrao de erro real em gabarito, referencia, texto ou classificacao.
+
+## Atualizacao - normalizacao textual do gabarito e referencias
+
+Status: APROVADO.
+
+Arquivos analisados e ajustados:
+
+- `src/lib/exportReport.js`
+  - Normalizacao cirurgica de rotulos financeiros no gabarito.
+  - Tratamento de metas de poupanca, imprevistos e melhorias explicitas por categoria.
+  - Validacao/autocorrecao de frases proibidas no gabarito.
+  - Sanitizacao de referencias e DOI com caracteres invisiveis ou invalidos.
+
+- `src/lib/learningExperience.js`
+  - Sanitizacao de referencias durante a normalizacao da experiencia.
+
+- `tests/financial-export.spec.js`
+  - Casos unitarios para meta generica, meta de viagem, imprevisto medico, imprevisto com remedios, melhoria explicita, frase proibida e DOI corrompido.
+
+Testes executados nesta atualizacao:
+
+- `node --check src/lib/exportReport.js && node --check src/lib/learningExperience.js && npx playwright test tests/financial-export.spec.js`: 15 aprovados.
+- `npm run lint`: aprovado.
+- `npm run build`: aprovado.
+- `npm test`: 47 aprovados, 9 ignorados.
+- `npm run test:validation`: 43 aprovados.
+- `npm run test:validation:loop -- --iterations=100`: 100 iteracoes aprovadas.
+
+Resultado:
+
+- Nao aparece `Meta de poupanca para ha`.
+- Nao aparece `Imprevisto com surge`.
+- Nao aparece `Imprevisto com uma medica inesperada`.
+- Metas, imprevistos e melhorias explicitas sao descritos com rotulos limpos.
+- DOI com caractere invalido e limpo sem inventar DOI.
+- O template visual aprovado nao foi alterado.

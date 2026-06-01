@@ -22,7 +22,9 @@ this.__test = {
   fixTruncatedSentences,
   cleanFinancialItemLabel,
   extractExplicitImprovement,
-  validateAnswerKeyText
+  validateAnswerKeyText,
+  fixAnswerKeyText,
+  sanitizeReferenceText
 };`, context);
 
   return context.__test;
@@ -347,6 +349,7 @@ test.describe("validação financeira da exportação", () => {
     }));
 
     expect(api.cleanFinancialItemLabel("surge um gasto inesperado com remédios de")).toBe("remédios");
+    expect(api.cleanFinancialItemLabel("surge um gasto inesperado com remédios de", "imprevisto")).toBe("Gasto inesperado com remédios");
     expect(api.extractExplicitImprovement(readyMaterials.join("\n"))).toEqual({
       action: "Reduzir",
       value: 100,
@@ -363,7 +366,7 @@ test.describe("validação financeira da exportação", () => {
     expect(gabarito).toContain("Saldo final: R$ 4.500,00 - R$ 3.530,00 = R$ 970,00.");
     expect(gabarito).toContain("Cenário 2:");
     expect(gabarito).toContain("Despesas do Cenário 1: R$ 3.530,00.");
-    expect(gabarito).toContain("Imprevisto com remédios: R$ 350,00.");
+    expect(gabarito).toContain("Gasto inesperado com remédios: R$ 350,00.");
     expect(gabarito).toContain("Compromisso total: R$ 3.530,00 + R$ 350,00 = R$ 3.880,00.");
     expect(gabarito).toContain("Saldo antes da melhoria: R$ 4.500,00 - R$ 3.880,00 = R$ 620,00.");
     expect(gabarito).toContain("Melhoria sugerida:\nReduzir R$ 100,00 do gasto com lazer.");
@@ -373,9 +376,51 @@ test.describe("validação financeira da exportação", () => {
     expect(gabarito).not.toContain("lazer, transporte ou compras não essenciais");
     expect(api.validateAnswerKeyText(gabarito).ok).toBe(true);
     expect(text).not.toContain("Exportação bloqueada");
-    expect(text).toContain("Imprevisto com remédios: R$ 350,00.");
+    expect(text).toContain("Gasto inesperado com remédios: R$ 350,00.");
     expect(text).toContain("Reduzir R$ 100,00 do gasto com lazer.");
     expect(html).toContain(".materials-table");
     expect(html).toContain(".stage");
+  });
+
+  test("normaliza rótulos financeiros malformados e DOI corrompido", () => {
+    const api = loadExportInternals();
+    const genericGoal = api.buildFinancialGabaritoFromReadyMaterials([
+      "CENÁRIO 1",
+      "Receita total: R$ 4.500,00",
+      "Despesas totais: R$ 3.000,00",
+      "CENÁRIO 2",
+      "há uma meta de poupança de R$ 300,00"
+    ]).join("\n");
+    const travelGoal = api.buildFinancialGabaritoFromReadyMaterials([
+      "CENÁRIO 1",
+      "Receita total: R$ 4.500,00",
+      "Despesas totais: R$ 3.000,00",
+      "CENÁRIO 2",
+      "deseja guardar R$ 400,00 para uma viagem"
+    ]).join("\n");
+    const medicalUnexpected = api.buildFinancialGabaritoFromReadyMaterials([
+      "CENÁRIO 1",
+      "Receita total: R$ 4.500,00",
+      "Despesas totais: R$ 3.000,00",
+      "CENÁRIO 2",
+      "surge uma despesa médica inesperada de R$ 400,00"
+    ]).join("\n");
+    const explicitImprovement = api.cleanFinancialItemLabel(
+      "a família decide reduzir R$ 100 do gasto com lazer",
+      "melhoria"
+    );
+    const fixedBadText = api.fixAnswerKeyText("Imprevisto com surge uma despesa médica inesperada");
+
+    expect(genericGoal).toContain("Meta de poupança planejada: R$ 300,00.");
+    expect(genericGoal).not.toContain("Meta de poupança para há");
+    expect(travelGoal).toContain("Meta de poupança para viagem: R$ 400,00.");
+    expect(medicalUnexpected).toContain("Despesa médica inesperada: R$ 400,00.");
+    expect(medicalUnexpected).not.toContain("Imprevisto com uma médica");
+    expect(explicitImprovement).toBe("Reduzir R$ 100,00 do gasto com lazer");
+    expect(api.validateAnswerKeyText("Imprevisto com surge uma despesa médica inesperada").ok).toBe(false);
+    expect(fixedBadText).toBe("Despesa médica inesperada.");
+    expect(api.validateAnswerKeyText(fixedBadText).ok).toBe(true);
+    expect(api.sanitizeReferenceText("10.29327/cb-multiplos￾olhares-educacao-1.599854"))
+      .toBe("10.29327/cb-multiplos-olhares-educacao-1.599854");
   });
 });

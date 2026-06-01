@@ -293,6 +293,25 @@ function isMethodologyReference(reference) {
   return /steam|maker|metodologias?\s+ativas?|aprendizagem\s+baseada\s+em\s+projetos?|project\s+based|cultura\s+maker|prototip|bncc|base\s+nacional\s+comum\s+curricular|common\s+european\s+framework|cefr|language|vocabulary/i.test(reference);
 }
 
+function sanitizeReferenceText(reference) {
+  if (reference == null) return "";
+  return cleanText(String(reference))
+    .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
+    .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+    .replace(/-{2,}/g, "-")
+    .replace(/\b(?:doi\s*[:.]?\s*)?(10\.\d{4,9}\/[^\s,;]+)/gi, (_, doi) => doi
+      .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
+      .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
+      .replace(/[\u0000-\u001F\u007F<>()[\]{}"']+/g, "")
+      .replace(/[*_`]+/g, "")
+      .replace(/\s+/g, "")
+      .replace(/-{2,}/g, "-")
+      .replace(/-+$/g, ""))
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
 function buildDefaultReadyMaterials(theme) {
   const cleanTheme = cleanText(theme || "problema investigado").toLowerCase();
 
@@ -484,7 +503,7 @@ function normalizeAssessmentRubric(activity, compact = false) {
 
 function normalizeReferences(value, compact = false, theme = "") {
   const references = toTextArray(value)
-    .map(cleanText)
+    .map(sanitizeReferenceText)
     .filter((item) => item && !/wikipedia/i.test(item));
   const budget = isBudgetTheme(theme);
   const aligned = references.filter((item) => (
