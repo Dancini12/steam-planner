@@ -1024,7 +1024,9 @@ const FINANCIAL_ENTRY_TYPE = {
 
 const REVENUE_RE = /\b(receitas?|rendas?|sal[aá]rios?|ganhos?|entradas?|remunera[cç][aã]o)\b/i;
 const IMPROVEMENT_RE = /\b(economizar|economizad[oa]s?|economia|poupar|poupan[cç]a|reduzir|redu[cç][aã]o|cortar|corte|ajustar|ajuste|melhoria|melhorar|reorganizar|reorganiza[cç][aã]o|preservar|reserva|saldo ap[oó]s melhoria|ap[oó]s melhoria|poderiam economizar|poderia economizar|valor que poderia ser economizado)\b/i;
-const SAVINGS_GOAL_RE = /\b(guardar|poupar|meta(?:\s+de\s+poupan[cç]a)?|poupan[cç]a|reserva|investimento|objetivo\s+financeiro|deseja\s+guardar|viagem)\b/i;
+const SAVINGS_GOAL_RE = /\b(guardar|poupar|reservar|juntar|separar|destinar|investir|meta(?:\s+de\s+poupan[cç]a)?|poupan[cç]a|reserva|investimento|objetivo\s+financeiro|deseja\s+guardar|viagem)\b/i;
+const SAVINGS_GOAL_ACTION_RE = /\b(guardar|poupar|reservar|juntar|separar|destinar|investir|economizar)\b/i;
+const SAVINGS_GOAL_TARGET_RE = /\b(viagem|reserva(?:\s+de\s+emerg[eê]ncia)?|investimento|poupan[cç]a|objetivo\s+financeiro|meta(?:\s+de\s+poupan[cç]a)?)\b/i;
 const PRIOR_EXPENSE_RE = /\bdespesas?\s+(?:do|da)\s+cen[aá]rio|\bdespesas?\s+anteriores?\b|\btotal\s+anterior\s+de\s+despesas\b/i;
 const EXPENSE_TOTAL_RE = /\b(?:novo\s+)?total\s+de\s+despesas\b|\bdespesas?\s+totais\b/i;
 const REVENUE_TOTAL_RE = /\b(?:receita|renda)\s+total\b|\btotal\s+de\s+(?:receitas?|rendas?)\b/i;
@@ -1091,6 +1093,57 @@ function cleanFinancialItemLabel(label) {
     .trim();
 }
 
+function hasExplicitSavingsGoalContext(text) {
+  const normalized = stripDecorativeMarkers(text || "")
+    .replace(BRL_MATCH_RE, " R$ ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!normalized) return false;
+
+  if (/\b(?:preservar|manter|recuperar|aumentar)\s+(?:parte\s+da\s+)?poupan[cç]a\b/i.test(normalized)) {
+    return false;
+  }
+
+  if (/\b(?:meta(?:\s+de\s+poupan[cç]a)?|objetivo\s+financeiro)\b/i.test(normalized) && SAVINGS_GOAL_TARGET_RE.test(normalized)) {
+    return true;
+  }
+
+  if (/\b(?:poupan[cç]a|reserva|investimento)\s+(?:para|de)\b/i.test(normalized)) {
+    return true;
+  }
+
+  if (/\bviagem\b/i.test(normalized) && /\b(?:guardar|poupar|reservar|juntar|separar|destinar|investir|economizar|meta|poupan[cç]a|reserva)\b/i.test(normalized)) {
+    return true;
+  }
+
+  return SAVINGS_GOAL_ACTION_RE.test(normalized)
+    && /\b(?:para|pra|destinad[oa]s?\s+a|com\s+objetivo\s+de|objetivo\s+de)\b[^.?!;]{0,80}\b(?:viagem|reserva|investimento|poupan[cç]a|objetivo\s+financeiro|meta)\b/i.test(normalized);
+}
+
+function cleanSavingsGoalLabel(label) {
+  const source = reviewText(label || "");
+
+  if (/reserva\s+de\s+emerg[eê]ncia/i.test(source)) return "reserva de emergência";
+  if (/\bviagem\b/i.test(source)) return "viagem";
+  if (/\binvestimento\b/i.test(source)) return "investimento";
+  if (/\bobjetivo\s+financeiro\b/i.test(source)) return "objetivo financeiro";
+
+  const purpose = source.match(/\b(?:para|pra)\s+(?:uma?|o|a)?\s*([^.,;?]+)/i)?.[1] || "";
+  const cleanedPurpose = cleanFinancialItemLabel(purpose)
+    .replace(/\b(?:uma?|o|a|os|as|de|da|do)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+  if (cleanedPurpose) return cleanedPurpose;
+
+  return cleanFinancialItemLabel(source)
+    .replace(/\b(?:guardar|poupar|economizar|reservar|juntar|separar|destinar|investir|deseja|quer|pretende|meta(?:\s+de\s+poupan[cç]a)?|poupan[cç]a|reserva|investimento)\b/gi, " ")
+    .replace(/\b(?:para|pra|uma?|o|a|os|as|de|da|do)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase() || "objetivo financeiro";
+}
+
 function parseFinancialAmount(rawValue) {
   const value = extractBRLAmounts(`R$ ${rawValue}`)[0];
   return Number.isFinite(value) ? Math.abs(value) : null;
@@ -1151,6 +1204,7 @@ function classifyFinancialEntry({ label, currentSection, afterClause }) {
   // REVENUE_TOTAL_RE moved after expense checks: a label containing both revenue-total
   // and expense keywords (e.g. "receita total com aluguel") must classify as expense first.
   if (BALANCE_RE.test(labelOnly) && !IMPROVEMENT_RE.test(local)) return FINANCIAL_ENTRY_TYPE.SALDO;
+  if (hasExplicitSavingsGoalContext(local)) return FINANCIAL_ENTRY_TYPE.META_POUPANCA;
   if (SAVINGS_GOAL_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.META_POUPANCA;
   if (IMPROVEMENT_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (currentSection === FINANCIAL_ENTRY_TYPE.MELHORIA) return FINANCIAL_ENTRY_TYPE.MELHORIA;
@@ -1164,7 +1218,7 @@ function classifyFinancialEntry({ label, currentSection, afterClause }) {
   if (EXPENSE_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
   if (REVENUE_TOTAL_RE.test(label) || REVENUE_TOTAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.RECEITA_TOTAL;
   if (REVENUE_RE.test(labelOnly) || FAMILY_REVENUE_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.RECEITA) return FINANCIAL_ENTRY_TYPE.RECEITA;
-  if (SAVINGS_GOAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.META_POUPANCA;
+  if (hasExplicitSavingsGoalContext(local) || SAVINGS_GOAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.META_POUPANCA;
   if (IMPROVEMENT_RE.test(local)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (UNEXPECTED_RE.test(local)) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
   if (FIXED_EXPENSE_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
@@ -1213,6 +1267,7 @@ function parseFinancialEntries(text) {
         id: match.index,
         amount: Math.abs(amount),
         label: normalizedLabel,
+        afterClause,
         context: `${currentSection} ${normalizedLabel}`.replace(/\s+/g, " ").trim(),
         description,
         type,
@@ -1232,8 +1287,11 @@ function parseFinancialEntries(text) {
 }
 
 function toBudgetItem(entry) {
+  const labelContext = `${entry.description || ""} ${entry.afterClause || ""}`;
   return {
-    descricao: cleanFinancialItemLabel(entry.description) || entry.description,
+    descricao: entry.type === FINANCIAL_ENTRY_TYPE.META_POUPANCA
+      ? cleanSavingsGoalLabel(labelContext)
+      : cleanFinancialItemLabel(entry.description) || entry.description,
     valor: entry.amount,
     sourceIndex: entry.id,
     type: entry.type,
@@ -2398,6 +2456,12 @@ function hasMoneyInSameClause(text, keywordRe) {
     .some((clause) => /-?\s*R\$\s*(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{2})?/.test(clause) && keywordRe.test(clause));
 }
 
+function hasSavingsGoalMoneyInSameClause(text) {
+  return stripDecorativeMarkers(text || "")
+    .split(/[.!?\n;]/)
+    .some((clause) => /-?\s*R\$\s*(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{2})?/.test(clause) && hasExplicitSavingsGoalContext(clause));
+}
+
 function hasAbsurdGabaritoResult(experience, budgetData) {
   const maxRevenue = Math.max(0, ...budgetData.map((data) => data.receitaTotal || 0));
   if (!maxRevenue) return false;
@@ -2428,7 +2492,7 @@ function validateFinancialSummary(data, allData = []) {
     blocking.push(`Cenário ${data.scenario.number}: há imprevisto com valor monetário, mas o total de imprevistos ficou zerado.`);
   }
 
-  if (data.isBudgetScenario && hasMoneyInSameClause(data.scenario.text, SAVINGS_GOAL_RE) && summary.metasPoupancaTotal <= 0) {
+  if (data.isBudgetScenario && hasSavingsGoalMoneyInSameClause(data.scenario.text) && summary.metasPoupancaTotal <= 0) {
     blocking.push(`Cenário ${data.scenario.number}: há meta de poupança com valor monetário, mas o total de metas ficou zerado.`);
   }
 

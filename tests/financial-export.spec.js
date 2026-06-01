@@ -169,6 +169,52 @@ test.describe("validação financeira da exportação", () => {
     expect(scenario.summary.compromissoTotal).toBe(3200);
   });
 
+  test("economia com finalidade de viagem vira meta de poupança", () => {
+    const api = loadExportInternals();
+    const readyMaterials = [
+      "CENÁRIO 1",
+      "Receita total: R$ 4.500,00",
+      "Despesas totais: R$ 3.480,00",
+      "CENÁRIO 2",
+      "A família quer economizar R$ 400,00 para uma viagem."
+    ];
+    const scenarios = api.extractFinancialScenarioData({ readyMaterials });
+    const scenario2 = scenarios[1];
+    const gabarito = api.buildFinancialGabaritoFromReadyMaterials(readyMaterials).join("\n");
+    const { text } = captureExportText(buildActivity({
+      readyMaterials,
+      teacherGabarito: ["Cenário 1: cálculo antigo inconsistente."]
+    }));
+
+    expect(scenario2.metasPoupancaTotal).toBe(400);
+    expect(scenario2.melhoriasTotal).toBe(0);
+    expect(scenario2.summary.compromissoTotal).toBe(3880);
+    expect(gabarito).toContain("Meta de poupança para viagem: R$ 400,00.");
+    expect(text).not.toContain("Exportação bloqueada");
+    expect(text).not.toContain("total de metas ficou zerado");
+  });
+
+  test("economia para preservar poupança continua melhoria", () => {
+    const api = loadExportInternals();
+    const readyMaterials = [
+      "CENÁRIO 1",
+      "Receita total: R$ 4.500,00",
+      "Despesas totais: R$ 3.480,00",
+      "CENÁRIO 2",
+      "Reduzir R$ 100,00 para preservar parte da poupança."
+    ];
+    const scenario2 = api.extractFinancialScenarioData({ readyMaterials })[1];
+    const { text } = captureExportText(buildActivity({
+      readyMaterials,
+      teacherGabarito: ["Cenário 1: cálculo antigo inconsistente."]
+    }));
+
+    expect(scenario2.metasPoupancaTotal).toBe(0);
+    expect(scenario2.melhoriasTotal).toBe(100);
+    expect(text).not.toContain("Exportação bloqueada");
+    expect(text).not.toContain("total de metas ficou zerado");
+  });
+
   test("cenário 2 com imprevisto e meta calcula compromisso total", () => {
     const api = loadExportInternals();
     const readyMaterials = [
