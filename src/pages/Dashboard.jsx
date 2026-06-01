@@ -69,6 +69,8 @@ export default function Dashboard({
   const isLightMode = themeMode === "light";
 
   useEffect(() => {
+    if (!isLoaded) return undefined;
+
     const computer = computerRef.current;
     if (!computer) return undefined;
 
@@ -102,7 +104,7 @@ export default function Dashboard({
       window.removeEventListener("pointermove", updateComputerLook);
       window.removeEventListener("pointerleave", resetComputerLook);
     };
-  }, []);
+  }, [isLoaded]);
 
   const toggleThemeMode = () => {
     const nextMode = isLightMode ? "dark" : "light";
