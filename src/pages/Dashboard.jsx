@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useProjects } from "../hooks/useProjects.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 import { trackEvent } from "../lib/analytics.js";
@@ -59,6 +59,7 @@ export default function Dashboard({
   const { projects, addProjectFromTemplate, isLoaded } = useProjects(currentUser?.id);
   const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
   const [creationError, setCreationError] = useState("");
+  const computerRef = useRef(null);
   const [themeMode, setThemeMode] = useState(
     () => localStorage.getItem("steam-dashboard-theme") || "dark"
   );
@@ -66,6 +67,42 @@ export default function Dashboard({
   const professorName = currentUser?.name || currentUser?.email?.split("@")[0] || "Professor";
   const firstName = professorName.split(" ")[0] || "Professor";
   const isLightMode = themeMode === "light";
+
+  useEffect(() => {
+    const computer = computerRef.current;
+    if (!computer) return undefined;
+
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+    const updateComputerLook = (event) => {
+      const rect = computer.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const x = clamp((event.clientX - centerX) / 150, -1, 1);
+      const y = clamp((event.clientY - centerY) / 120, -1, 1);
+
+      computer.style.setProperty("--eye-x", `${Math.round(x * 7)}px`);
+      computer.style.setProperty("--eye-y", `${Math.round(y * 5)}px`);
+      computer.style.setProperty("--screen-light-x", `${50 + x * 18}%`);
+      computer.style.setProperty("--screen-light-y", `${42 + y * 16}%`);
+    };
+
+    const resetComputerLook = () => {
+      computer.style.setProperty("--eye-x", "0px");
+      computer.style.setProperty("--eye-y", "0px");
+      computer.style.setProperty("--screen-light-x", "50%");
+      computer.style.setProperty("--screen-light-y", "42%");
+    };
+
+    window.addEventListener("pointermove", updateComputerLook);
+    window.addEventListener("pointerleave", resetComputerLook);
+    resetComputerLook();
+
+    return () => {
+      window.removeEventListener("pointermove", updateComputerLook);
+      window.removeEventListener("pointerleave", resetComputerLook);
+    };
+  }, []);
 
   const toggleThemeMode = () => {
     const nextMode = isLightMode ? "dark" : "light";
@@ -183,14 +220,17 @@ export default function Dashboard({
               <h1>STEAM+</h1>
               <p>CULTURA MAKER</p>
             </div>
+          </section>
 
-            <div className="speech-box">
+          <section
+            ref={computerRef}
+            className="pixel-computer"
+            aria-label="Computador antigo feliz dando boas-vindas"
+          >
+            <div className="speech-box computer-speech" aria-live="polite">
               <strong>OLÁ, {firstName.toUpperCase()}!</strong>
               <span>Pronto para planejar atividades pedagógicas com propósito.</span>
             </div>
-          </section>
-
-          <section className="pixel-computer" aria-label="Computador antigo feliz">
             <div className="computer-top">
               <div className="computer-screen">
                 <div className="computer-eye left" />
@@ -313,7 +353,7 @@ const retroCss = `
   .retro-hero {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 230px;
+    grid-template-columns: minmax(0, 1fr) minmax(290px, 330px);
     gap: 28px;
     align-items: center;
     min-height: 236px;
@@ -433,13 +473,32 @@ const retroCss = `
   }
 
   .pixel-computer {
-    justify-self: center;
-    width: 180px;
+    --eye-x: 0px;
+    --eye-y: 0px;
+    --screen-light-x: 50%;
+    --screen-light-y: 42%;
+    justify-self: end;
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+    width: min(320px, 100%);
     image-rendering: pixelated;
     filter: drop-shadow(0 0 14px rgba(34, 211, 238, 0.18));
   }
 
+  .computer-speech {
+    width: 100%;
+    margin: 0;
+    padding: 14px 16px;
+    animation: computerSpeechIn 0.52s ease-out both;
+  }
+
+  .computer-speech::after {
+    left: calc(50% - 11px);
+  }
+
   .computer-top {
+    width: 180px;
     padding: 18px;
     border: 5px solid #22D3EE;
     border-radius: 18px 18px 10px 10px;
@@ -453,8 +512,25 @@ const retroCss = `
     border: 5px solid #111827;
     border-radius: 10px;
     background:
+      radial-gradient(circle at var(--screen-light-x) var(--screen-light-y), rgba(57, 255, 136, 0.36), transparent 34px),
       linear-gradient(180deg, rgba(57, 255, 136, 0.24), rgba(34, 211, 238, 0.2)),
       #031B1C;
+    overflow: hidden;
+  }
+
+  .computer-screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.06) 0,
+      rgba(255, 255, 255, 0.06) 1px,
+      transparent 1px,
+      transparent 8px
+    );
+    opacity: 0.24;
   }
 
   .computer-eye {
@@ -464,6 +540,20 @@ const retroCss = `
     height: 18px;
     background: #39FF88;
     box-shadow: 0 0 8px rgba(57, 255, 136, 0.38);
+    transform: translate(var(--eye-x), var(--eye-y));
+    transition: transform 90ms linear;
+    will-change: transform;
+    z-index: 1;
+  }
+
+  .computer-eye::after {
+    content: "";
+    position: absolute;
+    right: 3px;
+    top: 3px;
+    width: 3px;
+    height: 4px;
+    background: rgba(3, 27, 28, 0.62);
   }
 
   .computer-eye.left {
@@ -483,6 +573,7 @@ const retroCss = `
     border-bottom: 7px solid #39FF88;
     border-radius: 0 0 28px 28px;
     transform: translateX(-50%);
+    z-index: 1;
   }
 
   .computer-base {
@@ -493,6 +584,17 @@ const retroCss = `
     border-radius: 0 0 16px 16px;
     background: #7C3AED;
     box-shadow: inset -8px -4px 0 rgba(15, 23, 42, 0.36);
+  }
+
+  @keyframes computerSpeechIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .primary-grid {
@@ -891,10 +993,14 @@ const retroCss = `
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .retro-hero {
-      grid-template-columns: minmax(0, 1fr) 190px;
+      grid-template-columns: minmax(0, 1fr) minmax(250px, 280px);
     }
 
     .pixel-computer {
+      width: min(280px, 100%);
+    }
+
+    .computer-top {
       width: 160px;
     }
 
@@ -914,8 +1020,13 @@ const retroCss = `
     }
 
     .pixel-computer {
-      width: 138px;
+      width: min(100%, 320px);
       justify-self: start;
+    }
+
+    .computer-top {
+      width: 138px;
+      padding: 14px;
     }
 
     .computer-screen {
@@ -935,7 +1046,7 @@ const retroCss = `
       right: 0;
     }
 
-22    .speech-box {
+    .speech-box {
       padding: 15px;
     }
   }
