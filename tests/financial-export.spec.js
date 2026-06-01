@@ -19,7 +19,10 @@ this.__test = {
   validateFinancialSummary,
   validateExportedExperience,
   buildFinancialGabaritoFromReadyMaterials,
-  fixTruncatedSentences
+  fixTruncatedSentences,
+  cleanFinancialItemLabel,
+  extractExplicitImprovement,
+  validateAnswerKeyText
 };`, context);
 
   return context.__test;
@@ -255,5 +258,56 @@ test.describe("validação financeira da exportação", () => {
     expect(html).toContain(".materials-table");
     expect(html).toContain(".stage");
     expect(html).toContain("GABARITO DO PROFESSOR");
+  });
+
+  test("gabarito limpa imprevisto e preserva melhoria explícita do cenário", () => {
+    const api = loadExportInternals();
+    const readyMaterials = [
+      "CENÁRIO 1:",
+      "Receita Total: R$ 4.500.",
+      "Despesas Fixas: Aluguel R$ 1.200, Luz R$ 150, Água R$ 80, Internet R$ 100.",
+      "Despesas Variáveis: Alimentação R$ 1.500, Transporte R$ 300, Lazer R$ 200.",
+      "CENÁRIO 2:",
+      "Além das despesas do Cenário 1, surge um gasto inesperado com remédios de R$ 350.",
+      "Para compensar, a família decide reduzir R$ 100 do gasto com lazer."
+    ];
+    const scenarios = api.extractFinancialScenarioData({ readyMaterials });
+    const gabarito = api.buildFinancialGabaritoFromReadyMaterials(readyMaterials).join("\n");
+    const { html, text } = captureExportText(buildActivity({
+      readyMaterials,
+      teacherGabarito: ["Cenário 1: cálculo antigo inconsistente."]
+    }));
+
+    expect(api.cleanFinancialItemLabel("surge um gasto inesperado com remédios de")).toBe("remédios");
+    expect(api.extractExplicitImprovement(readyMaterials.join("\n"))).toEqual({
+      action: "Reduzir",
+      value: 100,
+      target: "lazer"
+    });
+    expect(scenarios[1].imprevistosTotal).toBe(350);
+    expect(scenarios[1].despesasAnterioresTotal).toBe(3530);
+    expect(scenarios[1].melhoriasTotal).toBe(100);
+    expect(gabarito).toContain("Cenário 1:");
+    expect(gabarito).toContain("Receitas: R$ 4.500,00.");
+    expect(gabarito).toContain("Despesas fixas: R$ 1.200,00 + R$ 150,00 + R$ 80,00 + R$ 100,00 = R$ 1.530,00.");
+    expect(gabarito).toContain("Despesas variáveis: R$ 1.500,00 + R$ 300,00 + R$ 200,00 = R$ 2.000,00.");
+    expect(gabarito).toContain("Despesas totais: R$ 1.530,00 + R$ 2.000,00 = R$ 3.530,00.");
+    expect(gabarito).toContain("Saldo final: R$ 4.500,00 - R$ 3.530,00 = R$ 970,00.");
+    expect(gabarito).toContain("Cenário 2:");
+    expect(gabarito).toContain("Despesas do Cenário 1: R$ 3.530,00.");
+    expect(gabarito).toContain("Imprevisto com remédios: R$ 350,00.");
+    expect(gabarito).toContain("Compromisso total: R$ 3.530,00 + R$ 350,00 = R$ 3.880,00.");
+    expect(gabarito).toContain("Saldo antes da melhoria: R$ 4.500,00 - R$ 3.880,00 = R$ 620,00.");
+    expect(gabarito).toContain("Melhoria sugerida:\nReduzir R$ 100,00 do gasto com lazer.");
+    expect(gabarito).toContain("Resultado após melhoria:\nR$ 620,00 + R$ 100,00 = R$ 720,00.");
+    expect(gabarito).toContain("Interpretação:\nA melhoria aumenta o saldo final e ajuda a preservar parte da poupança.");
+    expect(gabarito).not.toContain("Imprevisto com surge");
+    expect(gabarito).not.toContain("lazer, transporte ou compras não essenciais");
+    expect(api.validateAnswerKeyText(gabarito).ok).toBe(true);
+    expect(text).not.toContain("Exportação bloqueada");
+    expect(text).toContain("Imprevisto com remédios: R$ 350,00.");
+    expect(text).toContain("Reduzir R$ 100,00 do gasto com lazer.");
+    expect(html).toContain(".materials-table");
+    expect(html).toContain(".stage");
   });
 });

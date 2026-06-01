@@ -864,8 +864,41 @@ function fixReadyMaterialText(text) {
     .join("\n");
 }
 
+function fixAnswerKeyText(answerKey) {
+  if (!answerKey) return "";
+  return reviewText(answerKey, { preserveLineBreaks: true })
+    .replace(/\b(Imprevisto com|Gasto(?: inesperado)? com)\s+(?:surge|surgiu)\s+(?:um\s+)?(?:gasto\s+inesperado\s+com\s+)?/gi, "$1 ")
+    .replace(/\bMeta(?: de poupan[cç]a)? com\s+(?:deseja|desejam)\s+guardar\s+/gi, "Meta de poupança para ")
+    .replace(/\bRedu[cç][aã]o com\s+(?:decidiu|decide)\s+/gi, "Redução: ")
+    .replace(/\bO saldo final é negativo\.\s+a equipe\b/gi, "O saldo final é negativo. A equipe")
+    .replace(/[ \t]{2,}/g, " ")
+    .split(/\n+/)
+    .map((line) => fixTruncatedSentences(line.trim()))
+    .filter(Boolean)
+    .join("\n");
+}
+
+function validateAnswerKeyText(answerKey) {
+  const text = Array.isArray(answerKey) ? answerKey.join("\n") : String(answerKey || "");
+  const invalidPatterns = [
+    /Imprevisto com\s+surge/i,
+    /Imprevisto com\s+surgiu/i,
+    /Gasto com\s+surge/i,
+    /Meta com\s+deseja/i,
+    /Redu[cç][aã]o com\s+decid/i,
+    /O saldo final é negativo\.\s+a equipe/i,
+    /(?:e\s+as|e\s+os|de|para)\.\s*(?:\n|$)/i
+  ];
+  return {
+    ok: !invalidPatterns.some((pattern) => pattern.test(text)),
+    blocking: invalidPatterns
+      .filter((pattern) => pattern.test(text))
+      .map(() => "Gabarito do professor contém redação financeira inválida ou frase truncada.")
+  };
+}
+
 function reviewGabaritoText(text) {
-  const reviewed = reviewText(text, { preserveLineBreaks: true });
+  const reviewed = fixAnswerKeyText(text);
   if (!reviewed) return "";
   return reviewed
     .split(/\n+/)
@@ -996,7 +1029,7 @@ const PRIOR_EXPENSE_RE = /\bdespesas?\s+(?:do|da)\s+cen[aá]rio|\bdespesas?\s+an
 const EXPENSE_TOTAL_RE = /\b(?:novo\s+)?total\s+de\s+despesas\b|\bdespesas?\s+totais\b/i;
 const REVENUE_TOTAL_RE = /\b(?:receita|renda)\s+total\b|\btotal\s+de\s+(?:receitas?|rendas?)\b/i;
 const BALANCE_RE = /\b(saldo|sobra\s+mensal|resultado\s+final)\b/i;
-const UNEXPECTED_RE = /\b(imprevisto|emerg[eê]ncia|emergencial|conserto|reparo|aumento|acr[eé]scimo|acrescimo|novo\s+gasto|gasto\s+extra|custo\s+extra|m[eé]dic[oa]|rem[eé]dio|consulta|carro|manuten[cç][aã]o)\b/i;
+const UNEXPECTED_RE = /\b(imprevisto|inesperad[oa]s?|emerg[eê]ncia|emergencial|conserto|reparo|aumento|acr[eé]scimo|acrescimo|novo\s+gasto|gasto\s+(?:extra|inesperado)|despesa\s+inesperada|custo\s+extra|m[eé]dic[oa]s?|rem[eé]dios?|consulta|carro|manuten[cç][aã]o)\b/i;
 const FIXED_EXPENSE_RE = /\b(despesas?\s+fixas?|gastos?\s+fixos?|custos?\s+fixos?|aluguel|escola|mensalidade|internet|[aá]gua|luz|energia|condom[ií]nio|telefone|celular|plano|presta[cç][aã]o|financiamento|seguro|educa[cç][aã]o|sa[uú]de|farm[aá]cia)\b/i;
 const VARIABLE_EXPENSE_RE = /\b(despesas?\s+vari[aá]veis?|gastos?\s+vari[aá]veis?|custos?\s+vari[aá]veis?|alimenta[cç][aã]o|mercado|transporte|lazer|compras?|roupas?|passeio|restaurante|lanche|combust[ií]vel)\b/i;
 const EXPENSE_RE = /\b(despesas?|gastos?|custos?|contas?|pagamentos?)\b/i;
@@ -1039,6 +1072,65 @@ function normalizeFinancialLabel(value) {
     .trim();
 }
 
+function cleanFinancialItemLabel(label) {
+  return reviewText(label || "")
+    .replace(BRL_MATCH_RE, " ")
+    .replace(/\bal[eé]m\s+das?\s+despesas?\s+do\s+cen[aá]rio\s*\d+\s*,?\s*/gi, " ")
+    .replace(/\b(?:surge|surgiu)\s+um\s+gasto\s+inesperado\s+com\s+/gi, " ")
+    .replace(/\bgastos?\s+inesperados?\s+com\s+/gi, " ")
+    .replace(/\bdespesas?\s+inesperadas?\s+com\s+/gi, " ")
+    .replace(/\bdespesas?\s+extras?\s+com\s+/gi, " ")
+    .replace(/\bprecis(?:a|ou|am)\s+comprar\s+/gi, " ")
+    .replace(/\b(?:de|no)\s+valor\s+de\b/gi, " ")
+    .replace(/\bcusto\s+de\b|\bcusta\b/gi, " ")
+    .replace(/\bgastos?\s+com\s+/gi, " ")
+    .replace(/\bdespesas?\s+com\s+/gi, " ")
+    .replace(/\s+/g, " ")
+    .replace(/^[\s:,-]+|[\s:,-]+$/g, "")
+    .replace(/\b(?:de|com)\s*$/i, "")
+    .trim();
+}
+
+function parseFinancialAmount(rawValue) {
+  const value = extractBRLAmounts(`R$ ${rawValue}`)[0];
+  return Number.isFinite(value) ? Math.abs(value) : null;
+}
+
+function cleanImprovementTarget(target) {
+  return cleanFinancialItemLabel(target || "")
+    .replace(/\bgastos?\s+com\s+/gi, "")
+    .replace(/\bdespesas?\s+com\s+/gi, "")
+    .replace(/\bcompras?\s+de\s+/gi, "")
+    .replace(/\b(?:o|a|os|as)\s+/i, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeImprovementAction(action) {
+  const normalized = String(action || "").toLowerCase();
+  if (/cortar/.test(normalized)) return "Cortar";
+  if (/economizar/.test(normalized)) return "Economizar";
+  if (/diminuir/.test(normalized)) return "Diminuir";
+  return "Reduzir";
+}
+
+function extractExplicitImprovement(scenarioText) {
+  const source = stripDecorativeMarkers(scenarioText || "").replace(/\s+/g, " ");
+  const match = source.match(/\b(reduzir|cortar|economizar|diminuir)\s+R\$\s*([\d.]+(?:,\d{2})?|\d+)(?:\s+(do|da|de|em)\s+([^.,;?]+))/i);
+  if (!match) return null;
+
+  const value = parseFinancialAmount(match[2]);
+  const target = cleanImprovementTarget(match[4]);
+  if (!Number.isFinite(value) || !target) return null;
+
+  return {
+    action: normalizeImprovementAction(match[1]),
+    value,
+    target
+  };
+}
+
 function getCurrentFinancialSection(before) {
   const matches = [...before.matchAll(/\b(receitas?|rendas?|despesas?\s+fixas?|gastos?\s+fixos?|custos?\s+fixos?|despesas?\s+vari[aá]veis?|gastos?\s+vari[aá]veis?|custos?\s+vari[aá]veis?|imprevistos?|melhorias?|economias?)\b/gi)];
   const last = matches.length ? matches[matches.length - 1][0] : "";
@@ -1054,7 +1146,7 @@ function classifyFinancialEntry({ label, currentSection, afterClause }) {
   const labelOnly = normalizeFinancialLabel(label || "");
   const local = `${label} ${afterClause}`.replace(/\s+/g, " ").trim();
 
-  if (PRIOR_EXPENSE_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_ANTERIOR;
+  if (PRIOR_EXPENSE_RE.test(local) && !UNEXPECTED_RE.test(local) && !IMPROVEMENT_RE.test(local) && !SAVINGS_GOAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_ANTERIOR;
   if (EXPENSE_TOTAL_RE.test(label) || EXPENSE_TOTAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_TOTAL;
   // REVENUE_TOTAL_RE moved after expense checks: a label containing both revenue-total
   // and expense keywords (e.g. "receita total com aluguel") must classify as expense first.
@@ -1141,7 +1233,7 @@ function parseFinancialEntries(text) {
 
 function toBudgetItem(entry) {
   return {
-    descricao: entry.description,
+    descricao: cleanFinancialItemLabel(entry.description) || entry.description,
     valor: entry.amount,
     sourceIndex: entry.id,
     type: entry.type,
@@ -1242,6 +1334,7 @@ function buildFinancialDataForScenarios(scenarios) {
     const entries = parseFinancialEntries(scenario.text);
     const structured = buildEmptyStructuredBudget();
     entries.forEach((entry) => addEntryToStructuredBudget(structured, entry));
+    const explicitImprovement = extractExplicitImprovement(scenario.text);
 
     if (!entries.length) {
       result.push({
@@ -1271,7 +1364,8 @@ function buildFinancialDataForScenarios(scenarios) {
     const despesasVariaveisTotal = sumBudgetItems(structured.despesasVariaveis);
     const imprevistosTotal = sumBudgetItems(structured.imprevistos);
     const metasPoupancaTotal = sumBudgetItems(structured.metasPoupanca);
-    const melhoriasTotal = sumBudgetItems(structured.melhorias);
+    const parsedMelhoriasTotal = sumBudgetItems(structured.melhorias);
+    const melhoriasTotal = parsedMelhoriasTotal || explicitImprovement?.value || 0;
     const despesasDetalhadasTotal = despesasFixasTotal + despesasVariaveisTotal;
     const declaredExpenseTotal = getLastDeclaredTotal(structured.totaisDeclarados.despesas);
     const priorExpenseTotal = getLastDeclaredTotal(structured.totaisDeclarados.despesasAnteriores);
@@ -1328,6 +1422,7 @@ function buildFinancialDataForScenarios(scenarios) {
       imprevistosTotal,
       metasPoupancaTotal,
       melhoriasTotal,
+      explicitImprovement,
       despesasAnterioresTotal,
       declaredExpenseTotal,
       compromissoTotal,
@@ -1393,11 +1488,23 @@ function formatContextualBudgetLine(defaultLabel, pluralLabel, items, total) {
   if (!items.length) return "";
   if (items.length > 1) return formatBudgetLine(pluralLabel, items, total);
 
-  const description = items[0].descricao || "";
+  const description = cleanFinancialItemLabel(items[0].descricao || "");
+  const connector = /meta\s+de\s+poupan[cç]a/i.test(defaultLabel) ? " para " : " com ";
   const label = description && !new RegExp(`^${defaultLabel}`, "i").test(description)
-    ? `${defaultLabel} com ${lowerFirst(description)}`
+    ? `${defaultLabel}${connector}${lowerFirst(description)}`
     : description || defaultLabel;
   return `${label}: ${formatCurrencyBRL(total)}.`;
+}
+
+function formatExplicitImprovementSentence(improvement) {
+  const action = normalizeImprovementAction(improvement?.action);
+  const value = formatCurrencyBRL(improvement?.value || 0);
+  const target = cleanImprovementTarget(improvement?.target || "");
+  if (!target) return `${action} ${value} em despesas variáveis.`;
+  if (/reduzir|cortar|diminuir/i.test(action)) {
+    return `${action} ${value} do gasto com ${target}.`;
+  }
+  return `${action} ${value} em ${target}.`;
 }
 
 function formatPartsTotalLine(label, parts, total) {
@@ -1431,11 +1538,11 @@ function buildImprovementSuggestion(financialData) {
   // Case 1: explicit improvement values extracted from the scenario text
   const explicitImprovement = [...financialData]
     .reverse()
-    .find((item) => item.melhoriasTotal > 0 && Number.isFinite(item.saldo) && item.scenario.number >= targetScenario.scenario.number);
+    .find((item) => item.melhoriasTotal > 0 && Number.isFinite(item.saldo) && item.explicitImprovement);
   if (explicitImprovement) {
     return [
       "Melhoria sugerida:",
-      `Reduzir ${fmt(explicitImprovement.melhoriasTotal)} em despesas variáveis, como lazer, transporte ou compras não essenciais.`,
+      formatExplicitImprovementSentence(explicitImprovement.explicitImprovement),
       "Resultado após melhoria:",
       `${fmt(explicitImprovement.saldo)} + ${fmt(explicitImprovement.melhoriasTotal)} = ${fmt(explicitImprovement.saldoAfterImprovement)}.`,
       "Interpretação:",
@@ -2458,6 +2565,10 @@ function validateExportedExperience(experience) {
         return;
       }
       const t = item.trim();
+      const answerTextValidation = validateAnswerKeyText(t);
+      if (!answerTextValidation.ok) {
+        answerTextValidation.blocking.forEach((message) => blocking.push(`Gabarito cenário ${i + 1}: ${message}`));
+      }
       // Incomplete math operation (ends with = - + or just R$)
       if (/[=+\-]\s*$|R\$\s*$/.test(t)) {
         blocking.push(`Gabarito cenário ${i + 1}: operação matemática incompleta.`);
