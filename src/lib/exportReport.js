@@ -85,7 +85,12 @@ function stripDecorativeMarkers(text) {
 
 function sanitizeReferenceText(reference) {
   if (reference == null) return "";
-  const cleaned = stripDecorativeMarkers(String(reference))
+  const source = String(reference)
+    .replace(/&lt;\s*br\s*\/?\s*&gt;/gi, " ")
+    .replace(/<\s*br\s*\/?\s*>/gi, " ")
+    .replace(/&lt;\/?\s*p[^&]*&gt;/gi, " ")
+    .replace(/<\/?\s*p[^>]*>/gi, " ");
+  const cleaned = stripDecorativeMarkers(source)
     .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
     .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
@@ -94,7 +99,7 @@ function sanitizeReferenceText(reference) {
     .replace(/[ \t]{2,}/g, " ")
     .trim();
 
-  return cleaned.replace(/\b(?:doi\s*[:.]?\s*)?(10\.\d{4,9}\/[^\s,;]+)/gi, (_, doi) => {
+  const withDoiPrefix = cleaned.replace(/\b(?:doi\s*[:.]?\s*)?(10\.\d{4,9}\/[^\s,;]+)/gi, (_, doi) => {
     const safeDoi = doi
       .replace(/\s*[\uFFFE\uFFFF]+\s*/g, "-")
       .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
@@ -102,9 +107,13 @@ function sanitizeReferenceText(reference) {
       .replace(/[*_`]+/g, "")
       .replace(/\s+/g, "")
       .replace(/-{2,}/g, "-")
-      .replace(/-+$/g, "");
-    return /^10\.\d{4,9}\/\S+$/.test(safeDoi) ? safeDoi : "";
+      .replace(/-+$/g, "")
+      .replace(/[.,;:]+$/g, "");
+    return /^10\.\d{4,9}\/\S+$/.test(safeDoi) ? `DOI: ${safeDoi}` : "";
   }).replace(/[ \t]{2,}/g, " ").trim();
+
+  if (!withDoiPrefix) return "";
+  return /[.!?]$/.test(withDoiPrefix) ? withDoiPrefix : `${withDoiPrefix}.`;
 }
 
 function cleanHtml(text) {

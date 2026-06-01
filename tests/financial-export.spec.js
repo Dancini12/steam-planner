@@ -421,6 +421,23 @@ test.describe("validação financeira da exportação", () => {
     expect(fixedBadText).toBe("Despesa médica inesperada.");
     expect(api.validateAnswerKeyText(fixedBadText).ok).toBe(true);
     expect(api.sanitizeReferenceText("10.29327/cb-multiplos￾olhares-educacao-1.599854"))
-      .toBe("10.29327/cb-multiplos-olhares-educacao-1.599854");
+      .toBe("DOI: 10.29327/cb-multiplos-olhares-educacao-1.599854.");
+  });
+
+  test("sanitiza referências e padroniza DOI sem alterar o gabarito", () => {
+    const api = loadExportInternals();
+
+    expect(api.sanitizeReferenceText("10.29327/cb-multiplos-olhares￾educacao-1.599854"))
+      .toBe("DOI: 10.29327/cb-multiplos-olhares-educacao-1.599854.");
+    expect(api.sanitizeReferenceText("Educação, 2023. 10.29327/cb-multiplos-olhares-educacao-1.599854."))
+      .toBe("Educação, 2023. DOI: 10.29327/cb-multiplos-olhares-educacao-1.599854.");
+    expect(api.sanitizeReferenceText("Educação Online, 2021. DOI: 10.36556/eol.v16i38.843."))
+      .toBe("Educação Online, 2021. DOI: 10.36556/eol.v16i38.843.");
+    expect(api.sanitizeReferenceText("10.54751/revistafoco.v18n11-163"))
+      .toBe("DOI: 10.54751/revistafoco.v18n11-163.");
+    expect(api.sanitizeReferenceText("Educação Financeira<br>Ensino Fundamental. DOI: 10.1234/teste."))
+      .toBe("Educação Financeira Ensino Fundamental. DOI: 10.1234/teste.");
+    expect(api.sanitizeReferenceText("**Educação Financeira**. DOI: 10.1234/teste."))
+      .toBe("Educação Financeira. DOI: 10.1234/teste.");
   });
 });
