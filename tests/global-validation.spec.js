@@ -211,4 +211,24 @@ test.describe("validação global STEAM + Maker", () => {
       expect(text).not.toMatch(/blob:http|localhost|127\.0\.0\.1|<br>|<\/p>|\*\*|\|\s*---/i);
     });
   }
+
+  test("não bloqueia problema declarativo quando a missão maker é coerente", () => {
+    const { text } = captureExport(buildActivity({
+      discipline: "Matemática",
+      theme: "Orçamento familiar",
+      problem: "Planejamento do orçamento familiar no cotidiano escolar.",
+      mission: "A equipe deve analisar dados, construir painel manipulável, testar cenários, registrar evidências, ajustar decisões e apresentar o resultado.",
+      makerChallenge: "Construir um painel de orçamento, testar com fichas de receita e despesa, registrar falhas e melhorar a organização visual.",
+      readyMaterials: [
+        "CENÁRIO 1",
+        "Receita total: R$ 4.500,00",
+        "Despesas fixas: R$ 2.000,00",
+        "Despesas variáveis: R$ 1.500,00"
+      ],
+      teacherGabarito: ["Cenário 1: cálculo antigo inconsistente."]
+    }));
+
+    expect(text).not.toContain("Exportação bloqueada");
+    expect(text).toContain("Saldo final: R$ 4.500,00 - R$ 3.500,00 = R$ 1.000,00.");
+  });
 });

@@ -1921,12 +1921,30 @@ function validateGlobalTemplate(experience) {
   return { ok, blocking };
 }
 
+function hasProblemLikeStatement(experience) {
+  const problem = stripDecorativeMarkers(experience.problem || "");
+  const combined = [
+    problem,
+    experience.mission,
+    experience.makerChallenge,
+    experience.title,
+    experience.theme,
+    ...(experience.readyMaterials || [])
+  ].filter(Boolean).join(" ");
+
+  if (/[?]/.test(problem) || /problema|desafio|situa[cç][aã]o|quest[aã]o|necessidade|como\s+/i.test(combined)) {
+    return true;
+  }
+
+  return problem.split(/\s+/).filter(Boolean).length >= 3
+    && /investig|analis|constru|cria|solu[cç][aã]o|melhor|organiza|represent|simula|planeja|compar|propor|adapt|resolver|identificar|avaliar|test/i.test(combined);
+}
+
 function validateSteamMakerEssence(experience) {
   const text = getExperienceContextText(experience);
-  const problemText = [experience.problem, experience.mission].filter(Boolean).join(" ");
   const blocking = [];
   const checks = [
-    ["problema real ou situação-problema", /problema|desafio|situa[cç][aã]o|quest[aã]o|necessidade|como\s+/i.test(problemText) || /\?/.test(problemText)],
+    ["problema real ou situação-problema", hasProblemLikeStatement(experience)],
     ["construção, criação ou prototipagem", /constru|cria|prot[oó]tipo|modelo|maquete|painel|mapa|circuito|cart[aã]o|ficha|roteiro|jogo|experimento/i.test(text)],
     ["teste ou experimentação", /test|experimento|simula|aplica|observa|verifica|valida/i.test(text)],
     ["registro de evidências", /evid[eê]ncia|registro|dados|resultado|observa[cç][aã]o|tabela|relat[oó]rio|di[aá]rio/i.test(text)],
@@ -2525,6 +2543,15 @@ function rebuildStructuredTeacherGabarito(experience) {
   };
 }
 
+function repairSteamMakerEssenceBeforeExport(experience) {
+  if (hasProblemLikeStatement(experience)) return experience;
+  const theme = reviewText(experience.theme || experience.title || "o tema estudado").toLowerCase();
+  return {
+    ...experience,
+    problem: `Como aplicar ${theme} em uma situação prática, construindo uma solução testável com registro de evidências e melhoria?`
+  };
+}
+
 function repairTextBeforeExport(experience) {
   const fix = fixDanglingText;
   return {
@@ -2570,6 +2597,10 @@ function getExportRepairCorrections(blocking, warnings) {
     corrections.push("gabarito pedagógico reconstruído por tipo de atividade");
   }
 
+  if (/situa[cç][aã]o-problema|problema real|Ess[eê]ncia STEAM \+ Maker/i.test(text)) {
+    corrections.push("situação-problema maker revisada");
+  }
+
   if (/letra min[uú]scula|espa[cç]os|quebras de linha|html|markdown|texto|frase/i.test(text)) {
     corrections.push("revisão textual reaplicada antes da exportação");
   }
@@ -2593,6 +2624,10 @@ function repairExperienceBeforeExport(experience, blocking, warnings) {
   if (corrections.some((item) => /gabarito pedagógico/i.test(item))) {
     repaired = rebuildGlobalTeacherGabarito(repaired);
     console.info("[export-repair] global answer key rebuilt");
+  }
+
+  if (corrections.some((item) => /situação-problema maker/i.test(item))) {
+    repaired = repairSteamMakerEssenceBeforeExport(repaired);
   }
 
   if (corrections.some((item) => /textual|geral/i.test(item))) {
