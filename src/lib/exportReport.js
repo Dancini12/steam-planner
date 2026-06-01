@@ -1149,6 +1149,11 @@ function parseFinancialAmount(rawValue) {
   return Number.isFinite(value) ? Math.abs(value) : null;
 }
 
+function parsePercentAmount(rawValue) {
+  const value = Number(String(rawValue || "").replace(",", "."));
+  return Number.isFinite(value) ? Math.abs(value) : null;
+}
+
 function cleanImprovementTarget(target) {
   return cleanFinancialItemLabel(target || "")
     .replace(/\bgastos?\s+com\s+/gi, "")
@@ -1181,6 +1186,62 @@ function extractExplicitImprovement(scenarioText) {
     action: normalizeImprovementAction(match[1]),
     value,
     target
+  };
+}
+
+function getBudgetItemsForPercentageBase(dataOrStructured) {
+  const structured = dataOrStructured?.structured || dataOrStructured || {};
+  return [
+    ...(structured.despesasFixas || []),
+    ...(structured.despesasVariaveis || []),
+    ...(structured.imprevistos || [])
+  ];
+}
+
+function findBudgetItemTotalByTarget(target, ...sources) {
+  const normalizedTarget = normalizeSearchText(target || "");
+  if (!normalizedTarget) return 0;
+  return sources.reduce((total, source) => {
+    const items = getBudgetItemsForPercentageBase(source);
+    const found = items.find((item) => {
+      const itemText = normalizeSearchText(`${item?.descricao || ""} ${item?.rawLabel || ""}`);
+      return itemText && (itemText.includes(normalizedTarget) || normalizedTarget.includes(itemText));
+    });
+    return total || found?.valor || 0;
+  }, 0);
+}
+
+function getPercentageBaseForTarget(target, currentStructured, previousData) {
+  const text = normalizeSearchText(target || "");
+  if (/variavel|variaveis/.test(text)) {
+    return sumBudgetItems(currentStructured?.despesasVariaveis || []) || previousData?.despesasVariaveisTotal || 0;
+  }
+  if (/fixa|fixas|fixo|fixos/.test(text)) {
+    return sumBudgetItems(currentStructured?.despesasFixas || []) || previousData?.despesasFixasTotal || 0;
+  }
+  if (/despesa|gasto|custo|total/.test(text)) {
+    const currentTotal = sumBudgetItems(currentStructured?.despesasFixas || []) + sumBudgetItems(currentStructured?.despesasVariaveis || []);
+    return currentTotal || previousData?.despesasBaseTotal || previousData?.totalExpenses || 0;
+  }
+  return findBudgetItemTotalByTarget(target, currentStructured, previousData);
+}
+
+function extractPercentageImprovement(scenarioText, currentStructured, previousData) {
+  const source = stripDecorativeMarkers(scenarioText || "").replace(/\s+/g, " ");
+  const match = source.match(/\b(reduzir|cortar|economizar|diminuir)\s+(\d+(?:[,.]\d+)?)\s*%\s+(?:do|da|dos|das|de|em)\s+(?:gasto\s+com\s+|despesas?\s+com\s+)?([^.,;?]+)/i);
+  if (!match) return null;
+
+  const percent = parsePercentAmount(match[2]);
+  const target = cleanImprovementTarget(match[3]);
+  const base = getPercentageBaseForTarget(target, currentStructured, previousData);
+  if (!Number.isFinite(percent) || !Number.isFinite(base) || base <= 0) return null;
+
+  return {
+    action: normalizeImprovementAction(match[1]),
+    value: Math.round((base * percent / 100) * 100) / 100,
+    target,
+    percent,
+    base
   };
 }
 
@@ -1393,6 +1454,63 @@ function buildFinancialDataForScenarios(scenarios) {
     const structured = buildEmptyStructuredBudget();
     entries.forEach((entry) => addEntryToStructuredBudget(structured, entry));
     const explicitImprovement = extractExplicitImprovement(scenario.text);
+    const percentageImprovement = extractPercentageImprovement(scenario.text, structured, previous);
+    const structuredImprovement = explicitImprovement || percentageImprovement;
+
+    if (!entries.length && structuredImprovement && previous?.receitaTotal !== null && previous?.totalExpenses > 0) {
+      const receitaTotal = previous.receitaTotal;
+      const despesasAnterioresTotal = previous.totalExpenses;
+      const melhoriasTotal = structuredImprovement.value;
+      const compromissoTotal = despesasAnterioresTotal;
+      const saldo = receitaTotal - compromissoTotal;
+      const saldoAfterImprovement = saldo + melhoriasTotal;
+      const data = {
+        scenario,
+        entries,
+        structured,
+        receitaTotal,
+        revenue: receitaTotal,
+        despesasFixasTotal: 0,
+        despesasVariaveisTotal: 0,
+        despesasBaseTotal: 0,
+        imprevistosTotal: 0,
+        metasPoupancaTotal: 0,
+        melhoriasTotal,
+        explicitImprovement: structuredImprovement,
+        despesasAnterioresTotal,
+        declaredExpenseTotal: 0,
+        compromissoTotal,
+        expenses: [{ amount: despesasAnterioresTotal, label: `Despesas do Cenário ${previous?.scenario?.number || scenario.number - 1}`, isRevenue: false, isExpense: true, isSavingsGoal: false, isImprovement: false, isPriorExpense: true }],
+        improvements: [{ amount: melhoriasTotal, label: structuredImprovement.target, isImprovement: true }],
+        improvementTotal: melhoriasTotal,
+        totalExpenses: compromissoTotal,
+        saldo,
+        saldoAfterImprovement,
+        usesPreviousExpenses: true,
+        isBudgetScenario: true,
+        summary: calculateFinancialSummary({
+          receitaTotal,
+          despesasFixasTotal: 0,
+          despesasVariaveisTotal: 0,
+          despesasBaseTotal: 0,
+          imprevistosTotal: 0,
+          metasPoupancaTotal: 0,
+          compromissoTotal,
+          saldoInicial: saldo,
+          saldoAntesMelhoria: saldo,
+          melhoriasTotal,
+          saldoAposMelhoria: saldoAfterImprovement
+        }),
+        validation: {
+          calculable: true,
+          hasRevenue: true,
+          hasExpenses: true
+        }
+      };
+      result.push(data);
+      previous = data;
+      return;
+    }
 
     if (!entries.length) {
       result.push({
@@ -1423,7 +1541,7 @@ function buildFinancialDataForScenarios(scenarios) {
     const imprevistosTotal = sumBudgetItems(structured.imprevistos);
     const metasPoupancaTotal = sumBudgetItems(structured.metasPoupanca);
     const parsedMelhoriasTotal = sumBudgetItems(structured.melhorias);
-    const melhoriasTotal = parsedMelhoriasTotal || explicitImprovement?.value || 0;
+    const melhoriasTotal = parsedMelhoriasTotal || structuredImprovement?.value || 0;
     const despesasDetalhadasTotal = despesasFixasTotal + despesasVariaveisTotal;
     const declaredExpenseTotal = getLastDeclaredTotal(structured.totaisDeclarados.despesas);
     const priorExpenseTotal = getLastDeclaredTotal(structured.totaisDeclarados.despesasAnteriores);
@@ -1480,7 +1598,7 @@ function buildFinancialDataForScenarios(scenarios) {
       imprevistosTotal,
       metasPoupancaTotal,
       melhoriasTotal,
-      explicitImprovement,
+      explicitImprovement: structuredImprovement,
       despesasAnterioresTotal,
       declaredExpenseTotal,
       compromissoTotal,
@@ -1802,7 +1920,7 @@ function getTopicTokens(text) {
 }
 
 function isMethodologyReference(refText) {
-  return /steam|maker|metodologias?\s+ativas?|aprendizagem\s+baseada\s+em\s+projetos?|project\s+based|cultura\s+maker|prototip|bncc|base\s+nacional\s+comum\s+curricular/i.test(refText);
+  return /steam|maker|metodologias?\s+ativas?|aprendizagem\s+baseada\s+em\s+projetos?|project\s+based|cultura\s+maker|prototip|bncc|base\s+nacional\s+comum\s+curricular|common\s+european\s+framework|cefr|language|vocabulary/i.test(refText);
 }
 
 function isFinancialReference(refText) {

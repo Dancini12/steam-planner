@@ -215,6 +215,28 @@ test.describe("validação financeira da exportação", () => {
     expect(text).not.toContain("total de metas ficou zerado");
   });
 
+  test("poupança percentual é calculada como melhoria", () => {
+    const api = loadExportInternals();
+    const readyMaterials = [
+      "CENÁRIO 1",
+      "Receita total: R$ 4.500,00",
+      "Despesas fixas: R$ 1.530,00",
+      "Despesas variáveis: R$ 2.000,00",
+      "CENÁRIO 2",
+      "Para melhorar o orçamento, reduzir 10% das despesas variáveis."
+    ];
+    const scenarios = api.extractFinancialScenarioData({ readyMaterials });
+    const scenario2 = scenarios[1];
+    const gabarito = api.buildFinancialGabaritoFromReadyMaterials(readyMaterials).join("\n");
+
+    expect(scenario2.melhoriasTotal).toBe(200);
+    expect(scenario2.metasPoupancaTotal).toBe(0);
+    expect(scenario2.summary.saldoAntesMelhoria).toBe(970);
+    expect(scenario2.summary.saldoAposMelhoria).toBe(1170);
+    expect(gabarito).toContain("Reduzir R$ 200,00 do gasto com despesas variáveis.");
+    expect(gabarito).toContain("R$ 970,00 + R$ 200,00 = R$ 1.170,00.");
+  });
+
   test("cenário 2 com imprevisto e meta calcula compromisso total", () => {
     const api = loadExportInternals();
     const readyMaterials = [

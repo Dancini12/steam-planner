@@ -1,0 +1,710 @@
+{
+  "startedAt": "2026-06-01T03:45:26.487Z",
+  "command": "npm run test:validation",
+  "requestedIterations": 100,
+  "until": null,
+  "iterations": [
+    {
+      "iteration": 1,
+      "startedAt": "2026-06-01T03:45:26.488Z",
+      "finishedAt": "2026-06-01T03:45:28.649Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 2,
+      "startedAt": "2026-06-01T03:45:28.649Z",
+      "finishedAt": "2026-06-01T03:45:30.838Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 3,
+      "startedAt": "2026-06-01T03:45:30.838Z",
+      "finishedAt": "2026-06-01T03:45:32.978Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 4,
+      "startedAt": "2026-06-01T03:45:32.978Z",
+      "finishedAt": "2026-06-01T03:45:35.111Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 5,
+      "startedAt": "2026-06-01T03:45:35.111Z",
+      "finishedAt": "2026-06-01T03:45:37.233Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 6,
+      "startedAt": "2026-06-01T03:45:37.233Z",
+      "finishedAt": "2026-06-01T03:45:39.384Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 7,
+      "startedAt": "2026-06-01T03:45:39.384Z",
+      "finishedAt": "2026-06-01T03:45:41.508Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 8,
+      "startedAt": "2026-06-01T03:45:41.508Z",
+      "finishedAt": "2026-06-01T03:45:43.647Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 9,
+      "startedAt": "2026-06-01T03:45:43.647Z",
+      "finishedAt": "2026-06-01T03:45:45.793Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 10,
+      "startedAt": "2026-06-01T03:45:45.793Z",
+      "finishedAt": "2026-06-01T03:45:47.913Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 11,
+      "startedAt": "2026-06-01T03:45:47.913Z",
+      "finishedAt": "2026-06-01T03:45:50.026Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 12,
+      "startedAt": "2026-06-01T03:45:50.026Z",
+      "finishedAt": "2026-06-01T03:45:52.163Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 13,
+      "startedAt": "2026-06-01T03:45:52.163Z",
+      "finishedAt": "2026-06-01T03:45:54.316Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 14,
+      "startedAt": "2026-06-01T03:45:54.317Z",
+      "finishedAt": "2026-06-01T03:45:56.464Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 15,
+      "startedAt": "2026-06-01T03:45:56.464Z",
+      "finishedAt": "2026-06-01T03:45:58.642Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 16,
+      "startedAt": "2026-06-01T03:45:58.642Z",
+      "finishedAt": "2026-06-01T03:46:00.778Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 17,
+      "startedAt": "2026-06-01T03:46:00.778Z",
+      "finishedAt": "2026-06-01T03:46:02.930Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 18,
+      "startedAt": "2026-06-01T03:46:02.930Z",
+      "finishedAt": "2026-06-01T03:46:05.082Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 19,
+      "startedAt": "2026-06-01T03:46:05.082Z",
+      "finishedAt": "2026-06-01T03:46:07.235Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 20,
+      "startedAt": "2026-06-01T03:46:07.235Z",
+      "finishedAt": "2026-06-01T03:46:09.392Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 21,
+      "startedAt": "2026-06-01T03:46:09.392Z",
+      "finishedAt": "2026-06-01T03:46:11.568Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 22,
+      "startedAt": "2026-06-01T03:46:11.568Z",
+      "finishedAt": "2026-06-01T03:46:13.727Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 23,
+      "startedAt": "2026-06-01T03:46:13.727Z",
+      "finishedAt": "2026-06-01T03:46:15.867Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 24,
+      "startedAt": "2026-06-01T03:46:15.867Z",
+      "finishedAt": "2026-06-01T03:46:18.024Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 25,
+      "startedAt": "2026-06-01T03:46:18.025Z",
+      "finishedAt": "2026-06-01T03:46:20.166Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 26,
+      "startedAt": "2026-06-01T03:46:20.167Z",
+      "finishedAt": "2026-06-01T03:46:22.311Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 27,
+      "startedAt": "2026-06-01T03:46:22.312Z",
+      "finishedAt": "2026-06-01T03:46:24.460Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 28,
+      "startedAt": "2026-06-01T03:46:24.460Z",
+      "finishedAt": "2026-06-01T03:46:26.629Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 29,
+      "startedAt": "2026-06-01T03:46:26.629Z",
+      "finishedAt": "2026-06-01T03:46:28.804Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 30,
+      "startedAt": "2026-06-01T03:46:28.804Z",
+      "finishedAt": "2026-06-01T03:46:30.981Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 31,
+      "startedAt": "2026-06-01T03:46:30.981Z",
+      "finishedAt": "2026-06-01T03:46:33.146Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 32,
+      "startedAt": "2026-06-01T03:46:33.147Z",
+      "finishedAt": "2026-06-01T03:46:35.306Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 33,
+      "startedAt": "2026-06-01T03:46:35.306Z",
+      "finishedAt": "2026-06-01T03:46:37.480Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 34,
+      "startedAt": "2026-06-01T03:46:37.480Z",
+      "finishedAt": "2026-06-01T03:46:39.648Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 35,
+      "startedAt": "2026-06-01T03:46:39.649Z",
+      "finishedAt": "2026-06-01T03:46:41.818Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 36,
+      "startedAt": "2026-06-01T03:46:41.819Z",
+      "finishedAt": "2026-06-01T03:46:43.986Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 37,
+      "startedAt": "2026-06-01T03:46:43.986Z",
+      "finishedAt": "2026-06-01T03:46:46.142Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 38,
+      "startedAt": "2026-06-01T03:46:46.143Z",
+      "finishedAt": "2026-06-01T03:46:48.308Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 39,
+      "startedAt": "2026-06-01T03:46:48.309Z",
+      "finishedAt": "2026-06-01T03:46:50.452Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 40,
+      "startedAt": "2026-06-01T03:46:50.452Z",
+      "finishedAt": "2026-06-01T03:46:52.613Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 41,
+      "startedAt": "2026-06-01T03:46:52.613Z",
+      "finishedAt": "2026-06-01T03:46:54.776Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 42,
+      "startedAt": "2026-06-01T03:46:54.776Z",
+      "finishedAt": "2026-06-01T03:46:56.927Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 43,
+      "startedAt": "2026-06-01T03:46:56.927Z",
+      "finishedAt": "2026-06-01T03:46:59.074Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 44,
+      "startedAt": "2026-06-01T03:46:59.074Z",
+      "finishedAt": "2026-06-01T03:47:01.220Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 45,
+      "startedAt": "2026-06-01T03:47:01.221Z",
+      "finishedAt": "2026-06-01T03:47:03.400Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 46,
+      "startedAt": "2026-06-01T03:47:03.400Z",
+      "finishedAt": "2026-06-01T03:47:05.540Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 47,
+      "startedAt": "2026-06-01T03:47:05.541Z",
+      "finishedAt": "2026-06-01T03:47:07.694Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 48,
+      "startedAt": "2026-06-01T03:47:07.695Z",
+      "finishedAt": "2026-06-01T03:47:09.880Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 49,
+      "startedAt": "2026-06-01T03:47:09.881Z",
+      "finishedAt": "2026-06-01T03:47:12.040Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 50,
+      "startedAt": "2026-06-01T03:47:12.041Z",
+      "finishedAt": "2026-06-01T03:47:14.182Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 51,
+      "startedAt": "2026-06-01T03:47:14.182Z",
+      "finishedAt": "2026-06-01T03:47:16.362Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 52,
+      "startedAt": "2026-06-01T03:47:16.362Z",
+      "finishedAt": "2026-06-01T03:47:18.513Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 53,
+      "startedAt": "2026-06-01T03:47:18.513Z",
+      "finishedAt": "2026-06-01T03:47:20.651Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 54,
+      "startedAt": "2026-06-01T03:47:20.651Z",
+      "finishedAt": "2026-06-01T03:47:22.791Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 55,
+      "startedAt": "2026-06-01T03:47:22.791Z",
+      "finishedAt": "2026-06-01T03:47:24.943Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 56,
+      "startedAt": "2026-06-01T03:47:24.943Z",
+      "finishedAt": "2026-06-01T03:47:27.106Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 57,
+      "startedAt": "2026-06-01T03:47:27.106Z",
+      "finishedAt": "2026-06-01T03:47:29.271Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 58,
+      "startedAt": "2026-06-01T03:47:29.272Z",
+      "finishedAt": "2026-06-01T03:47:31.416Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 59,
+      "startedAt": "2026-06-01T03:47:31.416Z",
+      "finishedAt": "2026-06-01T03:47:33.564Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 60,
+      "startedAt": "2026-06-01T03:47:33.564Z",
+      "finishedAt": "2026-06-01T03:47:35.710Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 61,
+      "startedAt": "2026-06-01T03:47:35.710Z",
+      "finishedAt": "2026-06-01T03:47:37.842Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 62,
+      "startedAt": "2026-06-01T03:47:37.842Z",
+      "finishedAt": "2026-06-01T03:47:40.007Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 63,
+      "startedAt": "2026-06-01T03:47:40.007Z",
+      "finishedAt": "2026-06-01T03:47:42.155Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 64,
+      "startedAt": "2026-06-01T03:47:42.155Z",
+      "finishedAt": "2026-06-01T03:47:44.292Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 65,
+      "startedAt": "2026-06-01T03:47:44.293Z",
+      "finishedAt": "2026-06-01T03:47:46.436Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 66,
+      "startedAt": "2026-06-01T03:47:46.437Z",
+      "finishedAt": "2026-06-01T03:47:48.592Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 67,
+      "startedAt": "2026-06-01T03:47:48.592Z",
+      "finishedAt": "2026-06-01T03:47:50.761Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 68,
+      "startedAt": "2026-06-01T03:47:50.761Z",
+      "finishedAt": "2026-06-01T03:47:52.908Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 69,
+      "startedAt": "2026-06-01T03:47:52.909Z",
+      "finishedAt": "2026-06-01T03:47:55.060Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 70,
+      "startedAt": "2026-06-01T03:47:55.060Z",
+      "finishedAt": "2026-06-01T03:47:57.214Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 71,
+      "startedAt": "2026-06-01T03:47:57.214Z",
+      "finishedAt": "2026-06-01T03:47:59.358Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 72,
+      "startedAt": "2026-06-01T03:47:59.358Z",
+      "finishedAt": "2026-06-01T03:48:01.559Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 73,
+      "startedAt": "2026-06-01T03:48:01.559Z",
+      "finishedAt": "2026-06-01T03:48:03.710Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 74,
+      "startedAt": "2026-06-01T03:48:03.710Z",
+      "finishedAt": "2026-06-01T03:48:05.854Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 75,
+      "startedAt": "2026-06-01T03:48:05.854Z",
+      "finishedAt": "2026-06-01T03:48:08.028Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 76,
+      "startedAt": "2026-06-01T03:48:08.028Z",
+      "finishedAt": "2026-06-01T03:48:10.178Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 77,
+      "startedAt": "2026-06-01T03:48:10.178Z",
+      "finishedAt": "2026-06-01T03:48:12.361Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 78,
+      "startedAt": "2026-06-01T03:48:12.361Z",
+      "finishedAt": "2026-06-01T03:48:14.524Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 79,
+      "startedAt": "2026-06-01T03:48:14.524Z",
+      "finishedAt": "2026-06-01T03:48:16.688Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 80,
+      "startedAt": "2026-06-01T03:48:16.688Z",
+      "finishedAt": "2026-06-01T03:48:18.838Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 81,
+      "startedAt": "2026-06-01T03:48:18.838Z",
+      "finishedAt": "2026-06-01T03:48:20.988Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 82,
+      "startedAt": "2026-06-01T03:48:20.989Z",
+      "finishedAt": "2026-06-01T03:48:23.169Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 83,
+      "startedAt": "2026-06-01T03:48:23.169Z",
+      "finishedAt": "2026-06-01T03:48:25.385Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 84,
+      "startedAt": "2026-06-01T03:48:25.385Z",
+      "finishedAt": "2026-06-01T03:48:27.570Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 85,
+      "startedAt": "2026-06-01T03:48:27.570Z",
+      "finishedAt": "2026-06-01T03:48:29.724Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 86,
+      "startedAt": "2026-06-01T03:48:29.724Z",
+      "finishedAt": "2026-06-01T03:48:31.896Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 87,
+      "startedAt": "2026-06-01T03:48:31.896Z",
+      "finishedAt": "2026-06-01T03:48:34.059Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 88,
+      "startedAt": "2026-06-01T03:48:34.059Z",
+      "finishedAt": "2026-06-01T03:48:36.225Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 89,
+      "startedAt": "2026-06-01T03:48:36.225Z",
+      "finishedAt": "2026-06-01T03:48:38.367Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 90,
+      "startedAt": "2026-06-01T03:48:38.367Z",
+      "finishedAt": "2026-06-01T03:48:40.512Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 91,
+      "startedAt": "2026-06-01T03:48:40.513Z",
+      "finishedAt": "2026-06-01T03:48:42.652Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 92,
+      "startedAt": "2026-06-01T03:48:42.653Z",
+      "finishedAt": "2026-06-01T03:48:44.805Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 93,
+      "startedAt": "2026-06-01T03:48:44.805Z",
+      "finishedAt": "2026-06-01T03:48:46.927Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 94,
+      "startedAt": "2026-06-01T03:48:46.927Z",
+      "finishedAt": "2026-06-01T03:48:49.046Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 95,
+      "startedAt": "2026-06-01T03:48:49.046Z",
+      "finishedAt": "2026-06-01T03:48:51.180Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 96,
+      "startedAt": "2026-06-01T03:48:51.180Z",
+      "finishedAt": "2026-06-01T03:48:53.350Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 97,
+      "startedAt": "2026-06-01T03:48:53.350Z",
+      "finishedAt": "2026-06-01T03:48:55.515Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 98,
+      "startedAt": "2026-06-01T03:48:55.516Z",
+      "finishedAt": "2026-06-01T03:48:57.667Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 99,
+      "startedAt": "2026-06-01T03:48:57.667Z",
+      "finishedAt": "2026-06-01T03:48:59.807Z",
+      "status": "PASSED",
+      "exitCode": 0
+    },
+    {
+      "iteration": 100,
+      "startedAt": "2026-06-01T03:48:59.808Z",
+      "finishedAt": "2026-06-01T03:49:01.951Z",
+      "status": "PASSED",
+      "exitCode": 0
+    }
+  ],
+  "status": "PASSED",
+  "finishedAt": "2026-06-01T03:49:01.951Z"
+}

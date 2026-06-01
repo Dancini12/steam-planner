@@ -290,7 +290,7 @@ function isFinancialReference(reference) {
 }
 
 function isMethodologyReference(reference) {
-  return /steam|maker|metodologias?\s+ativas?|aprendizagem\s+baseada\s+em\s+projetos?|project\s+based|cultura\s+maker|prototip|bncc|base\s+nacional\s+comum\s+curricular/i.test(reference);
+  return /steam|maker|metodologias?\s+ativas?|aprendizagem\s+baseada\s+em\s+projetos?|project\s+based|cultura\s+maker|prototip|bncc|base\s+nacional\s+comum\s+curricular|common\s+european\s+framework|cefr|language|vocabulary/i.test(reference);
 }
 
 function buildDefaultReadyMaterials(theme) {

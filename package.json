@@ -6,8 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "lint": "node scripts/lint-syntax.js",
     "preview": "vite preview",
     "test": "playwright test",
+    "test:validation": "playwright test tests/financial-export.spec.js tests/global-validation.spec.js tests/deterministic-validation.spec.js",
+    "test:validation:loop": "node scripts/run-validation-loop.js",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report"
   },
