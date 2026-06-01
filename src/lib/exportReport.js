@@ -1686,6 +1686,378 @@ function filterReferencesByTheme(references, experience) {
   return selected.slice(0, 2);
 }
 
+const DISCIPLINE_RULES = [
+  {
+    key: "educacaoFinanceira",
+    label: "Educação Financeira",
+    detect: /educa[cç][aã]o\s+financeira|or[cç]amento|finan[cç]as|poupan[cç]a|renda|despesa/i,
+    evidence: /or[cç]amento|finan[cç]as|renda|despesa|saldo|poupan[cç]a|consumo|planejamento/i
+  },
+  {
+    key: "linguaPortuguesa",
+    label: "Língua Portuguesa",
+    detect: /l[ií]ngua\s+portuguesa|portugu[eê]s|leitura|interpreta[cç][aã]o|produ[cç][aã]o\s+textual|g[eê]nero\s+discursivo/i,
+    evidence: /texto|leitura|interpreta[cç][aã]o|g[eê]nero|argumenta[cç][aã]o|produ[cç][aã]o\s+textual|reescrita|linguagem/i
+  },
+  {
+    key: "matematica",
+    label: "Matemática",
+    detect: /matem[aá]tica|recomposi[cç][aã]o\s+de\s+matem[aá]tica|c[aá]lculo|medida|porcentagem|propor[cç][aã]o|gr[aá]fico/i,
+    evidence: /c[aá]lculo|medida|propor[cç][aã]o|porcentagem|tabela|gr[aá]fico|escala|racioc[ií]nio|resultado/i
+  },
+  {
+    key: "ciencias",
+    label: "Ciências",
+    detect: /ci[eê]ncias|experimento|hip[oó]tese|fen[oô]meno|observa[cç][aã]o|investiga[cç][aã]o/i,
+    evidence: /hip[oó]tese|experimento|fen[oô]meno|observa[cç][aã]o|procedimento|evid[eê]ncia|seguran[cç]a|resultado/i
+  },
+  {
+    key: "historia",
+    label: "História",
+    detect: /hist[oó]ria|fonte\s+hist[oó]rica|temporalidade|processo\s+hist[oó]rico|mem[oó]ria/i,
+    evidence: /fonte|temporalidade|contexto|causa|consequ[eê]ncia|processo|per[ií]odo|personagem|mem[oó]ria/i
+  },
+  {
+    key: "geografia",
+    label: "Geografia",
+    detect: /geografia|mapa|territ[oó]rio|paisagem|lugar|escala|espa[cç]o\s+geogr[aá]fico/i,
+    evidence: /mapa|territ[oó]rio|paisagem|escala|localiza[cç][aã]o|lugar|regi[aã]o|sociedade|natureza/i
+  },
+  {
+    key: "arte",
+    label: "Arte",
+    detect: /arte|art[ií]stic|visual|c[eê]nica|m[uú]sica|dan[cç]a|composi[cç][aã]o|express[aã]o/i,
+    evidence: /linguagem\s+art[ií]stica|cria[cç][aã]o|composi[cç][aã]o|express[aã]o|est[eé]tica|aprecia[cç][aã]o|visual|c[eê]nica/i
+  },
+  {
+    key: "educacaoFisica",
+    label: "Educação Física",
+    detect: /educa[cç][aã]o\s+f[ií]sica|pr[aá]tica\s+corporal|movimento|jogo|brincadeira|esporte/i,
+    evidence: /movimento|pr[aá]tica\s+corporal|jogo|regras|coopera[cç][aã]o|seguran[cç]a|participa[cç][aã]o|corporal/i
+  },
+  {
+    key: "linguaInglesa",
+    label: "Língua Inglesa",
+    detect: /l[ií]ngua\s+inglesa|ingl[eê]s|english|vocabulary|speaking|reading|writing/i,
+    evidence: /vocabul[aá]rio|vocabulary|english|speaking|reading|writing|oralidade|comandos|frases/i
+  },
+  {
+    key: "robotica",
+    label: "Robótica",
+    detect: /rob[oó]tica|circuito|sensor|atuador|arduino|protoboard|motor|led/i,
+    evidence: /circuito|sensor|atuador|montagem|c[oó]digo|teste|falha|ajuste|prot[oó]tipo|funcionamento/i
+  },
+  {
+    key: "pensamentoComputacional",
+    label: "Pensamento Computacional",
+    detect: /pensamento\s+computacional|algoritmo|decomposi[cç][aã]o|abstra[cç][aã]o|depura[cç][aã]o|programa[cç][aã]o/i,
+    evidence: /algoritmo|sequ[eê]ncia|padr[aã]o|decomposi[cç][aã]o|abstra[cç][aã]o|teste|depura[cç][aã]o|l[oó]gica/i
+  },
+  {
+    key: "empreendedorismo",
+    label: "Empreendedorismo",
+    detect: /empreendedorismo|proposta\s+de\s+valor|p[uú]blico|cliente|solu[cç][aã]o|neg[oó]cio/i,
+    evidence: /problema|solu[cç][aã]o|p[uú]blico|proposta\s+de\s+valor|custos?|recursos?|prot[oó]tipo|teste|apresenta[cç][aã]o/i
+  },
+  {
+    key: "projetoDeVida",
+    label: "Projeto de Vida",
+    detect: /projeto\s+de\s+vida|autoconhecimento|metas?|escolhas|planejamento\s+pessoal/i,
+    evidence: /metas?|escolhas|planejamento|autoconhecimento|decis[aã]o|trajet[oó]ria|reflex[aã]o/i
+  },
+  {
+    key: "ensinoReligioso",
+    label: "Ensino Religioso",
+    detect: /ensino\s+religioso|tradi[cç][aã]o|cren[cç]a|valores|conviv[eê]ncia|diversidade\s+religiosa/i,
+    evidence: /tradi[cç][aã]o|cren[cç]a|valores|respeito|diversidade|conviv[eê]ncia|cultura/i
+  }
+];
+
+const ACTIVITY_TYPE_RULES = [
+  { key: "calculo", label: "cálculo", evidence: /c[aá]lculo|calcular|medida|porcentagem|propor[cç][aã]o|escala|r\$\s*[\d.]+|\d+\s*(?:cm|m|km|kg|g|%)/i },
+  { key: "leituraInterpretacao", label: "leitura e interpretação", evidence: /leitura|interpreta[cç][aã]o|texto-base|quest[oõ]es|infer[eê]ncia|fonte|imagem/i },
+  { key: "producaoTextual", label: "produção textual", evidence: /produ[cç][aã]o\s+textual|reescrita|g[eê]nero|relato|carta|artigo|roteiro|texto/i },
+  { key: "experimento", label: "experimento científico", evidence: /experimento|hip[oó]tese|procedimento|observa[cç][aã]o|fen[oô]meno|vari[aá]vel/i },
+  { key: "prototipo", label: "construção/protótipo", evidence: /prot[oó]tipo|construir|montar|modelo|maquete|painel|cart[oõ]es|fichas|simula[cç][aã]o/i },
+  { key: "robotica", label: "robótica ou circuito", evidence: /rob[oó]tica|circuito|sensor|atuador|led|motor|arduino|c[oó]digo/i },
+  { key: "pesquisa", label: "pesquisa histórica ou geográfica", evidence: /pesquisa|fonte|mapa|territ[oó]rio|paisagem|contexto|temporalidade/i },
+  { key: "artistica", label: "artística ou cênica", evidence: /art[ií]stic|visual|c[eê]nica|dramatiza[cç][aã]o|composi[cç][aã]o|express[aã]o/i },
+  { key: "corporal", label: "corporal ou movimento", evidence: /movimento|corporal|jogo|brincadeira|esporte|coopera[cç][aã]o/i },
+  { key: "linguaEstrangeira", label: "língua estrangeira", evidence: /ingl[eê]s|english|vocabulary|speaking|reading|writing|oralidade/i },
+  { key: "aberta", label: "aberta/criativa", evidence: /cria[cç][aã]o|proposta|debate|dramatiza[cç][aã]o|apresenta[cç][aã]o|solu[cç][aã]o|argumenta[cç][aã]o/i },
+  { key: "interdisciplinar", label: "interdisciplinar", evidence: /interdisciplinar|steam|maker|ci[eê]ncia|tecnologia|engenharia|arte|matem[aá]tica/i }
+];
+
+function getExperienceContextText(experience) {
+  return [
+    experience.discipline,
+    experience.component,
+    experience.title,
+    experience.theme,
+    experience.objective,
+    experience.problem,
+    experience.mission,
+    experience.makerChallenge,
+    experience.finalProduct,
+    ...(experience.readyMaterials || []),
+    ...(experience.materials || []),
+    ...(experience.materialFunctions || []),
+    ...(experience.stages || []).flatMap((stage) => [stage.title, stage.description]),
+    ...(experience.assessmentRubric || []).flatMap((item) => [item.criterion, item.observation]),
+    ...(experience.teacherGabarito || []),
+    ...Object.values(experience.steamConnection || {})
+  ].filter(Boolean).join(" ");
+}
+
+function detectDiscipline(experience) {
+  const text = getExperienceContextText(experience);
+  return DISCIPLINE_RULES.find((rule) => rule.detect.test(text)) || {
+    key: "componenteCurricular",
+    label: reviewText(experience.discipline || experience.component || "Componente curricular"),
+    evidence: /problema|solu[cç][aã]o|prot[oó]tipo|teste|evid[eê]ncia|apresenta[cç][aã]o/i
+  };
+}
+
+function detectActivityTypes(experience) {
+  const text = getExperienceContextText(experience);
+  const detected = ACTIVITY_TYPE_RULES.filter((rule) => rule.evidence.test(text));
+  if (detected.length) return detected;
+  return ACTIVITY_TYPE_RULES.filter((rule) => ["prototipo", "aberta"].includes(rule.key));
+}
+
+function getActivityProfile(experience) {
+  const discipline = detectDiscipline(experience);
+  const types = detectActivityTypes(experience);
+  const financialData = extractFinancialScenarioData(experience);
+  const hasStructuredCalculation = financialData.some((data) => data.isBudgetScenario && data.validation.calculable);
+  return {
+    discipline,
+    types,
+    hasStructuredCalculation,
+    isOpenEnded: types.some((type) => [
+      "leituraInterpretacao",
+      "producaoTextual",
+      "experimento",
+      "prototipo",
+      "pesquisa",
+      "artistica",
+      "corporal",
+      "linguaEstrangeira",
+      "aberta",
+      "interdisciplinar"
+    ].includes(type.key)) && !hasStructuredCalculation
+  };
+}
+
+function hasAnyPattern(text, patterns) {
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function buildGlobalTeacherGabarito(experience, profile = getActivityProfile(experience)) {
+  const scenarios = getScenarioItems(experience.readyMaterials || []);
+  const typeLabels = profile.types.map((type) => type.label).join(", ");
+  const discipline = profile.discipline.label;
+  const baseLines = [
+    "Critérios de análise:",
+    `A resposta deve dialogar com ${discipline} e com o tipo de atividade: ${typeLabels}.`,
+    "Verificar se a equipe compreendeu o problema, construiu uma solução testável, registrou evidências e justificou melhorias.",
+    "Respostas possíveis:",
+    "Aceitar soluções diferentes quando forem coerentes com o problema, os dados ou fontes analisadas e o produto construído.",
+    "Pontos que o professor deve observar:",
+    "Clareza da explicação, uso de evidências, funcionamento do protótipo ou produção, colaboração da equipe e adequação ao tema.",
+    "Erros comuns:",
+    "Resposta sem evidência, produto sem teste, melhoria não justificada, cópia de conteúdo ou explicação desconectada do desafio.",
+    "Indicadores de aprendizagem:",
+    "A equipe apresenta o produto, explica decisões, identifica limitações e propõe ajuste coerente após o teste."
+  ].join("\n");
+
+  if (!scenarios.length) return [baseLines];
+
+  return [
+    ...scenarios.map((scenario) => [
+      `Cenário ${scenario.number}:`,
+      "Resposta esperada: analisar o cenário, aplicar o protótipo ou procedimento planejado, registrar evidências e justificar a decisão tomada.",
+      "Critérios de conferência: coerência com o problema, uso correto dos dados ou fontes, teste realizado e melhoria explicada."
+    ].join("\n")),
+    baseLines
+  ];
+}
+
+function hasOpenEndedGabaritoCriteria(gabarito) {
+  const text = normalizeTextItems(gabarito || []).join(" ");
+  return /crit[eé]rios?|respostas?\s+poss[ií]veis?|pontos?\s+que\s+o\s+professor|observar|indicadores?|evid[eê]ncias?|erros?\s+comuns?/i.test(text);
+}
+
+function shouldRebuildGlobalGabarito(fixedGabarito, profile, hasFinancialGabarito) {
+  if (hasFinancialGabarito) return false;
+  if (!fixedGabarito.length) return true;
+  const text = fixedGabarito.join(" ");
+  if (profile.isOpenEnded && !hasOpenEndedGabaritoCriteria(fixedGabarito)) return true;
+  if (/resposta\s+(?:correta|[uú]nica)|gabarito:\s*[a-d]\b/i.test(text) && profile.isOpenEnded) return true;
+  return fixedGabarito.some((item) => stripDecorativeMarkers(item).split(/\s+/).length < 8);
+}
+
+function rebuildGlobalTeacherGabarito(experience) {
+  const profile = getActivityProfile(experience);
+  const globalGabarito = buildGlobalTeacherGabarito(experience, profile).map(reviewGabaritoText);
+  return {
+    ...experience,
+    teacherGabarito: orderGabaritoItems(completeGabaritoForScenarios(globalGabarito, experience.readyMaterials || []))
+  };
+}
+
+function validateGlobalTemplate(experience) {
+  const blocking = [];
+  const ok = Boolean(
+    experience.objective
+    && experience.problem
+    && experience.mission
+    && experience.makerChallenge
+    && experience.finalProduct
+    && (experience.teacherGabarito || []).length
+    && (experience.bibliography || []).length
+  );
+  if (!ok) blocking.push("Template oficial incompleto para exportação.");
+  return { ok, blocking };
+}
+
+function validateSteamMakerEssence(experience) {
+  const text = getExperienceContextText(experience);
+  const problemText = [experience.problem, experience.mission].filter(Boolean).join(" ");
+  const blocking = [];
+  const checks = [
+    ["problema real ou situação-problema", /problema|desafio|situa[cç][aã]o|quest[aã]o|necessidade|como\s+/i.test(problemText) || /\?/.test(problemText)],
+    ["construção, criação ou prototipagem", /constru|cria|prot[oó]tipo|modelo|maquete|painel|mapa|circuito|cart[aã]o|ficha|roteiro|jogo|experimento/i.test(text)],
+    ["teste ou experimentação", /test|experimento|simula|aplica|observa|verifica|valida/i.test(text)],
+    ["registro de evidências", /evid[eê]ncia|registro|dados|resultado|observa[cç][aã]o|tabela|relat[oó]rio|di[aá]rio/i.test(text)],
+    ["melhoria ou ajuste", /melhor|ajust|revis|depur|aperfei[cç]oa|reorganiza|corrige/i.test(text)],
+    ["apresentação do produto final", /apresent|socializ|comunica|compartilh|exposi[cç][aã]o/i.test(text)]
+  ];
+  checks.forEach(([label, ok]) => {
+    if (!ok) blocking.push(`Essência STEAM + Maker incompleta: falta ${label}.`);
+  });
+  const onlyTheoretical = /resumo|copiar|question[aá]rio|lista\s+de\s+perguntas|aula\s+expositiva/i.test(text)
+    && !/constru|prot[oó]tipo|teste|melhor|evid[eê]ncia/i.test(text);
+  if (onlyTheoretical) blocking.push("Atividade parece teórica, sem criação, teste e melhoria.");
+  return { ok: blocking.length === 0, blocking };
+}
+
+function validateDisciplineCoherence(experience, profile) {
+  const text = getExperienceContextText(experience);
+  const ok = profile.discipline.evidence.test(text) || profile.types.some((type) => type.key === "interdisciplinar");
+  return {
+    ok,
+    blocking: ok ? [] : [`A atividade não apresenta evidências suficientes de coerência com ${profile.discipline.label}.`]
+  };
+}
+
+function validateActivityTypeCoherence(experience, profile) {
+  const text = getExperienceContextText(experience);
+  const ok = profile.types.some((type) => type.evidence.test(text));
+  return {
+    ok,
+    blocking: ok ? [] : ["Não foi possível identificar o tipo principal da atividade para validação."]
+  };
+}
+
+function validateGlobalGabarito(experience, profile) {
+  const gabarito = experience.teacherGabarito || [];
+  const blocking = [];
+  if (!gabarito.length) blocking.push("Gabarito do professor ausente.");
+  if (profile.isOpenEnded && !hasOpenEndedGabaritoCriteria(gabarito)) {
+    blocking.push("Gabarito de atividade aberta deve apresentar critérios, respostas possíveis e indicadores de aprendizagem.");
+  }
+  if (profile.hasStructuredCalculation && !gabarito.every(validateGabaritoMath)) {
+    blocking.push("Gabarito com cálculo possui inconsistência matemática.");
+  }
+  return { ok: blocking.length === 0, blocking };
+}
+
+function validateMaterialsSemantics(experience) {
+  const lines = normalizeTextItems((experience.materialFunctions || []).length ? experience.materialFunctions : experience.materials);
+  const rows = lines.map(parseMaterialItem).filter(Boolean);
+  const blocking = [];
+  if (!rows.length) blocking.push("Tabela de materiais sem itens válidos.");
+  rows.forEach((row) => {
+    if (!/\d|conforme\s+disponibilidade/i.test(row.qty)) blocking.push(`Material "${row.name}" sem quantidade precisa.`);
+    if (!/^(por\s+grupo|por\s+aluno|para\s+a\s+turma|por\s+turma|conforme\s+disponibilidade)$/i.test(row.unit)) {
+      blocking.push(`Material "${row.name}" com unidade fora do padrão.`);
+    }
+    if (!row.use || row.use === "—") blocking.push(`Material "${row.name}" sem uso claro na atividade.`);
+    if (/tesoura/i.test(row.name) && !/sem\s+ponta/i.test(row.name)) blocking.push("Tesoura deve aparecer como tesoura sem ponta.");
+    if (RISKY_MATERIAL_RE.test(row.name) && !/supervis[aã]o/i.test(row.obs)) {
+      blocking.push(`Material de risco "${row.name}" sem orientação de supervisão.`);
+    }
+  });
+  return { ok: blocking.length === 0, blocking };
+}
+
+function validateStagesSemantics(experience) {
+  const stages = experience.stages || [];
+  const text = stages.map((stage) => `${stage.title || ""} ${stage.description || ""}`).join(" ");
+  const normalizedDescriptions = stages.map((stage) => normalizeSearchText(stage.description || ""));
+  const uniqueDescriptions = new Set(normalizedDescriptions.filter(Boolean));
+  const blocking = [];
+  if (stages.length < 6) blocking.push("A atividade deve manter seis etapas de desenvolvimento.");
+  if (uniqueDescriptions.size < Math.min(4, stages.length)) blocking.push("Etapas repetidas ou genéricas demais.");
+  if (!/prepar|organiza|separ/i.test(text)) blocking.push("Etapas sem preparação clara dos materiais.");
+  if (!/constru|monta|cria|produz/i.test(text)) blocking.push("Etapas sem construção ou criação prática.");
+  if (!/test|aplica|experimenta|simula/i.test(text)) blocking.push("Etapas sem teste com situação real.");
+  if (!/melhor|ajust|revis|depur|corrig/i.test(text)) blocking.push("Etapas sem ajuste após teste.");
+  if (!/apresent|socializ|evid[eê]ncia|resultado/i.test(text)) blocking.push("Etapas sem apresentação de produto e evidências.");
+  return { ok: blocking.length === 0, blocking };
+}
+
+function validateFinalProductSemantics(experience) {
+  const text = stripDecorativeMarkers(experience.finalProduct || "");
+  const blocking = [];
+  if (text.length < 20) blocking.push("Produto final incompleto.");
+  if (hasTruncatedSentence(text)) blocking.push("Produto final termina com frase truncada.");
+  if (!/prot[oó]tipo|painel|mapa|texto|cartaz|maquete|circuito|relat[oó]rio|apresenta[cç][aã]o|modelo|registro|tabela|jogo|roteiro|experimento/i.test(text)) {
+    blocking.push("Produto final não indica claramente o que será entregue.");
+  }
+  if (!/evid[eê]ncia|registro|resultado|apresenta|relat[oó]rio|tabela|teste|explica/i.test(text)) {
+    blocking.push("Produto final não indica evidência ou forma de apresentação.");
+  }
+  return { ok: blocking.length === 0, blocking };
+}
+
+function validateReferenceSemantics(experience) {
+  const refs = normalizeTextItems(experience.bibliography || []);
+  const blocking = [];
+  if (!refs.length) blocking.push("Referências bibliográficas ausentes.");
+  if (refs.some((ref) => /wikipedia/i.test(ref))) blocking.push("Referências não podem usar Wikipedia.");
+  if (refs.some(hasVisibleTechnicalMarkup)) blocking.push("Referências com HTML ou Markdown visível.");
+  if (refs.some((ref) => /doi:\s*10\.\?+|DOI\s+inexistente/i.test(ref))) blocking.push("Referência contém DOI inválido ou inventado.");
+  return { ok: blocking.length === 0, blocking };
+}
+
+function buildGlobalActivityValidationReport(experience) {
+  const profile = getActivityProfile(experience);
+  const validations = [
+    ["Template", validateGlobalTemplate(experience)],
+    ["Disciplina", validateDisciplineCoherence(experience, profile)],
+    ["Tipo de atividade", validateActivityTypeCoherence(experience, profile)],
+    ["STEAM + Maker", validateSteamMakerEssence(experience)],
+    ["Materiais", validateMaterialsSemantics(experience)],
+    ["Etapas", validateStagesSemantics(experience)],
+    ["Produto final", validateFinalProductSemantics(experience)],
+    ["Gabarito", validateGlobalGabarito(experience, profile)],
+    ["Referências", validateReferenceSemantics(experience)]
+  ];
+  const blocking = validations.flatMap(([, result]) => result.blocking || []);
+  const checks = validations.map(([label, result]) => [label, result.ok]);
+  checks.push(["Disciplina detectada", profile.discipline.label]);
+  checks.push(["Tipo de atividade detectado", profile.types.map((type) => type.label).join(" + ")]);
+  return {
+    profile,
+    checks,
+    blocking,
+    warnings: [],
+    finalStatus: blocking.length ? "BLOCKED" : "APPROVED"
+  };
+}
+
 function cleanCriterionName(value) {
   return reviewText(value || "")
     .replace(/[.!?:;]+$/g, "")
@@ -1697,9 +2069,13 @@ function autoFixExperience(experience) {
   const fixedReadyMaterials = fixScenarioQuestions((experience.readyMaterials || []).map(fixReadyMaterialText)).map(fixDecisionLanguage);
   const fixedGabarito = fixGabaritoLanguage((experience.teacherGabarito || []).map(reviewGabaritoText));
   const financialGabarito = buildFinancialGabaritoFromReadyMaterials(fixedReadyMaterials);
+  const profile = getActivityProfile({ ...experience, readyMaterials: fixedReadyMaterials, teacherGabarito: fixedGabarito });
+  const globalGabarito = shouldRebuildGlobalGabarito(fixedGabarito, profile, financialGabarito.length > 0)
+    ? buildGlobalTeacherGabarito({ ...experience, readyMaterials: fixedReadyMaterials }, profile)
+    : [];
   const fallbackGabarito = fixedGabarito.length ? fixedGabarito : buildFallbackGabaritoFromReadyMaterials(fixedReadyMaterials);
   const teacherGabarito = completeGabaritoForScenarios(
-    financialGabarito.length ? financialGabarito : fallbackGabarito,
+    financialGabarito.length ? financialGabarito : (globalGabarito.length ? globalGabarito : fallbackGabarito),
     fixedReadyMaterials
   ).map(reviewGabaritoText);
   const orderedGabarito = orderGabaritoItems(teacherGabarito);
@@ -1946,6 +2322,7 @@ function validateFinancialSummary(data, allData = []) {
 }
 
 function buildInternalValidationReport(experience) {
+  const globalReport = buildGlobalActivityValidationReport(experience);
   const scenarioData = extractFinancialScenarioData(experience);
   const budgetData = scenarioData.filter((data) => data.isBudgetScenario && data.entries.length > 0);
   const hasFinancialBudget = budgetData.length > 0;
@@ -1975,6 +2352,7 @@ function buildInternalValidationReport(experience) {
   const calculosOk = !uncalculableBudget && gabaritoMathOk && !financialSummaryBlocks.length && !absurdGabaritoResult;
   const gabaritoCompletoOk = !hasIncompleteGabaritoCoverage(experience);
   const pdfApproved = [
+    globalReport.finalStatus === "APPROVED",
     receitasOk,
     despesasOk,
     imprevistosOk,
@@ -1987,6 +2365,7 @@ function buildInternalValidationReport(experience) {
   ].every(Boolean);
 
   const checks = [
+    ...globalReport.checks,
     ["Receitas classificadas corretamente", receitasOk],
     ["Despesas classificadas corretamente", despesasOk],
     ["Imprevistos classificados corretamente", imprevistosOk],
@@ -2000,7 +2379,8 @@ function buildInternalValidationReport(experience) {
   ];
 
   const blocking = [];
-  const internalWarnings = [];
+  const internalWarnings = [...(globalReport.warnings || [])];
+  globalReport.blocking.forEach((item) => blocking.push(item));
   // Cross-classification text checks are heuristic and prone to false positives
   // when the AI embeds expense/revenue keywords in contextual clauses — downgraded to warnings.
   if (hasFinancialBudget && receitaEmDespesa) internalWarnings.push("Receita apareceu dentro da classificação de despesas.");
@@ -2019,7 +2399,8 @@ function buildInternalValidationReport(experience) {
     checks,
     finalStatus: pdfApproved ? "OK" : "BLOCKED",
     blocking,
-    warnings: internalWarnings
+    warnings: internalWarnings,
+    profile: globalReport.profile
   };
 }
 
@@ -2121,7 +2502,7 @@ function validateExportedExperience(experience) {
   validationReport.blocking.forEach((item) => blocking.push(item));
   (validationReport.warnings || []).forEach((item) => warnings.push(item));
 
-  return { blocking, warnings };
+  return { blocking, warnings, validationReport };
 }
 
 function rebuildStructuredTeacherGabarito(experience) {
@@ -2185,6 +2566,10 @@ function getExportRepairCorrections(blocking, warnings) {
     corrections.push("gabarito financeiro recalculado por dados estruturados");
   }
 
+  if (/pedag[oó]gic|disciplina|tipo de atividade|STEAM|Maker|atividade aberta|crit[eé]rios|indicadores|produto final/i.test(text)) {
+    corrections.push("gabarito pedagógico reconstruído por tipo de atividade");
+  }
+
   if (/letra min[uú]scula|espa[cç]os|quebras de linha|html|markdown|texto|frase/i.test(text)) {
     corrections.push("revisão textual reaplicada antes da exportação");
   }
@@ -2203,6 +2588,11 @@ function repairExperienceBeforeExport(experience, blocking, warnings) {
   if (corrections.some((item) => /gabarito financeiro/i.test(item))) {
     repaired = rebuildStructuredTeacherGabarito(repaired);
     console.info("[export-repair] answer key rebuilt");
+  }
+
+  if (corrections.some((item) => /gabarito pedagógico/i.test(item))) {
+    repaired = rebuildGlobalTeacherGabarito(repaired);
+    console.info("[export-repair] global answer key rebuilt");
   }
 
   if (corrections.some((item) => /textual|geral/i.test(item))) {
@@ -2227,7 +2617,8 @@ function prepareExperienceForExport(activity, maxAttempts = 3) {
         experience,
         blocking: [],
         warnings: validation.warnings,
-        attempts: attempt
+        attempts: attempt,
+        validationReport: validation.validationReport
       };
     }
 
@@ -2246,7 +2637,8 @@ function prepareExperienceForExport(activity, maxAttempts = 3) {
       experience,
       blocking: [],
       warnings: finalValidation.warnings,
-      attempts: maxAttempts
+      attempts: maxAttempts,
+      validationReport: finalValidation.validationReport
     };
   }
 
@@ -2258,7 +2650,8 @@ function prepareExperienceForExport(activity, maxAttempts = 3) {
     blocking: finalValidation.blocking,
     warnings: finalValidation.warnings,
     attempts: maxAttempts,
-    lastValidation
+    lastValidation,
+    validationReport: finalValidation.validationReport
   };
 }
 
