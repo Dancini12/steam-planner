@@ -824,13 +824,27 @@ function renderAssessmentRubric(experience) {
 // ── Export validation ─────────────────────────────────────────────────────────
 
 const DANGLING = /\s+(e|ou|de|da|do|dos|das|com|para|que|se|em|na|no|nas|nos|a|o|ao|por|pelo|pela|pelos|pelas|um|uma|uns|umas|mais|mas|nem|sobre|após|antes|entre|sua|seu|seus|suas|este|esta|estes|estas|esse|essa|todo|toda|qual|quando|onde|como|permitindo|incluindo|utilizando|tendo|gerando)\.?$/i;
+const TRUNCATED_ENDING = /\s+(?:e\s+as|e\s+os|e|com|para|de|da|do|das|dos|as|os|a|o)\.?$/i;
+
+function fixTruncatedSentences(text) {
+  if (!text) return text;
+  let t = String(text)
+    .replace(/\bcom os resultados dos cen[aá]rios e as\.?$/i, "com os resultados dos cenários e as melhorias aplicadas.")
+    .trim();
+  let previous = "";
+  while (t !== previous && TRUNCATED_ENDING.test(t)) {
+    previous = t;
+    t = t.replace(TRUNCATED_ENDING, "").trim();
+  }
+  if (t && !/[.!?:;)\]"]$/.test(t)) t += ".";
+  return t;
+}
 
 function fixDanglingText(text) {
   if (!text) return text;
   let t = reviewText(text).replace(/\.{3,}|…/g, ".").trim();
   t = t.replace(DANGLING, "").trim();
-  if (t && !/[.!?:;)\]"]$/.test(t)) t += ".";
-  return t;
+  return fixTruncatedSentences(t);
 }
 
 function fixReadyMaterialText(text) {
@@ -841,7 +855,9 @@ function fixReadyMaterialText(text) {
       let t = line.replace(/\.{3,}|…/g, ".").trim();
       t = t.replace(DANGLING, "").trim();
       if (!t) return "";
-      if (/^CEN[AÁ]RIO\s*\d+$/i.test(t) || /:$/.test(t) || /[.!?)]$/.test(t)) return t;
+      if (/^CEN[AÁ]RIO\s*\d+$/i.test(t) || /:$/.test(t)) return t;
+      t = fixTruncatedSentences(t);
+      if (/[.!?)]$/.test(t)) return t;
       return `${t}.`;
     })
     .filter(Boolean)
@@ -859,7 +875,7 @@ function reviewGabaritoText(text) {
       if (/^(Cen[aá]rio\s*\d+|Sugest[aã]o de melhoria|Outra possibilidade):$/i.test(trimmed)) {
         return trimmed.replace(/^(cen)/i, "Cen");
       }
-      return /[.!?:;)]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+      return fixTruncatedSentences(/[.!?:;)]$/.test(trimmed) ? trimmed : `${trimmed}.`);
     })
     .filter(Boolean)
     .join("\n");
@@ -965,6 +981,7 @@ const FINANCIAL_ENTRY_TYPE = {
   DESPESA_FIXA: "despesaFixa",
   DESPESA_VARIAVEL: "despesaVariavel",
   IMPREVISTO: "imprevisto",
+  META_POUPANCA: "metaPoupanca",
   MELHORIA: "melhoria",
   DESPESA_TOTAL: "despesaTotal",
   DESPESA_ANTERIOR: "despesaAnterior",
@@ -974,6 +991,7 @@ const FINANCIAL_ENTRY_TYPE = {
 
 const REVENUE_RE = /\b(receitas?|rendas?|sal[aá]rios?|ganhos?|entradas?|remunera[cç][aã]o)\b/i;
 const IMPROVEMENT_RE = /\b(economizar|economizad[oa]s?|economia|poupar|poupan[cç]a|reduzir|redu[cç][aã]o|cortar|corte|ajustar|ajuste|melhoria|melhorar|reorganizar|reorganiza[cç][aã]o|preservar|reserva|saldo ap[oó]s melhoria|ap[oó]s melhoria|poderiam economizar|poderia economizar|valor que poderia ser economizado)\b/i;
+const SAVINGS_GOAL_RE = /\b(guardar|poupar|meta(?:\s+de\s+poupan[cç]a)?|poupan[cç]a|reserva|investimento|objetivo\s+financeiro|deseja\s+guardar|viagem)\b/i;
 const PRIOR_EXPENSE_RE = /\bdespesas?\s+(?:do|da)\s+cen[aá]rio|\bdespesas?\s+anteriores?\b|\btotal\s+anterior\s+de\s+despesas\b/i;
 const EXPENSE_TOTAL_RE = /\b(?:novo\s+)?total\s+de\s+despesas\b|\bdespesas?\s+totais\b/i;
 const REVENUE_TOTAL_RE = /\b(?:receita|renda)\s+total\b|\btotal\s+de\s+(?:receitas?|rendas?)\b/i;
@@ -991,6 +1009,7 @@ function buildEmptyStructuredBudget() {
     despesasFixas: [],
     despesasVariaveis: [],
     imprevistos: [],
+    metasPoupanca: [],
     melhorias: [],
     totaisDeclarados: {
       receitas: [],
@@ -1012,6 +1031,14 @@ function normalizeFinancialDescription(value, fallback) {
   return cleaned || fallback;
 }
 
+function normalizeFinancialLabel(value) {
+  return (value || "")
+    .replace(BRL_MATCH_RE, " ")
+    .replace(/[-–—]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function getCurrentFinancialSection(before) {
   const matches = [...before.matchAll(/\b(receitas?|rendas?|despesas?\s+fixas?|gastos?\s+fixos?|custos?\s+fixos?|despesas?\s+vari[aá]veis?|gastos?\s+vari[aá]veis?|custos?\s+vari[aá]veis?|imprevistos?|melhorias?|economias?)\b/gi)];
   const last = matches.length ? matches[matches.length - 1][0] : "";
@@ -1024,7 +1051,7 @@ function getCurrentFinancialSection(before) {
 }
 
 function classifyFinancialEntry({ label, currentSection, afterClause }) {
-  const labelOnly = (label || "").replace(/\s+/g, " ").trim();
+  const labelOnly = normalizeFinancialLabel(label || "");
   const local = `${label} ${afterClause}`.replace(/\s+/g, " ").trim();
 
   if (PRIOR_EXPENSE_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_ANTERIOR;
@@ -1032,6 +1059,7 @@ function classifyFinancialEntry({ label, currentSection, afterClause }) {
   // REVENUE_TOTAL_RE moved after expense checks: a label containing both revenue-total
   // and expense keywords (e.g. "receita total com aluguel") must classify as expense first.
   if (BALANCE_RE.test(labelOnly) && !IMPROVEMENT_RE.test(local)) return FINANCIAL_ENTRY_TYPE.SALDO;
+  if (SAVINGS_GOAL_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.META_POUPANCA;
   if (IMPROVEMENT_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (currentSection === FINANCIAL_ENTRY_TYPE.MELHORIA) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (UNEXPECTED_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.IMPREVISTO) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
@@ -1044,6 +1072,7 @@ function classifyFinancialEntry({ label, currentSection, afterClause }) {
   if (EXPENSE_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
   if (REVENUE_TOTAL_RE.test(label) || REVENUE_TOTAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.RECEITA_TOTAL;
   if (REVENUE_RE.test(labelOnly) || FAMILY_REVENUE_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.RECEITA) return FINANCIAL_ENTRY_TYPE.RECEITA;
+  if (SAVINGS_GOAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.META_POUPANCA;
   if (IMPROVEMENT_RE.test(local)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (UNEXPECTED_RE.test(local)) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
   if (FIXED_EXPENSE_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
@@ -1056,16 +1085,22 @@ function parseFinancialEntries(text) {
   const sourceText = text || "";
   const matches = [...sourceText.matchAll(BRL_MATCH_RE)];
   return matches
-    .map((match) => {
+    .map((match, index) => {
       const amount = extractBRLAmounts(match[0])[0];
       if (!Number.isFinite(amount)) return null;
 
-      const before = stripDecorativeMarkers(sourceText.slice(Math.max(0, match.index - 120), match.index)).toLowerCase();
+      const previousMatch = matches[index - 1];
+      const previousEnd = previousMatch ? previousMatch.index + previousMatch[0].length : null;
+      const windowStart = Math.max(0, match.index - 120);
+      const sectionBefore = stripDecorativeMarkers(sourceText.slice(0, match.index)).toLowerCase();
+      const labelSourceStart = previousEnd !== null && previousEnd >= windowStart ? previousEnd : windowStart;
+      const labelSource = stripDecorativeMarkers(sourceText.slice(labelSourceStart, match.index)).toLowerCase();
       const rawAfter = sourceText.slice(match.index + match[0].length, match.index + match[0].length + 90).toLowerCase();
-      const label = before
-        .split(/[.;:\n]/)
+      const label = labelSource
+        .split(/[.;:\n,]/)
         .map((part) => part
           .replace(/[-–—]/g, " ")
+          .replace(/^(?:e|ou)\s+/i, "")
           .replace(/\s+/g, " ")
           .trim())
         .filter(Boolean)
@@ -1074,7 +1109,7 @@ function parseFinancialEntries(text) {
         .replace(/[-–—]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
-      const currentSection = getCurrentFinancialSection(before);
+      const currentSection = getCurrentFinancialSection(sectionBefore);
       const afterClause = stripDecorativeMarkers(rawAfter.split(/[.;:\n]/)[0])
         .replace(/[-–—]/g, " ")
         .replace(/\s+/g, " ")
@@ -1133,6 +1168,9 @@ function addEntryToStructuredBudget(structured, entry) {
     case FINANCIAL_ENTRY_TYPE.IMPREVISTO:
       structured.imprevistos.push(item);
       break;
+    case FINANCIAL_ENTRY_TYPE.META_POUPANCA:
+      structured.metasPoupanca.push(item);
+      break;
     case FINANCIAL_ENTRY_TYPE.MELHORIA:
       structured.melhorias.push(item);
       break;
@@ -1161,6 +1199,41 @@ function getLastDeclaredTotal(items) {
   return last ? last.valor : 0;
 }
 
+function calculateFinancialSummary(data) {
+  const receitaTotal = data?.receitaTotal ?? 0;
+  const despesasFixasTotal = data?.despesasFixasTotal ?? 0;
+  const despesasVariaveisTotal = data?.despesasVariaveisTotal ?? 0;
+  const despesasBaseTotal = data?.despesasBaseTotal ?? despesasFixasTotal + despesasVariaveisTotal;
+  const imprevistosTotal = data?.imprevistosTotal ?? 0;
+  const metasPoupancaTotal = data?.metasPoupancaTotal ?? 0;
+  const compromissoTotal = data?.compromissoTotal ?? despesasBaseTotal + imprevistosTotal + metasPoupancaTotal;
+  const saldoInicial = data?.saldoInicial ?? receitaTotal - despesasBaseTotal;
+  const saldoAntesMelhoria = data?.saldoAntesMelhoria ?? receitaTotal - compromissoTotal;
+  const melhoriasTotal = data?.melhoriasTotal ?? 0;
+  const saldoAposMelhoria = data?.saldoAposMelhoria ?? saldoAntesMelhoria + melhoriasTotal;
+
+  return {
+    receitaTotal,
+    despesasFixasTotal,
+    despesasVariaveisTotal,
+    despesasBaseTotal,
+    imprevistosTotal,
+    metasPoupancaTotal,
+    compromissoTotal,
+    saldoInicial,
+    saldoAntesMelhoria,
+    melhoriasTotal,
+    saldoAposMelhoria
+  };
+}
+
+function extractFinancialScenarioData(experience) {
+  const readyMaterials = Array.isArray(experience)
+    ? experience
+    : experience?.readyMaterials || experience?.printableMaterials || experience?.scenarios || [];
+  return buildFinancialDataForScenarios(getScenarioItems(readyMaterials));
+}
+
 function buildFinancialDataForScenarios(scenarios) {
   const result = [];
   let previous = null;
@@ -1178,6 +1251,9 @@ function buildFinancialDataForScenarios(scenarios) {
         receitaTotal: previous?.receitaTotal ?? null,
         revenue: previous?.receitaTotal ?? null,
         expenses: [],
+        improvements: [],
+        metasPoupancaTotal: 0,
+        compromissoTotal: previous?.totalExpenses || 0,
         totalExpenses: previous?.totalExpenses || 0,
         saldo: null,
         isBudgetScenario: false,
@@ -1194,35 +1270,49 @@ function buildFinancialDataForScenarios(scenarios) {
     const despesasFixasTotal = sumBudgetItems(structured.despesasFixas);
     const despesasVariaveisTotal = sumBudgetItems(structured.despesasVariaveis);
     const imprevistosTotal = sumBudgetItems(structured.imprevistos);
+    const metasPoupancaTotal = sumBudgetItems(structured.metasPoupanca);
     const melhoriasTotal = sumBudgetItems(structured.melhorias);
     const despesasDetalhadasTotal = despesasFixasTotal + despesasVariaveisTotal;
     const declaredExpenseTotal = getLastDeclaredTotal(structured.totaisDeclarados.despesas);
     const priorExpenseTotal = getLastDeclaredTotal(structured.totaisDeclarados.despesasAnteriores);
     const usesPreviousExpenses = Boolean(
       previous?.totalExpenses
-      && imprevistosTotal > 0
+      && (imprevistosTotal > 0 || metasPoupancaTotal > 0)
       && despesasDetalhadasTotal === 0
       && !priorExpenseTotal
     );
     const despesasAnterioresTotal = priorExpenseTotal || (usesPreviousExpenses ? previous.totalExpenses : 0);
 
-    let totalExpenses = despesasDetalhadasTotal + imprevistosTotal;
+    const despesasBaseTotal = despesasDetalhadasTotal || declaredExpenseTotal || 0;
+    let compromissoTotal = despesasDetalhadasTotal + imprevistosTotal + metasPoupancaTotal;
     if (despesasAnterioresTotal > 0) {
-      totalExpenses = despesasAnterioresTotal + despesasDetalhadasTotal + imprevistosTotal;
-    } else if (totalExpenses === 0 && declaredExpenseTotal > 0) {
-      totalExpenses = declaredExpenseTotal;
+      compromissoTotal = despesasAnterioresTotal + despesasDetalhadasTotal + imprevistosTotal + metasPoupancaTotal;
+    } else if (compromissoTotal === 0 && declaredExpenseTotal > 0) {
+      compromissoTotal = declaredExpenseTotal;
+    } else if (despesasDetalhadasTotal === 0 && declaredExpenseTotal > 0) {
+      compromissoTotal = declaredExpenseTotal + imprevistosTotal + metasPoupancaTotal;
     }
 
-    const saldo = receitaTotal !== null ? receitaTotal - totalExpenses : null;
+    const totalExpenses = compromissoTotal;
+    const saldo = receitaTotal !== null ? receitaTotal - compromissoTotal : null;
     const saldoAfterImprovement = saldo !== null && melhoriasTotal > 0 ? saldo + melhoriasTotal : null;
     const expenses = [
       ...structured.despesasFixas,
       ...structured.despesasVariaveis,
       ...structured.imprevistos,
+      ...structured.metasPoupanca,
       ...(despesasAnterioresTotal > 0
         ? [{ descricao: `Despesas do Cenário ${previous?.scenario?.number || scenario.number - 1}`, valor: despesasAnterioresTotal, type: FINANCIAL_ENTRY_TYPE.DESPESA_ANTERIOR }]
         : [])
-    ].map((item) => ({ amount: item.valor, label: item.descricao, isRevenue: false, isExpense: true, isImprovement: false, isPriorExpense: item.type === FINANCIAL_ENTRY_TYPE.DESPESA_ANTERIOR }));
+    ].map((item) => ({
+      amount: item.valor,
+      label: item.descricao,
+      isRevenue: false,
+      isExpense: item.type !== FINANCIAL_ENTRY_TYPE.META_POUPANCA,
+      isSavingsGoal: item.type === FINANCIAL_ENTRY_TYPE.META_POUPANCA,
+      isImprovement: false,
+      isPriorExpense: item.type === FINANCIAL_ENTRY_TYPE.DESPESA_ANTERIOR
+    }));
     const improvements = structured.melhorias.map((item) => ({ amount: item.valor, label: item.descricao, isImprovement: true }));
     const isBudgetScenario = /receita|renda|sal[aá]rio|despesa|gasto|custo|or[cç]amento|saldo|imprevisto|economi[az]ar|economia|melhoria|conserto|reparo|aluguel|alimenta[cç][aã]o/i.test(scenario.text)
       || (receitaTotal !== null && totalExpenses > 0);
@@ -1234,10 +1324,13 @@ function buildFinancialDataForScenarios(scenarios) {
       revenue: receitaTotal,
       despesasFixasTotal,
       despesasVariaveisTotal,
+      despesasBaseTotal,
       imprevistosTotal,
+      metasPoupancaTotal,
       melhoriasTotal,
       despesasAnterioresTotal,
       declaredExpenseTotal,
+      compromissoTotal,
       expenses,
       improvements,
       improvementTotal: melhoriasTotal,
@@ -1246,10 +1339,23 @@ function buildFinancialDataForScenarios(scenarios) {
       saldoAfterImprovement,
       usesPreviousExpenses,
       isBudgetScenario,
+      summary: calculateFinancialSummary({
+        receitaTotal,
+        despesasFixasTotal,
+        despesasVariaveisTotal,
+        despesasBaseTotal,
+        imprevistosTotal,
+        metasPoupancaTotal,
+        compromissoTotal,
+        saldoInicial: receitaTotal !== null ? receitaTotal - despesasBaseTotal : null,
+        saldoAntesMelhoria: saldo,
+        melhoriasTotal,
+        saldoAposMelhoria: saldoAfterImprovement
+      }),
       validation: {
-        calculable: receitaTotal !== null && totalExpenses > 0,
+        calculable: receitaTotal !== null && compromissoTotal > 0,
         hasRevenue: receitaTotal !== null,
-        hasExpenses: totalExpenses > 0
+        hasExpenses: compromissoTotal > 0
       }
     };
     result.push(data);
@@ -1278,6 +1384,22 @@ function formatBudgetLine(label, items, total) {
     : `${label}: ${expression}.`;
 }
 
+function lowerFirst(value) {
+  if (!value) return value;
+  return `${value.charAt(0).toLowerCase()}${value.slice(1)}`;
+}
+
+function formatContextualBudgetLine(defaultLabel, pluralLabel, items, total) {
+  if (!items.length) return "";
+  if (items.length > 1) return formatBudgetLine(pluralLabel, items, total);
+
+  const description = items[0].descricao || "";
+  const label = description && !new RegExp(`^${defaultLabel}`, "i").test(description)
+    ? `${defaultLabel} com ${lowerFirst(description)}`
+    : description || defaultLabel;
+  return `${label}: ${formatCurrencyBRL(total)}.`;
+}
+
 function formatPartsTotalLine(label, parts, total) {
   const activeParts = parts.filter((value) => Number.isFinite(value) && value > 0);
   if (!activeParts.length) return `${label}: ${formatCurrencyBRL(0)}.`;
@@ -1298,9 +1420,18 @@ function formatRevenueLine(data) {
 
 function buildImprovementSuggestion(financialData) {
   const fmt = formatCurrencyBRL;
+  const targetScenario = [...financialData]
+    .reverse()
+    .find((item) => Number.isFinite(item.saldo) && item.isBudgetScenario);
+
+  if (!targetScenario) {
+    return "Melhoria sugerida: A equipe deve identificar quais despesas podem ser reduzidas e calcular o novo saldo após os ajustes.";
+  }
 
   // Case 1: explicit improvement values extracted from the scenario text
-  const explicitImprovement = financialData.find((item) => item.melhoriasTotal > 0 && Number.isFinite(item.saldo));
+  const explicitImprovement = [...financialData]
+    .reverse()
+    .find((item) => item.melhoriasTotal > 0 && Number.isFinite(item.saldo) && item.scenario.number >= targetScenario.scenario.number);
   if (explicitImprovement) {
     return [
       "Melhoria sugerida:",
@@ -1313,55 +1444,61 @@ function buildImprovementSuggestion(financialData) {
   }
 
   // Case 2: negative saldo — suggest minimum reduction to zero the deficit
-  const negative = financialData.find((item) => Number.isFinite(item.saldo) && item.saldo < 0);
-  if (negative) {
-    const deficit = Math.abs(negative.saldo);
+  if (targetScenario.saldo < 0) {
+    const deficit = Math.abs(targetScenario.saldo);
     return [
       "Melhoria sugerida:",
       `Reduzir pelo menos ${fmt(deficit)} em despesas variáveis, como lazer, transporte ou compras não essenciais.`,
       "Resultado após melhoria:",
-      `${fmt(negative.saldo)} + ${fmt(deficit)} = ${fmt(0)}.`,
+      `${fmt(targetScenario.saldo)} + ${fmt(deficit)} = ${fmt(0)}.`,
       "Interpretação:",
       "Com esse ajuste, o orçamento fica equilibrado."
     ].join("\n");
   }
 
-  // Case 3: positive saldo — structured numeric suggestion
-  const positive = [...financialData]
-    .reverse()
-    .find((item) => Number.isFinite(item.saldo) && item.saldo > 0 && item.isBudgetScenario);
-
-  if (positive) {
-    const saldo = positive.saldo;
-    const primaryAmount = saldo; // reducing by the current saldo doubles the savings
-    const primaryResult = saldo + primaryAmount;
-
-    const lines = [
+  if (targetScenario.saldo === 0) {
+    return [
       "Melhoria sugerida:",
-      `Reduzir ${fmt(primaryAmount)} em despesas variáveis, como lazer, transporte, alimentação fora de casa ou compras não essenciais.`,
+      "Manter o orçamento equilibrado e revisar despesas variáveis antes de assumir novos compromissos.",
       "Resultado após melhoria:",
-      `${fmt(saldo)} + ${fmt(primaryAmount)} = ${fmt(primaryResult)}.`,
+      `${fmt(0)} + ${fmt(0)} = ${fmt(0)}.`,
       "Interpretação:",
-      "A melhoria aumenta o saldo final e ajuda a preservar parte da poupança."
-    ];
-
-    // Secondary: if there was an imprevisto, offer option to fully restore previous saldo
-    if (positive.imprevistosTotal > 0 && positive.imprevistosTotal !== primaryAmount) {
-      const restoreAmount = positive.imprevistosTotal;
-      const restoredSaldo = saldo + restoreAmount;
-      lines.push(
-        "\nPossibilidade para recuperar o saldo anterior:",
-        `Reduzir ${fmt(restoreAmount)} em despesas variáveis.`,
-        `Resultado: ${fmt(saldo)} + ${fmt(restoreAmount)} = ${fmt(restoredSaldo)}.`,
-        "Interpretação:",
-        "Com esse ajuste, a família recupera o saldo do cenário anterior."
-      );
-    }
-
-    return lines.join("\n");
+      "O orçamento está equilibrado, mas sem sobra para ampliar a poupança."
+    ].join("\n");
   }
 
-  return "Melhoria sugerida: A equipe deve identificar quais despesas podem ser reduzidas e calcular o novo saldo após os ajustes.";
+  // Case 3: positive saldo — structured numeric suggestion
+  const positive = targetScenario;
+
+  const saldo = positive.saldo;
+  const primaryAmount = Math.min(saldo, 150);
+  const primaryResult = saldo + primaryAmount;
+
+  const lines = [
+    "Melhoria sugerida:",
+    `Reduzir ${fmt(primaryAmount)} em despesas variáveis, como lazer, transporte, alimentação fora de casa ou compras não essenciais.`,
+    "Resultado após melhoria:",
+    `${fmt(saldo)} + ${fmt(primaryAmount)} = ${fmt(primaryResult)}.`,
+    "Interpretação:",
+    positive.metasPoupancaTotal > 0 || positive.imprevistosTotal > 0
+      ? "A família cobre o imprevisto, mantém o compromisso financeiro planejado e ainda preserva saldo positivo."
+      : "A melhoria aumenta o saldo final e ajuda a preservar parte da poupança."
+  ];
+
+  // Secondary: if there was an imprevisto, offer option to fully restore previous saldo
+  if (positive.imprevistosTotal > 0 && positive.imprevistosTotal !== primaryAmount) {
+    const restoreAmount = positive.imprevistosTotal;
+    const restoredSaldo = saldo + restoreAmount;
+    lines.push(
+      "\nPossibilidade para recuperar o saldo anterior:",
+      `Reduzir ${fmt(restoreAmount)} em despesas variáveis.`,
+      `Resultado: ${fmt(saldo)} + ${fmt(restoreAmount)} = ${fmt(restoredSaldo)}.`,
+      "Interpretação:",
+      "Com esse ajuste, a família recupera o saldo do cenário anterior."
+    );
+  }
+
+  return lines.join("\n");
 }
 
 function buildStructuredScenarioGabarito(data) {
@@ -1376,9 +1513,18 @@ function buildStructuredScenarioGabarito(data) {
 
   if (data.despesasAnterioresTotal > 0 && data.despesasFixasTotal + data.despesasVariaveisTotal === 0) {
     lines.push(`Despesas do Cenário ${Math.max(1, data.scenario.number - 1)}: ${formatCurrencyBRL(data.despesasAnterioresTotal)}.`);
-    lines.push(formatBudgetLine("Imprevistos", data.structured.imprevistos, data.imprevistosTotal));
-    lines.push(`Novo total de despesas: ${formatCurrencyBRL(data.despesasAnterioresTotal)} + ${formatCurrencyBRL(data.imprevistosTotal)} = ${formatCurrencyBRL(data.totalExpenses)}.`);
-    lines.push(`Saldo antes da melhoria: ${formatCurrencyBRL(data.receitaTotal)} - ${formatCurrencyBRL(data.totalExpenses)} = ${formatCurrencyBRL(data.saldo)}.`);
+    if (data.imprevistosTotal > 0) {
+      lines.push(formatContextualBudgetLine("Imprevisto", "Imprevistos", data.structured.imprevistos, data.imprevistosTotal));
+    }
+    if (data.metasPoupancaTotal > 0) {
+      lines.push(formatContextualBudgetLine("Meta de poupança", "Metas de poupança", data.structured.metasPoupanca, data.metasPoupancaTotal));
+    }
+    lines.push(formatPartsTotalLine(
+      "Compromisso total",
+      [data.despesasAnterioresTotal, data.imprevistosTotal, data.metasPoupancaTotal],
+      data.compromissoTotal
+    ));
+    lines.push(`Saldo antes da melhoria: ${formatCurrencyBRL(data.receitaTotal)} - ${formatCurrencyBRL(data.compromissoTotal)} = ${formatCurrencyBRL(data.saldo)}.`);
     return lines.join("\n");
   }
 
@@ -1386,17 +1532,23 @@ function buildStructuredScenarioGabarito(data) {
     lines.push(formatBudgetLine("Despesas fixas", data.structured.despesasFixas, data.despesasFixasTotal));
     lines.push(formatBudgetLine("Despesas variáveis", data.structured.despesasVariaveis, data.despesasVariaveisTotal));
     if (data.imprevistosTotal > 0) {
-      lines.push(formatBudgetLine("Imprevistos", data.structured.imprevistos, data.imprevistosTotal));
+      lines.push(formatContextualBudgetLine("Imprevisto", "Imprevistos", data.structured.imprevistos, data.imprevistosTotal));
     }
+    if (data.metasPoupancaTotal > 0) {
+      lines.push(formatContextualBudgetLine("Meta de poupança", "Metas de poupança", data.structured.metasPoupanca, data.metasPoupancaTotal));
+    }
+    const hasCommitmentBeyondBase = data.imprevistosTotal > 0 || data.metasPoupancaTotal > 0;
     lines.push(formatPartsTotalLine(
-      "Despesas totais",
-      [data.despesasFixasTotal, data.despesasVariaveisTotal, data.imprevistosTotal],
-      data.totalExpenses
+      hasCommitmentBeyondBase ? "Compromisso total" : "Despesas totais",
+      hasCommitmentBeyondBase
+        ? [data.despesasFixasTotal + data.despesasVariaveisTotal, data.imprevistosTotal, data.metasPoupancaTotal]
+        : [data.despesasFixasTotal, data.despesasVariaveisTotal],
+      data.compromissoTotal
     ));
   } else {
-    lines.push(`Despesas totais: ${formatCurrencyBRL(data.totalExpenses)}.`);
+    lines.push(`${data.metasPoupancaTotal > 0 ? "Compromisso total" : "Despesas totais"}: ${formatCurrencyBRL(data.compromissoTotal)}.`);
   }
-  lines.push(`${data.imprevistosTotal > 0 ? "Saldo antes da melhoria" : "Saldo final"}: ${formatCurrencyBRL(data.receitaTotal)} - ${formatCurrencyBRL(data.totalExpenses)} = ${formatCurrencyBRL(data.saldo)}.`);
+  lines.push(`${data.imprevistosTotal > 0 || data.metasPoupancaTotal > 0 ? "Saldo antes da melhoria" : "Saldo final"}: ${formatCurrencyBRL(data.receitaTotal)} - ${formatCurrencyBRL(data.compromissoTotal)} = ${formatCurrencyBRL(data.saldo)}.`);
   return lines.join("\n");
 }
 
@@ -1405,6 +1557,23 @@ function buildFinancialGabaritoFromReadyMaterials(readyMaterials) {
   if (!scenarios.length) return [];
 
   const financialData = buildFinancialDataForScenarios(scenarios);
+  console.info("[financial-parser] items", financialData);
+  console.info("[financial-summary] summary", financialData.map((data) => data.summary || calculateFinancialSummary(data)));
+  const hasFinancialScenario = financialData.some((data) => data.isBudgetScenario && data.validation.calculable);
+  if (!hasFinancialScenario) return [];
+
+  const cards = financialData
+    .map(buildStructuredScenarioGabarito)
+    .filter(Boolean);
+
+  if (cards.length) {
+    cards.push(buildImprovementSuggestion(financialData));
+  }
+
+  return cards;
+}
+
+function rebuildAnswerKeyFromFinancialData(experience, financialData = extractFinancialScenarioData(experience)) {
   const hasFinancialScenario = financialData.some((data) => data.isBudgetScenario && data.validation.calculable);
   if (!hasFinancialScenario) return [];
 
@@ -1597,6 +1766,11 @@ function hasPoorSpacing(text) {
   return / {2,}|[ \t]+\n|\n[ \t]+/.test(String(text));
 }
 
+function hasTruncatedSentence(text) {
+  if (!text) return false;
+  return TRUNCATED_ENDING.test(stripDecorativeMarkers(text || ""));
+}
+
 function hasScenarioBalanceContradiction(experience) {
   const scenarios = getScenarioItems(experience.readyMaterials || []);
   const scenarioData = buildFinancialDataForScenarios(scenarios);
@@ -1673,6 +1847,10 @@ function getExpenseBudgetItems(structured) {
   ];
 }
 
+function getSavingsGoalBudgetItems(structured) {
+  return structured?.metasPoupanca || [];
+}
+
 function getRevenueBudgetItems(structured) {
   return [
     ...(structured?.receitas || []),
@@ -1694,10 +1872,15 @@ function hasImprovementMarker(item) {
   return IMPROVEMENT_RE.test(`${item?.descricao || ""} ${item?.rawLabel || ""}`);
 }
 
+function hasSavingsGoalMarker(item) {
+  return SAVINGS_GOAL_RE.test(`${item?.descricao || ""} ${item?.rawLabel || ""}`);
+}
+
 function hasDuplicatedStructuredValue(data) {
   const grouped = [
     ...getRevenueBudgetItems(data.structured),
     ...getExpenseBudgetItems(data.structured),
+    ...getSavingsGoalBudgetItems(data.structured),
     ...(data.structured?.melhorias || [])
   ].filter((item) => item.sourceIndex !== undefined);
   const seen = new Set();
@@ -1708,36 +1891,95 @@ function hasDuplicatedStructuredValue(data) {
   });
 }
 
+function hasMoneyInSameClause(text, keywordRe) {
+  return stripDecorativeMarkers(text || "")
+    .split(/[.!?\n;]/)
+    .some((clause) => /-?\s*R\$\s*(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{2})?/.test(clause) && keywordRe.test(clause));
+}
+
+function hasAbsurdGabaritoResult(experience, budgetData) {
+  const maxRevenue = Math.max(0, ...budgetData.map((data) => data.receitaTotal || 0));
+  if (!maxRevenue) return false;
+
+  return (experience.teacherGabarito || []).some((item) => {
+    const lines = String(item || "").split(/\n+/);
+    return lines.some((line) => {
+      if (!/resultado\s+ap[oó]s\s+melhoria/i.test(line)) return false;
+      const amounts = extractBRLAmounts(line);
+      const result = amounts[amounts.length - 1];
+      return Number.isFinite(result) && result > maxRevenue;
+    });
+  });
+}
+
+function validateFinancialSummary(data, allData = []) {
+  const blocking = [];
+  const summary = data.summary || calculateFinancialSummary(data);
+
+  if (data.isBudgetScenario && data.scenario.number === 1 && summary.despesasBaseTotal > 0) {
+    const declaredBase = data.declaredExpenseTotal || 0;
+    if (declaredBase > 0 && summary.despesasBaseTotal < declaredBase * 0.3) {
+      blocking.push("Despesas do Cenário 1 ficaram incompatíveis com os itens reais informados.");
+    }
+  }
+
+  if (data.isBudgetScenario && hasMoneyInSameClause(data.scenario.text, UNEXPECTED_RE) && summary.imprevistosTotal <= 0) {
+    blocking.push(`Cenário ${data.scenario.number}: há imprevisto com valor monetário, mas o total de imprevistos ficou zerado.`);
+  }
+
+  if (data.isBudgetScenario && hasMoneyInSameClause(data.scenario.text, SAVINGS_GOAL_RE) && summary.metasPoupancaTotal <= 0) {
+    blocking.push(`Cenário ${data.scenario.number}: há meta de poupança com valor monetário, mas o total de metas ficou zerado.`);
+  }
+
+  if (Number.isFinite(summary.saldoAposMelhoria) && summary.receitaTotal > 0 && summary.saldoAposMelhoria > summary.receitaTotal) {
+    blocking.push(`Cenário ${data.scenario.number}: resultado após melhoria maior que a receita total sem nova receita declarada.`);
+  }
+
+  if (data.despesasAnterioresTotal > 0) {
+    const previous = allData.find((item) => item.scenario.number === data.scenario.number - 1);
+    if (previous?.totalExpenses > 0 && data.despesasAnterioresTotal < previous.totalExpenses * 0.3) {
+      blocking.push(`Cenário ${data.scenario.number}: despesas do cenário anterior parecem substituídas por outro valor.`);
+    }
+  }
+
+  return { ok: blocking.length === 0, blocking, summary };
+}
+
 function buildInternalValidationReport(experience) {
-  const scenarioData = buildFinancialDataForScenarios(getScenarioItems(experience.readyMaterials || []));
+  const scenarioData = extractFinancialScenarioData(experience);
   const budgetData = scenarioData.filter((data) => data.isBudgetScenario && data.entries.length > 0);
   const hasFinancialBudget = budgetData.length > 0;
   const receitaEmDespesa = budgetData.some((data) => getExpenseBudgetItems(data.structured).some(hasRevenueMarker));
   const despesaEmReceita = budgetData.some((data) => getRevenueBudgetItems(data.structured).some(hasExpenseMarker));
   const melhoriaEmDespesa = budgetData.some((data) => getExpenseBudgetItems(data.structured).some(hasImprovementMarker));
+  const metaEmDespesa = budgetData.some((data) => getExpenseBudgetItems(data.structured).some(hasSavingsGoalMarker));
   const imprevistoComReceitaOuMelhoria = budgetData.some((data) => (
     data.structured.imprevistos || []
   ).some((item) => hasRevenueMarker(item) || hasImprovementMarker(item)));
   const duplicatedValues = budgetData.some(hasDuplicatedStructuredValue);
+  const financialSummaryBlocks = budgetData.flatMap((data) => validateFinancialSummary(data, budgetData).blocking);
+  const absurdGabaritoResult = hasAbsurdGabaritoResult(experience, budgetData);
   const uncalculableBudget = budgetData.some((data) => {
     const requiresBalance = /receita|renda|sal[aá]rio|or[cç]amento|saldo|despesas?/i.test(data.scenario.text);
     return requiresBalance && !data.validation.calculable;
   });
   const gabaritoMathOk = (experience.teacherGabarito || []).every(validateGabaritoMath);
   const textItems = collectExperienceText(experience);
-  const reviewOk = !textItems.some(hasLowercaseAfterSentence) && !textItems.some(hasPoorSpacing);
+  const reviewOk = !textItems.some(hasLowercaseAfterSentence) && !textItems.some(hasPoorSpacing) && !textItems.some(hasTruncatedSentence);
   const receitasOk = !receitaEmDespesa;
   const despesasOk = !despesaEmReceita;
   const imprevistosOk = !imprevistoComReceitaOuMelhoria;
   const melhoriasOk = !melhoriaEmDespesa;
+  const metasOk = !metaEmDespesa;
   const duplicidadeOk = !duplicatedValues;
-  const calculosOk = !uncalculableBudget && gabaritoMathOk;
+  const calculosOk = !uncalculableBudget && gabaritoMathOk && !financialSummaryBlocks.length && !absurdGabaritoResult;
   const gabaritoCompletoOk = !hasIncompleteGabaritoCoverage(experience);
   const pdfApproved = [
     receitasOk,
     despesasOk,
     imprevistosOk,
     melhoriasOk,
+    metasOk,
     duplicidadeOk,
     calculosOk,
     gabaritoCompletoOk,
@@ -1749,6 +1991,7 @@ function buildInternalValidationReport(experience) {
     ["Despesas classificadas corretamente", despesasOk],
     ["Imprevistos classificados corretamente", imprevistosOk],
     ["Melhorias separadas das despesas", melhoriasOk],
+    ["Metas de poupança separadas das despesas comuns", metasOk],
     ["Nenhum valor duplicado", duplicidadeOk],
     ["Cálculos conferidos por código", calculosOk],
     ["Gabarito completo", gabaritoCompletoOk],
@@ -1764,10 +2007,13 @@ function buildInternalValidationReport(experience) {
   if (hasFinancialBudget && despesaEmReceita) internalWarnings.push("Despesa apareceu dentro da classificação de receitas.");
   // These checks are reliable and remain blocking.
   if (hasFinancialBudget && melhoriaEmDespesa) blocking.push("Valor de economia ou melhoria apareceu como despesa.");
+  if (hasFinancialBudget && metaEmDespesa) blocking.push("Meta de poupança apareceu como despesa comum.");
   if (hasFinancialBudget && imprevistoComReceitaOuMelhoria) blocking.push("Imprevisto foi misturado com receita ou melhoria.");
   if (hasFinancialBudget && duplicatedValues) blocking.push("Há valor financeiro duplicado na estrutura de cálculo.");
   if (hasFinancialBudget && uncalculableBudget) blocking.push("Há cenário financeiro sem dados suficientes para cálculo estruturado.");
   if (hasFinancialBudget && !gabaritoMathOk) blocking.push("Gabarito financeiro possui equação inconsistente.");
+  if (hasFinancialBudget && absurdGabaritoResult) blocking.push("Resultado após melhoria maior que a receita total sem justificativa.");
+  financialSummaryBlocks.forEach((item) => blocking.push(item));
 
   return {
     checks,
@@ -1863,6 +2109,10 @@ function validateExportedExperience(experience) {
     blocking.push("Há espaços duplicados ou quebras de linha inadequadas no texto.");
   }
 
+  if (collectExperienceText(experience).some(hasTruncatedSentence)) {
+    blocking.push("Há frase terminando de forma truncada.");
+  }
+
   if (hasScenarioBalanceContradiction(experience)) {
     blocking.push("Há pergunta de cenário financeiro incoerente com saldo positivo.");
   }
@@ -1875,7 +2125,8 @@ function validateExportedExperience(experience) {
 }
 
 function rebuildStructuredTeacherGabarito(experience) {
-  const financialGabarito = buildFinancialGabaritoFromReadyMaterials(experience.readyMaterials || []);
+  const financialData = extractFinancialScenarioData(experience);
+  const financialGabarito = rebuildAnswerKeyFromFinancialData(experience, financialData);
   const fallbackGabarito = (experience.teacherGabarito || []).length
     ? experience.teacherGabarito
     : buildFallbackGabaritoFromReadyMaterials(experience.readyMaterials || []);
@@ -1951,6 +2202,7 @@ function repairExperienceBeforeExport(experience, blocking, warnings) {
 
   if (corrections.some((item) => /gabarito financeiro/i.test(item))) {
     repaired = rebuildStructuredTeacherGabarito(repaired);
+    console.info("[export-repair] answer key rebuilt");
   }
 
   if (corrections.some((item) => /textual|geral/i.test(item))) {
@@ -1979,6 +2231,7 @@ function prepareExperienceForExport(activity, maxAttempts = 3) {
       };
     }
 
+    console.warn("[export-validation] blocking", validation.blocking);
     const corrections = getExportRepairCorrections(validation.blocking, validation.warnings);
     experience = repairExperienceBeforeExport(experience, validation.blocking, validation.warnings);
     console.info("[export-repair] correções aplicadas", corrections);
