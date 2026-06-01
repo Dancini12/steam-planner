@@ -1294,6 +1294,8 @@ function cleanImprovementTarget(target) {
     .replace(/\bdespesas?\s+com\s+/gi, "")
     .replace(/\bcompras?\s+de\s+/gi, "")
     .replace(/\b(?:o|a|os|as)\s+/i, "")
+    .replace(/\b(?:do|da|no|na)\s+m[eê]s\b/gi, "")
+    .replace(/\bmensal\b/gi, "")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
@@ -1323,6 +1325,45 @@ function extractExplicitImprovement(scenarioText) {
   };
 }
 
+function calculateImprovementValue(baseValue, percentage) {
+  if (!Number.isFinite(baseValue) || !Number.isFinite(percentage) || baseValue <= 0 || percentage < 0) {
+    return null;
+  }
+  return Math.round((baseValue * (percentage / 100)) * 100) / 100;
+}
+
+function parsePercentageImprovementRequest(scenarioText) {
+  const source = stripDecorativeMarkers(scenarioText || "").replace(/\s+/g, " ");
+  const percentageMatch = source.match(/\b(reduzir|cortar|economizar|diminuir)\s+(?:em\s+)?(\d+(?:[,.]\d+)?)\s*%\s+(?:(?:do|da|dos|das|de|em)\s+)?(?:(?:o|a|os|as)\s+)?(?:(?:gastos?|despesas?|custos?)\s+(?:com|de|do|da)\s+)?([^.,;?]+)/i);
+  if (percentageMatch) {
+    return {
+      action: normalizeImprovementAction(percentageMatch[1]),
+      percentage: parsePercentAmount(percentageMatch[2]),
+      target: cleanImprovementTarget(percentageMatch[3])
+    };
+  }
+
+  const halfBeforeTargetMatch = source.match(/\b(reduzir|cortar|economizar|diminuir)\s+(?:pela\s+)?metade\s+(?:(?:do|da|dos|das|de|em)\s+)?(?:(?:o|a|os|as)\s+)?(?:(?:gastos?|despesas?|custos?)\s+(?:com|de|do|da)\s+)?([^.,;?]+)/i);
+  if (halfBeforeTargetMatch) {
+    return {
+      action: normalizeImprovementAction(halfBeforeTargetMatch[1]),
+      percentage: 50,
+      target: cleanImprovementTarget(halfBeforeTargetMatch[2])
+    };
+  }
+
+  const halfAfterTargetMatch = source.match(/\b(reduzir|cortar|economizar|diminuir)\s+(?:(?:o|a|os|as)\s+)?(?:(?:gastos?|despesas?|custos?)\s+(?:com|de|do|da)\s+)?([^.,;?]+?)\s+(?:pela\s+)?metade\b/i);
+  if (halfAfterTargetMatch) {
+    return {
+      action: normalizeImprovementAction(halfAfterTargetMatch[1]),
+      percentage: 50,
+      target: cleanImprovementTarget(halfAfterTargetMatch[2])
+    };
+  }
+
+  return null;
+}
+
 function getBudgetItemsForPercentageBase(dataOrStructured) {
   const structured = dataOrStructured?.structured || dataOrStructured || {};
   return [
@@ -1332,50 +1373,99 @@ function getBudgetItemsForPercentageBase(dataOrStructured) {
   ];
 }
 
-function findBudgetItemTotalByTarget(target, ...sources) {
+function getBudgetItemTargetCategory(item) {
+  if (!item) return "";
+  if (item.type === FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL) return "despesa_variavel";
+  if (item.type === FINANCIAL_ENTRY_TYPE.DESPESA_FIXA) return "despesa_fixa";
+  if (item.type === FINANCIAL_ENTRY_TYPE.IMPREVISTO) return "imprevisto";
+  if (item.type === FINANCIAL_ENTRY_TYPE.DESPESA_TOTAL) return "despesas_totais";
+  if (item.type === FINANCIAL_ENTRY_TYPE.DESPESA_ANTERIOR) return "despesas_anteriores";
+  return "despesa";
+}
+
+function findBudgetItemByTarget(target, ...sources) {
   const normalizedTarget = normalizeSearchText(target || "");
-  if (!normalizedTarget) return 0;
-  return sources.reduce((total, source) => {
+  if (!normalizedTarget) return null;
+  return sources.reduce((foundItem, source) => {
+    if (foundItem) return foundItem;
     const items = getBudgetItemsForPercentageBase(source);
-    const found = items.find((item) => {
+    return items.find((item) => {
       const itemText = normalizeSearchText(`${item?.descricao || ""} ${item?.rawLabel || ""}`);
       return itemText && (itemText.includes(normalizedTarget) || normalizedTarget.includes(itemText));
-    });
-    return total || found?.valor || 0;
-  }, 0);
+    }) || null;
+  }, null);
+}
+
+function findBudgetItemTotalByTarget(target, ...sources) {
+  return findBudgetItemByTarget(target, ...sources)?.valor || 0;
+}
+
+function getPercentageBaseDetailForTarget(target, currentStructured, previousData) {
+  const text = normalizeSearchText(target || "");
+  if (/variavel|variaveis/.test(text)) {
+    const baseValue = sumBudgetItems(currentStructured?.despesasVariaveis || []) || previousData?.despesasVariaveisTotal || 0;
+    return baseValue > 0 ? { baseValue, targetCategory: "despesa_variavel" } : null;
+  }
+  if (/fixa|fixas|fixo|fixos/.test(text)) {
+    const baseValue = sumBudgetItems(currentStructured?.despesasFixas || []) || previousData?.despesasFixasTotal || 0;
+    return baseValue > 0 ? { baseValue, targetCategory: "despesa_fixa" } : null;
+  }
+  if (/despesas?\s+totais|gastos?\s+totais|custos?\s+totais|total\s+de\s+(?:despesas?|gastos?|custos?)/.test(text)) {
+    const currentTotal = sumBudgetItems(currentStructured?.despesasFixas || []) + sumBudgetItems(currentStructured?.despesasVariaveis || []);
+    const baseValue = currentTotal || previousData?.despesasBaseTotal || previousData?.totalExpenses || 0;
+    return baseValue > 0 ? { baseValue, targetCategory: "despesas_totais" } : null;
+  }
+
+  const item = findBudgetItemByTarget(target, currentStructured, previousData);
+  return item ? {
+    baseValue: item.valor,
+    targetCategory: getBudgetItemTargetCategory(item),
+    item
+  } : null;
 }
 
 function getPercentageBaseForTarget(target, currentStructured, previousData) {
-  const text = normalizeSearchText(target || "");
-  if (/variavel|variaveis/.test(text)) {
-    return sumBudgetItems(currentStructured?.despesasVariaveis || []) || previousData?.despesasVariaveisTotal || 0;
-  }
-  if (/fixa|fixas|fixo|fixos/.test(text)) {
-    return sumBudgetItems(currentStructured?.despesasFixas || []) || previousData?.despesasFixasTotal || 0;
-  }
-  if (/despesa|gasto|custo|total/.test(text)) {
-    const currentTotal = sumBudgetItems(currentStructured?.despesasFixas || []) + sumBudgetItems(currentStructured?.despesasVariaveis || []);
-    return currentTotal || previousData?.despesasBaseTotal || previousData?.totalExpenses || 0;
-  }
-  return findBudgetItemTotalByTarget(target, currentStructured, previousData);
+  return getPercentageBaseDetailForTarget(target, currentStructured, previousData)?.baseValue || 0;
 }
 
 function extractPercentageImprovement(scenarioText, currentStructured, previousData) {
-  const source = stripDecorativeMarkers(scenarioText || "").replace(/\s+/g, " ");
-  const match = source.match(/\b(reduzir|cortar|economizar|diminuir)\s+(\d+(?:[,.]\d+)?)\s*%\s+(?:do|da|dos|das|de|em)\s+(?:gasto\s+com\s+|despesas?\s+com\s+)?([^.,;?]+)/i);
-  if (!match) return null;
+  const request = parsePercentageImprovementRequest(scenarioText);
+  if (!request) return null;
 
-  const percent = parsePercentAmount(match[2]);
-  const target = cleanImprovementTarget(match[3]);
-  const base = getPercentageBaseForTarget(target, currentStructured, previousData);
-  if (!Number.isFinite(percent) || !Number.isFinite(base) || base <= 0) return null;
+  const percentage = request.percentage;
+  const target = request.target;
+  const baseDetail = getPercentageBaseDetailForTarget(target, currentStructured, previousData);
+  const improvementValue = calculateImprovementValue(baseDetail?.baseValue, percentage);
+
+  if (!Number.isFinite(percentage) || !target || !baseDetail || !Number.isFinite(improvementValue)) {
+    return {
+      type: "percentage",
+      action: request.action,
+      percentage,
+      percent: percentage,
+      target,
+      targetCategory: null,
+      baseValue: null,
+      base: null,
+      improvementValue: null,
+      value: null,
+      calculable: false,
+      reason: "target_not_found"
+    };
+  }
 
   return {
-    action: normalizeImprovementAction(match[1]),
-    value: Math.round((base * percent / 100) * 100) / 100,
+    type: "percentage",
+    action: request.action,
+    percentage,
+    percent: percentage,
     target,
-    percent,
-    base
+    targetCategory: baseDetail.targetCategory,
+    baseValue: baseDetail.baseValue,
+    base: baseDetail.baseValue,
+    improvementValue,
+    value: improvementValue,
+    calculable: true
   };
 }
 
@@ -1592,12 +1682,13 @@ function buildFinancialDataForScenarios(scenarios) {
     entries.forEach((entry) => addEntryToStructuredBudget(structured, entry));
     const explicitImprovement = extractExplicitImprovement(scenario.text);
     const percentageImprovement = extractPercentageImprovement(scenario.text, structured, previous);
-    const structuredImprovement = explicitImprovement || percentageImprovement;
+    const structuredImprovement = explicitImprovement || (percentageImprovement?.calculable ? percentageImprovement : null);
+    const unresolvedPercentageImprovement = percentageImprovement && !percentageImprovement.calculable ? percentageImprovement : null;
 
     if (!entries.length && structuredImprovement && previous?.receitaTotal !== null && previous?.totalExpenses > 0) {
       const receitaTotal = previous.receitaTotal;
       const despesasAnterioresTotal = previous.totalExpenses;
-      const melhoriasTotal = structuredImprovement.value;
+      const melhoriasTotal = structuredImprovement.improvementValue ?? structuredImprovement.value;
       const compromissoTotal = despesasAnterioresTotal;
       const saldo = receitaTotal - compromissoTotal;
       const saldoAfterImprovement = saldo + melhoriasTotal;
@@ -1614,6 +1705,8 @@ function buildFinancialDataForScenarios(scenarios) {
         metasPoupancaTotal: 0,
         melhoriasTotal,
         explicitImprovement: structuredImprovement,
+        percentageImprovement: percentageImprovement || null,
+        unresolvedPercentageImprovement: null,
         despesasAnterioresTotal,
         declaredExpenseTotal: 0,
         compromissoTotal,
@@ -1650,6 +1743,7 @@ function buildFinancialDataForScenarios(scenarios) {
     }
 
     if (!entries.length) {
+      const hasUnresolvedPercentage = Boolean(unresolvedPercentageImprovement);
       result.push({
         scenario,
         entries,
@@ -1662,7 +1756,10 @@ function buildFinancialDataForScenarios(scenarios) {
         compromissoTotal: previous?.totalExpenses || 0,
         totalExpenses: previous?.totalExpenses || 0,
         saldo: null,
-        isBudgetScenario: false,
+        explicitImprovement: null,
+        percentageImprovement: percentageImprovement || null,
+        unresolvedPercentageImprovement,
+        isBudgetScenario: hasUnresolvedPercentage,
         validation: { calculable: false }
       });
       return;
@@ -1678,7 +1775,7 @@ function buildFinancialDataForScenarios(scenarios) {
     const imprevistosTotal = sumBudgetItems(structured.imprevistos);
     const metasPoupancaTotal = sumBudgetItems(structured.metasPoupanca);
     const parsedMelhoriasTotal = sumBudgetItems(structured.melhorias);
-    const melhoriasTotal = parsedMelhoriasTotal || structuredImprovement?.value || 0;
+    const melhoriasTotal = parsedMelhoriasTotal || structuredImprovement?.improvementValue || structuredImprovement?.value || 0;
     const despesasDetalhadasTotal = despesasFixasTotal + despesasVariaveisTotal;
     const declaredExpenseTotal = getLastDeclaredTotal(structured.totaisDeclarados.despesas);
     const priorExpenseTotal = getLastDeclaredTotal(structured.totaisDeclarados.despesasAnteriores);
@@ -1736,6 +1833,8 @@ function buildFinancialDataForScenarios(scenarios) {
       metasPoupancaTotal,
       melhoriasTotal,
       explicitImprovement: structuredImprovement,
+      percentageImprovement: percentageImprovement || null,
+      unresolvedPercentageImprovement,
       despesasAnterioresTotal,
       declaredExpenseTotal,
       compromissoTotal,
@@ -2750,6 +2849,11 @@ function validateFinancialSummary(data, allData = []) {
   const blocking = [];
   const summary = data.summary || calculateFinancialSummary(data);
 
+  if (data.unresolvedPercentageImprovement) {
+    const target = data.unresolvedPercentageImprovement.target || "item-alvo";
+    blocking.push(`Cenário ${data.scenario.number}: melhoria percentual sem valor-base encontrado para "${target}".`);
+  }
+
   if (data.isBudgetScenario && data.scenario.number === 1 && summary.despesasBaseTotal > 0) {
     const declaredBase = data.declaredExpenseTotal || 0;
     if (declaredBase > 0 && summary.despesasBaseTotal < declaredBase * 0.3) {
@@ -2782,7 +2886,7 @@ function validateFinancialSummary(data, allData = []) {
 function buildInternalValidationReport(experience) {
   const globalReport = buildGlobalActivityValidationReport(experience);
   const scenarioData = extractFinancialScenarioData(experience);
-  const budgetData = scenarioData.filter((data) => data.isBudgetScenario && data.entries.length > 0);
+  const budgetData = scenarioData.filter((data) => data.isBudgetScenario && (data.entries.length > 0 || data.unresolvedPercentageImprovement));
   const hasFinancialBudget = budgetData.length > 0;
   const receitaEmDespesa = budgetData.some((data) => getExpenseBudgetItems(data.structured).some(hasRevenueMarker));
   const despesaEmReceita = budgetData.some((data) => getRevenueBudgetItems(data.structured).some(hasExpenseMarker));

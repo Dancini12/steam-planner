@@ -22,6 +22,8 @@ this.__test = {
   fixTruncatedSentences,
   cleanFinancialItemLabel,
   extractExplicitImprovement,
+  extractPercentageImprovement,
+  calculateImprovementValue,
   validateAnswerKeyText,
   fixAnswerKeyText,
   sanitizeReferenceText,
@@ -241,6 +243,138 @@ test.describe("validação financeira da exportação", () => {
     expect(scenario2.summary.saldoAposMelhoria).toBe(1170);
     expect(gabarito).toContain("Reduzir R$ 200,00 do gasto com despesas variáveis.");
     expect(gabarito).toContain("R$ 970,00 + R$ 200,00 = R$ 1.170,00.");
+  });
+
+  test("melhoria percentual usa o valor real do lazer", () => {
+    const api = loadExportInternals();
+    const readyMaterials = [
+      "CENÁRIO 1",
+      "Receita total: R$ 4.500,00.",
+      "Despesas fixas: R$ 2.000,00.",
+      "Despesas variáveis: Alimentação R$ 1.000,00. Transporte R$ 300,00. Lazer R$ 200,00.",
+      "CENÁRIO 2",
+      "Imprevisto: manutenção inesperada no carro de R$ 350,00.",
+      "Melhoria: reduzir em 50% o gasto com Lazer do mês."
+    ];
+    const scenarios = api.extractFinancialScenarioData({ readyMaterials });
+    const scenario2 = scenarios[1];
+    const gabarito = api.buildFinancialGabaritoFromReadyMaterials(readyMaterials).join("\n");
+
+    expect(scenario2.explicitImprovement).toMatchObject({
+      type: "percentage",
+      percentage: 50,
+      target: "lazer",
+      targetCategory: "despesa_variavel",
+      baseValue: 200,
+      improvementValue: 100,
+      value: 100,
+      calculable: true
+    });
+    expect(api.calculateImprovementValue(200, 50)).toBe(100);
+    expect(scenario2.melhoriasTotal).toBe(100);
+    expect(scenario2.summary.saldoAntesMelhoria).toBe(650);
+    expect(scenario2.summary.saldoAposMelhoria).toBe(750);
+    expect(gabarito).toContain("Reduzir R$ 100,00 do gasto com lazer.");
+    expect(gabarito).toContain("R$ 650,00 + R$ 100,00 = R$ 750,00.");
+    expect(gabarito).not.toContain("R$ 150,00");
+  });
+
+  test("cortar 30% do transporte usa o item transporte", () => {
+    const api = loadExportInternals();
+    const readyMaterials = [
+      "CENÁRIO 1",
+      "Receita total: R$ 4.500,00.",
+      "Despesas fixas: R$ 2.000,00.",
+      "Despesas variáveis: Alimentação R$ 1.000,00. Transporte R$ 300,00. Lazer R$ 200,00.",
+      "CENÁRIO 2",
+      "Cortar 30% do transporte."
+    ];
+    const scenario2 = api.extractFinancialScenarioData({ readyMaterials })[1];
+
+    expect(scenario2.explicitImprovement).toMatchObject({
+      type: "percentage",
+      percentage: 30,
+      target: "transporte",
+      baseValue: 300,
+      improvementValue: 90
+    });
+    expect(scenario2.melhoriasTotal).toBe(90);
+  });
+
+  test("economizar 20% da alimentação usa o item alimentação", () => {
+    const api = loadExportInternals();
+    const readyMaterials = [
+      "CENÁRIO 1",
+      "Receita total: R$ 4.500,00.",
+      "Despesas fixas: R$ 2.000,00.",
+      "Despesas variáveis: Alimentação R$ 1.000,00. Transporte R$ 300,00. Lazer R$ 200,00.",
+      "CENÁRIO 2",
+      "Economizar 20% da alimentação."
+    ];
+    const scenario2 = api.extractFinancialScenarioData({ readyMaterials })[1];
+
+    expect(scenario2.explicitImprovement).toMatchObject({
+      type: "percentage",
+      percentage: 20,
+      target: "alimentação",
+      baseValue: 1000,
+      improvementValue: 200
+    });
+    expect(scenario2.melhoriasTotal).toBe(200);
+  });
+
+  test("reduzir pela metade o lazer interpreta 50%", () => {
+    const api = loadExportInternals();
+    const readyMaterials = [
+      "CENÁRIO 1",
+      "Receita total: R$ 4.500,00.",
+      "Despesas fixas: R$ 2.000,00.",
+      "Despesas variáveis: Alimentação R$ 1.000,00. Transporte R$ 300,00. Lazer R$ 200,00.",
+      "CENÁRIO 2",
+      "Reduzir pela metade o lazer."
+    ];
+    const scenario2 = api.extractFinancialScenarioData({ readyMaterials })[1];
+
+    expect(scenario2.explicitImprovement).toMatchObject({
+      type: "percentage",
+      percentage: 50,
+      target: "lazer",
+      baseValue: 200,
+      improvementValue: 100
+    });
+    expect(scenario2.melhoriasTotal).toBe(100);
+  });
+
+  test("melhoria percentual com item inexistente bloqueia gabarito numérico", () => {
+    const api = loadExportInternals();
+    const readyMaterials = [
+      "CENÁRIO 1",
+      "Receita total: R$ 4.500,00.",
+      "Despesas fixas: R$ 2.000,00.",
+      "Despesas variáveis: Alimentação R$ 1.000,00. Transporte R$ 300,00. Lazer R$ 200,00.",
+      "CENÁRIO 2",
+      "Reduzir em 40% o gasto com assinatura de streaming."
+    ];
+    const scenarios = api.extractFinancialScenarioData({ readyMaterials });
+    const scenario2 = scenarios[1];
+    const validation = api.validateExportedExperience(buildActivity({
+      readyMaterials,
+      teacherGabarito: [
+        "Cenário 1: cálculo financeiro conferido.",
+        "Cenário 2: cálculo financeiro pendente."
+      ]
+    }));
+
+    expect(scenario2.unresolvedPercentageImprovement).toMatchObject({
+      type: "percentage",
+      percentage: 40,
+      target: "assinatura de streaming",
+      baseValue: null,
+      improvementValue: null,
+      calculable: false,
+      reason: "target_not_found"
+    });
+    expect(validation.blocking.join(" ")).toContain('melhoria percentual sem valor-base encontrado para "assinatura de streaming"');
   });
 
   test("cenário 2 com imprevisto e meta calcula compromisso total", () => {
