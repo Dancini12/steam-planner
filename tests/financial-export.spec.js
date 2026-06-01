@@ -133,6 +133,40 @@ test.describe("validação financeira da exportação", () => {
     expect(scenario.despesasVariaveisTotal).toBe(150);
   });
 
+  test("parser respeita delimitadores de categoria do enunciado", () => {
+    const api = loadExportInternals();
+    const [scenario1, scenario2] = api.extractFinancialScenarioData({
+      readyMaterials: [
+        "CENÁRIO 1",
+        "Receitas:",
+        "Aluguel R$ 2.000,00, Internet R$ 500,00",
+        "Despesas fixas:",
+        "Pai R$ 300,00, Mãe R$ 200,00",
+        "Despesas variáveis:",
+        "Remédios R$ 100,00, Viagem R$ 400,00",
+        "Imprevistos:",
+        "Lazer R$ 50,00",
+        "Melhorias:",
+        "Alimentação R$ 80,00",
+        "CENÁRIO 2",
+        "Remédio: R$ 250,00"
+      ]
+    });
+
+    expect(scenario1.receitaTotal).toBe(2500);
+    expect(scenario1.despesasFixasTotal).toBe(500);
+    expect(scenario1.despesasVariaveisTotal).toBe(500);
+    expect(scenario1.imprevistosTotal).toBe(50);
+    expect(scenario1.melhoriasTotal).toBe(80);
+    expect(scenario1.structured.receitas.map((item) => item.rawLabel)).toEqual(["aluguel", "internet"]);
+    expect(scenario1.structured.despesasFixas.map((item) => item.rawLabel)).toEqual(["pai", "mãe"]);
+    expect(scenario1.structured.despesasVariaveis.map((item) => item.rawLabel)).toEqual(["remédios", "viagem"]);
+    expect(scenario1.structured.imprevistos.map((item) => item.rawLabel)).toEqual(["lazer"]);
+    expect(scenario1.structured.melhorias.map((item) => item.rawLabel)).toEqual(["alimentação"]);
+    expect(scenario2.imprevistosTotal).toBe(250);
+    expect(scenario2.despesasVariaveisTotal).toBe(0);
+  });
+
   test("economia não vira despesa", () => {
     const api = loadExportInternals();
     const [scenario] = api.extractFinancialScenarioData({
@@ -681,14 +715,20 @@ test.describe("validação financeira da exportação", () => {
   test("sanitiza gabarito e HTML final imediatamente antes da renderização", () => {
     const api = loadExportInternals();
     const dirtyHtml = "<html><body>10.29327/cb-multiplos￾olhares-educacao-1.599854</body></html>";
+    const dirtyEntityHtml = "<html><body>10.29327/cb-multiplos&#65534;olhares-educacao-1.599854</body></html>";
+    const dirtyEscapedEntityHtml = "<html><body>10.29327/cb-multiplos&amp;#65534;olhares-educacao-1.599854</body></html>";
     const cleanHtml = api.sanitizeFinalRenderedHTML(dirtyHtml);
+    const cleanEntityHtml = api.sanitizeFinalRenderedHTML(dirtyEntityHtml);
+    const cleanEscapedEntityHtml = api.sanitizeFinalRenderedHTML(dirtyEscapedEntityHtml);
     const dirtyGabaritoDoi = "Referência do conteúdo usado no gabarito: 10.29327/cb-multiplos￾olhares-educacao-1.599854";
+    const dirtyEntityGabaritoDoi = "Referência do conteúdo usado no gabarito: 10.29327/cb-multiplos&amp;#65534;olhares-educacao-1.599854";
     const activity = buildActivity({
       bibliography: ["10.29327/cb-multiplos￾olhares-educacao-1.599854"],
       teacherGabarito: [
         "Cenário 1:\nReceita total: R$ 4.500,00.\nDespesas totais: R$ 3.530,00.\nSaldo final: R$ 4.500,00 - R$ 3.530,00 = R$ 970,00.",
         "Cenário 2:\nImprevisto com um conserto urgente de eletrodoméstico: R$ 450,00.",
-        dirtyGabaritoDoi
+        dirtyGabaritoDoi,
+        dirtyEntityGabaritoDoi
       ]
     });
     const finalHtml = api.buildActivityPrintHTMLFromExperience(activity);
@@ -697,12 +737,18 @@ test.describe("validação financeira da exportação", () => {
       .toBe("Conserto urgente de eletrodoméstico: R$ 450,00.");
     expect(api.sanitizeAnswerKeyText(dirtyGabaritoDoi))
       .toBe("Referência do conteúdo usado no gabarito: DOI: 10.29327/cb-multiplos-olhares-educacao-1.599854.");
+    expect(api.sanitizeAnswerKeyText(dirtyEntityGabaritoDoi))
+      .toBe("Referência do conteúdo usado no gabarito: DOI: 10.29327/cb-multiplos-olhares-educacao-1.599854.");
     expect(api.validateFinalRenderedHTML(dirtyHtml).ok).toBe(false);
     expect(api.validateFinalRenderedHTML(cleanHtml).ok).toBe(true);
     expect(cleanHtml).toContain("DOI: 10.29327/cb-multiplos-olhares-educacao-1.599854.");
+    expect(cleanEntityHtml).toContain("DOI: 10.29327/cb-multiplos-olhares-educacao-1.599854.");
+    expect(cleanEscapedEntityHtml).toContain("DOI: 10.29327/cb-multiplos-olhares-educacao-1.599854.");
     expect(finalHtml).toContain("DOI: 10.29327/cb-multiplos-olhares-educacao-1.599854.");
     expect(finalHtml).toContain("Conserto urgente de eletrodoméstico: R$ 450,00.");
     expect(finalHtml).not.toContain("￾");
+    expect(finalHtml).not.toContain("&#65534;");
+    expect(finalHtml).not.toContain("&amp;#65534;");
     expect(finalHtml).not.toContain("10.29327/cb-multiplos￾olhares-educacao-1.599854");
     expect(finalHtml).not.toContain("Imprevisto com um conserto urgente");
     expect(finalHtml).not.toContain("Exportação bloqueada");

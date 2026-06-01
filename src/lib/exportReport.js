@@ -48,7 +48,7 @@ const FINANCIAL_REFERENCES = [
 
 function stripDecorativeMarkers(text) {
   if (typeof text !== "string") return "";
-  return text
+  return normalizeCorruptedText(text)
     .replace(/&lt;\s*br\s*\/?\s*&gt;/gi, ". ")
     .replace(/&lt;[^&]+&gt;/gi, " ")
     .replace(/<\s*br\s*\/?\s*>/gi, ". ")
@@ -83,9 +83,14 @@ function stripDecorativeMarkers(text) {
     .trim();
 }
 
+function normalizeCorruptedText(text) {
+  return String(text || "")
+    .replace(/\s*(?:[\uFFFE\uFFFF\uFFFD]|&(?:amp;)?#(?:65534|65535|65533);|&(?:amp;)?#x(?:fffe|ffff|fffd);|\\u(?:fffe|ffff|fffd))\s*/gi, "-");
+}
+
 function sanitizeReferenceText(reference) {
   if (reference == null) return "";
-  const source = String(reference)
+  const source = normalizeCorruptedText(reference)
     .replace(/&lt;\s*br\s*\/?\s*&gt;/gi, " ")
     .replace(/<\s*br\s*\/?\s*>/gi, " ")
     .replace(/&lt;\/?\s*p[^&]*&gt;/gi, " ")
@@ -117,7 +122,7 @@ function sanitizeReferenceText(reference) {
 }
 
 function sanitizeDoiText(text) {
-  const source = String(text || "")
+  const source = normalizeCorruptedText(text)
     .replace(/\s*[\uFFFE\uFFFF\uFFFD]+\s*/g, "-")
     .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
@@ -1476,20 +1481,34 @@ function extractPercentageImprovement(scenarioText, currentStructured, previousD
 }
 
 function getCurrentFinancialSection(before) {
-  const matches = [...before.matchAll(/\b(receitas?|rendas?|despesas?\s+fixas?|gastos?\s+fixos?|custos?\s+fixos?|despesas?\s+vari[aá]veis?|gastos?\s+vari[aá]veis?|custos?\s+vari[aá]veis?|imprevistos?|melhorias?|economias?)\b/gi)];
+  const scope = stripDecorativeMarkers(before || "")
+    .split(/\bCEN[AÁ]RIO\s*\d*\b/i)
+    .pop() || "";
+  const matches = [...scope.matchAll(/(?:^|[\n.;]|\be\s+)\s*(receitas?|rendas?|despesas?\s+fixas?|gastos?\s+fixos?|custos?\s+fixos?|despesas?\s+vari[aá]veis?|gastos?\s+vari[aá]veis?|custos?\s+vari[aá]veis?|fixas?|vari[aá]veis?|imprevistos?|melhorias?|economias?)\s*:/gi)];
   const last = matches.length ? matches[matches.length - 1][0] : "";
   if (/receitas?|rendas?/i.test(last)) return FINANCIAL_ENTRY_TYPE.RECEITA;
-  if (/(?:despesas?|gastos?|custos?)\s+fixos?/i.test(last)) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
+  if (/(?:despesas?|gastos?|custos?)\s+fix[ao]s?/i.test(last)) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
   if (/(?:despesas?|gastos?|custos?)\s+vari[aá]veis?/i.test(last)) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
   if (/imprevistos?/i.test(last)) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
   if (/melhorias?|economias?/i.test(last)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   return "";
 }
 
+function isDelimitedFinancialSection(type) {
+  return [
+    FINANCIAL_ENTRY_TYPE.RECEITA,
+    FINANCIAL_ENTRY_TYPE.DESPESA_FIXA,
+    FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL,
+    FINANCIAL_ENTRY_TYPE.IMPREVISTO,
+    FINANCIAL_ENTRY_TYPE.MELHORIA
+  ].includes(type);
+}
+
 function classifyFinancialEntry({ label, currentSection, afterClause }) {
   const labelOnly = normalizeFinancialLabel(label || "");
   const local = `${label} ${afterClause}`.replace(/\s+/g, " ").trim();
 
+  if (isDelimitedFinancialSection(currentSection)) return currentSection;
   if (PRIOR_EXPENSE_RE.test(local) && !UNEXPECTED_RE.test(local) && !IMPROVEMENT_RE.test(local) && !SAVINGS_GOAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_ANTERIOR;
   if (EXPENSE_TOTAL_RE.test(label) || EXPENSE_TOTAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_TOTAL;
   // REVENUE_TOTAL_RE moved after expense checks: a label containing both revenue-total
