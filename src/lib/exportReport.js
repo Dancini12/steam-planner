@@ -1295,6 +1295,7 @@ function parsePercentAmount(rawValue) {
 
 function cleanImprovementTarget(target) {
   return cleanFinancialItemLabel(target || "")
+    .replace(/\s+e\s+(?:recalcular|calcular|testar|verificar|registrar|comparar|apresentar|explicar|melhorar|ajustar|revisar|simular|conferir)\b.*$/i, "")
     .replace(/\bgastos?\s+com\s+/gi, "")
     .replace(/\bdespesas?\s+com\s+/gi, "")
     .replace(/\bcompras?\s+de\s+/gi, "")
@@ -1954,7 +1955,7 @@ function formatRevenueLine(data) {
     : `Receita total: ${formatCurrencyBRL(data.receitaTotal)}.`;
 }
 
-function buildImprovementSuggestion(financialData) {
+function buildImprovementSuggestion(financialData, improvementContext = "") {
   const fmt = formatCurrencyBRL;
   const targetScenario = [...financialData]
     .reverse()
@@ -1979,7 +1980,21 @@ function buildImprovementSuggestion(financialData) {
     ].join("\n");
   }
 
-  // Case 2: negative saldo — suggest minimum reduction to zero the deficit
+  // Case 2: explicit improvement values extracted from the activity stages
+  const contextualImprovement = extractExplicitImprovement(improvementContext);
+  if (contextualImprovement) {
+    const contextualValue = contextualImprovement.value;
+    return [
+      "Melhoria sugerida:",
+      formatExplicitImprovementSentence(contextualImprovement),
+      "Resultado após melhoria:",
+      `${fmt(targetScenario.saldo)} + ${fmt(contextualValue)} = ${fmt(targetScenario.saldo + contextualValue)}.`,
+      "Interpretação:",
+      "A melhoria aumenta o saldo final e ajuda a preservar parte da poupança."
+    ].join("\n");
+  }
+
+  // Case 3: negative saldo — suggest minimum reduction to zero the deficit
   if (targetScenario.saldo < 0) {
     const deficit = Math.abs(targetScenario.saldo);
     return [
@@ -2003,7 +2018,7 @@ function buildImprovementSuggestion(financialData) {
     ].join("\n");
   }
 
-  // Case 3: positive saldo — structured numeric suggestion
+  // Case 4: positive saldo — structured numeric suggestion
   const positive = targetScenario;
 
   const saldo = positive.saldo;
@@ -2088,7 +2103,7 @@ function buildStructuredScenarioGabarito(data) {
   return lines.join("\n");
 }
 
-function buildFinancialGabaritoFromReadyMaterials(readyMaterials) {
+function buildFinancialGabaritoFromReadyMaterials(readyMaterials, improvementContext = "") {
   const scenarios = getScenarioItems(readyMaterials);
   if (!scenarios.length) return [];
 
@@ -2103,10 +2118,22 @@ function buildFinancialGabaritoFromReadyMaterials(readyMaterials) {
     .filter(Boolean);
 
   if (cards.length) {
-    cards.push(buildImprovementSuggestion(financialData));
+    cards.push(buildImprovementSuggestion(financialData, improvementContext));
   }
 
   return cards;
+}
+
+function buildFinancialImprovementContext(experience) {
+  return [
+    experience?.financialImprovementContext,
+    experience?.makerChallenge,
+    experience?.finalProduct,
+    experience?.teacherOrientation,
+    ...(experience?.stages || []).flatMap((stage) => [stage.title, stage.description])
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function rebuildAnswerKeyFromFinancialData(experience, financialData = extractFinancialScenarioData(experience)) {
@@ -2624,7 +2651,10 @@ function autoFixExperience(experience) {
   const fix = fixDanglingText;
   const fixedReadyMaterials = fixScenarioQuestions((experience.readyMaterials || []).map(fixReadyMaterialText)).map(fixDecisionLanguage);
   const fixedGabarito = fixGabaritoLanguage((experience.teacherGabarito || []).map(reviewGabaritoText));
-  const financialGabarito = buildFinancialGabaritoFromReadyMaterials(fixedReadyMaterials);
+  const financialGabarito = buildFinancialGabaritoFromReadyMaterials(
+    fixedReadyMaterials,
+    buildFinancialImprovementContext(experience)
+  );
   const profile = getActivityProfile({ ...experience, readyMaterials: fixedReadyMaterials, teacherGabarito: fixedGabarito });
   const globalGabarito = shouldRebuildGlobalGabarito(fixedGabarito, profile, financialGabarito.length > 0)
     ? buildGlobalTeacherGabarito({ ...experience, readyMaterials: fixedReadyMaterials }, profile)
@@ -3191,7 +3221,11 @@ function repairExperienceBeforeExport(experience, blocking, warnings) {
 }
 
 function prepareExperienceForExport(activity, maxAttempts = 3) {
-  let experience = autoFixExperience(normalizeLearningExperience(activity));
+  const financialImprovementContext = buildFinancialImprovementContext(activity);
+  let experience = autoFixExperience({
+    ...normalizeLearningExperience(activity),
+    financialImprovementContext
+  });
   let lastValidation = { blocking: [], warnings: [] };
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {

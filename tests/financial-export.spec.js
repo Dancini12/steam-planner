@@ -526,6 +526,47 @@ test.describe("validação financeira da exportação", () => {
     expect(html).toContain("GABARITO DO PROFESSOR");
   });
 
+  test("gabarito respeita melhoria explícita descrita na Etapa 5", () => {
+    const api = loadExportInternals();
+    const readyMaterials = [
+      "CENÁRIO 1",
+      "Receita total: R$ 4.500,00",
+      "Despesas fixas: R$ 2.030,00",
+      "Despesas variáveis: R$ 1.450,00",
+      "CENÁRIO 2",
+      "Remédio: R$ 250,00",
+      "Meta de poupança para viagem: R$ 400,00"
+    ];
+    const stageImprovement = "ETAPA 5 - Teste e melhoria: testar como cortar R$ 100 do Lazer e recalcular o saldo.";
+    const gabarito = api.buildFinancialGabaritoFromReadyMaterials(readyMaterials, stageImprovement).join("\n");
+    const { text } = captureExportText(buildActivity({
+      readyMaterials,
+      stages: [
+        { number: 1, title: "Preparar a base", description: "Organizar cartões de receitas e despesas." },
+        { number: 2, title: "Investigar", description: "Comparar saldo inicial e compromissos." },
+        { number: 3, title: "Planejar", description: "Escolher quais cartões serão reorganizados." },
+        { number: 4, title: "Construir", description: "Montar o painel financeiro manipulável." },
+        { number: 5, title: "Teste e melhoria", description: "Testar como cortar R$ 100 do Lazer e recalcular o saldo." },
+        { number: 6, title: "Apresentar", description: "Explicar o ajuste realizado e o novo saldo." }
+      ],
+      teacherGabarito: ["Cenário 1: cálculo antigo inconsistente."]
+    }));
+
+    expect(api.extractExplicitImprovement(stageImprovement)).toEqual({
+      action: "Cortar",
+      value: 100,
+      target: "lazer"
+    });
+    expect(gabarito).toContain("Saldo antes da melhoria: R$ 4.500,00 - R$ 4.130,00 = R$ 370,00.");
+    expect(gabarito).toContain("Melhoria sugerida:\nCortar R$ 100,00 do gasto com lazer.");
+    expect(gabarito).toContain("Resultado após melhoria:\nR$ 370,00 + R$ 100,00 = R$ 470,00.");
+    expect(gabarito).not.toContain("Reduzir R$ 150,00 em despesas variáveis");
+    expect(text).toContain("Cortar R$ 100,00 do gasto com lazer.");
+    expect(text).toContain("Resultado após melhoria: R$ 370,00 + R$ 100,00 = R$ 470,00.");
+    expect(text).not.toContain("Reduzir R$ 150,00 em despesas variáveis");
+    expect(text).not.toContain("R$ 370,00 + R$ 150,00 = R$ 520,00");
+  });
+
   test("gabarito limpa imprevisto e preserva melhoria explícita do cenário", () => {
     const api = loadExportInternals();
     const readyMaterials = [
