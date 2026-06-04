@@ -91,6 +91,7 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       grade: formData?.grade || "",
       steam: steamLetters,
       theme: initialActivity.theme || "",
+      materials: initialActivity.materials || [],
     }).catch(console.error);
   };
 

@@ -378,13 +378,15 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
       const result = await PedagogicalPlannerService.generatePedagogicalActivity({
         ...formData,
         customInstructions: buildCustomInstructions(),
-        userId: user.id
+        userId: user.id,
+        userEmail: user.email,
       })
 
       setUsedProvider(result.provider || providers[0] || 'gemini')
+      setLoadingPhase('saving')
 
       if (onActivityGenerated) {
-        onActivityGenerated({ ...result, formData })
+        await onActivityGenerated({ ...result, formData })
       }
 
       onClose()
@@ -761,20 +763,26 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
       </div>
 
       <div style={loadingTitleStyle}>
-        {loadingPhase === 'sources' ? 'Buscando fontes reais…' : 'Gerando sua atividade'}
+        {loadingPhase === 'sources' ? 'Buscando fontes reais…' : loadingPhase === 'saving' ? 'Salvando atividade…' : 'Gerando sua atividade'}
       </div>
       <p style={loadingSubtitleStyle}>
         {loadingPhase === 'sources'
           ? 'Consultando Crossref, OpenAlex, SciELO e Semantic Scholar para validar referências antes de gerar o planejamento…'
+          : loadingPhase === 'saving'
+          ? 'Registrando a atividade gerada e preparando o visualizador…'
           : 'Analisando o tema, selecionando competências BNCC e montando o planejamento completo…'}
       </p>
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20 }}>
         {[
           { key: 'sources', label: '🔍 Fontes' },
-          { key: 'generating', label: '✨ Geração' }
+          { key: 'generating', label: '✨ Geração' },
+          { key: 'saving', label: '💾 Salvando' }
         ].map(({ key, label }, i) => {
-          const done = (key === 'sources' && loadingPhase === 'generating')
+          const phaseOrder = ['sources', 'generating', 'saving']
+          const currentIndex = phaseOrder.indexOf(loadingPhase)
+          const stepIndex = phaseOrder.indexOf(key)
+          const done = stepIndex < currentIndex
           const active = key === loadingPhase
           return (
             <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

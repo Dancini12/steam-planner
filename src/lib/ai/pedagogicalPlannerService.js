@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient.js'
+import { supabase, isSupabaseConfigured } from '../supabaseClient.js'
 import { AIProviderManager } from './AIProviderManager.js'
 import {
   formatBnccSuggestions,
@@ -70,7 +70,8 @@ Aprendizado de atividades anteriores bem avaliadas por este professor (${quality
 ${qualityPatterns.topDisciplines.length ? `- Disciplinas mais eficazes para este professor: ${qualityPatterns.topDisciplines.join(', ')}` : ''}
 ${qualityPatterns.topGrades.length ? `- Séries em que as atividades funcionaram melhor: ${qualityPatterns.topGrades.join(', ')}` : ''}
 ${qualityPatterns.topSteamAreas.length ? `- Áreas STEAM que geraram maior engajamento: ${qualityPatterns.topSteamAreas.join(', ')}` : ''}
-Adapte a complexidade, a linguagem e a abordagem prática para se alinhar a esses padrões que funcionaram bem para este professor.` : ''}
+${qualityPatterns.topMaterials && qualityPatterns.topMaterials.length ? `- Materiais que já apareceram em atividades bem avaliadas (evite repeti-los; busque alternativas criativas diferentes): ${qualityPatterns.topMaterials.join(', ')}` : ''}
+Adapte a complexidade, a linguagem e a abordagem prática para se alinhar a esses padrões que funcionaram bem para este professor. Priorize materiais diferentes dos já usados.` : ''}
 
 REGRA CENTRAL:
 Toda experiência precisa nascer de:
@@ -82,10 +83,11 @@ Toda experiência precisa nascer de:
 6. uma melhoria/redesign da solução.
 
 VARIAÇÃO E FLEXIBILIDADE:
-- Não use cartolina como material-padrão; inclua cartolina apenas se ela for a escolha mais coerente para o produto final.
-- Não repita automaticamente a ideia de painel com fichas e canetinhas.
+- PROIBIDO usar base de papelão, caixas de papelão ou cartolina como material-padrão. Use-os apenas quando forem, de fato, a melhor solução para o produto final específico.
+- PROIBIDO repetir painel com fichas e canetinhas como solução padrão. Cada atividade deve ter materiais e mecânica de teste completamente diferentes.
+- A criatividade é obrigatória: às vezes a atividade ideal usa apenas lápis e papel; outras vezes usa fios, sensores, sementes, água, régua, dados, elástico, palitos, materiais recicláveis variados ou instrumentos simples do cotidiano.
 - Escolha o tipo de atividade conforme o tema: experimento, maquete, jogo, mapa, circuito ou sensor simulado, modelo 3D, protótipo estrutural, instalação, planilha física/digital ou investigação de campo.
-- Os materiais devem servir à mecânica de teste da atividade, não a um formato fixo.
+- Os materiais devem ser escolhidos pela adequação ao problema, não por conveniência ou hábito. Nunca use estrutura física só por ser "segura" — use-a quando for a melhor solução pedagógica.
 
 LIMITE OBRIGATÓRIO:
 - A atividade final deve caber em no máximo 2 páginas A4.
@@ -114,7 +116,7 @@ Regras de conteúdo:
 - "objective": 1 frase, até 20 palavras.
 - "problem": problema real, concreto e contextualizado, até 45 palavras.
 - "mission": frase curta começando com "Sua equipe deverá..." ou equivalente individual.
-- "materials": máximo 6 itens acessíveis, com quantidade precisa por grupo sempre que possível. Varie os materiais de acordo com o problema, o produto final, a disciplina, a série e o tempo disponível; exemplos são apenas de formato, não de lista fixa.
+- "materials": máximo 6 itens acessíveis, com quantidade precisa por grupo sempre que possível. PROIBIDO base de papelão, caixas ou cartolina como padrão. Varie completamente os materiais a cada geração: escolha de acordo com o problema, o produto final, a disciplina, a série e o tempo disponível. Exemplos de tipos possíveis (não lista fixa): lápis+papel, dados, elásticos, fios, sementes, água, régua, calculadora, fichas de papel simples, palitos, tampas, barbante, materiais recicláveis, instrumentos de medição simples.
 - "materialFunctions": explique a função prática de cada material listado, em 1 frase curta por material.
 - "readyMaterials": entregue os cenários, fichas, cartões, tabela de teste, perguntas ou dados citados. Nunca cite material complementar sem gerar o conteúdo pronto. Para atividades com cálculo financeiro, orçamento familiar, renda, despesas, poupança ou investimento, use exatamente: "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
 - "stages": exatamente 6 etapas de desenvolvimento e montagem, na ordem obrigatória acima. Cada etapa deve explicar como preparar base, dividir materiais, construir, interagir, testar, ajustar ou apresentar.
@@ -394,8 +396,10 @@ Regras:
 - Deve caber em no máximo 2 páginas A4.
 - Toda etapa deve ter ação prática, não explicação longa.
 - A experiência deve incluir problema real, missão, investigação, construção/prototipagem, teste, comparação e melhoria.
-- Não use cartolina como material-padrão; inclua cartolina apenas se ela for a escolha mais coerente para o produto final.
-- Não repita automaticamente a ideia de painel com fichas e canetinhas. Escolha experimento, maquete, jogo, mapa, circuito ou sensor simulado, modelo 3D, protótipo estrutural, instalação, planilha física/digital ou investigação de campo conforme o tema.
+- PROIBIDO usar base de papelão, caixas de papelão ou cartolina como material-padrão. Use-os apenas se forem realmente a melhor escolha para o produto final específico.
+- PROIBIDO repetir painel com fichas e canetinhas como solução padrão. Cada atividade deve ter materiais e mecânica de teste completamente diferentes.
+- A criatividade é obrigatória: às vezes a atividade ideal usa apenas lápis e papel; outras vezes usa fios, sementes, água, dados, elástico, palitos ou materiais simples do cotidiano.
+- Escolha experimento, maquete, jogo, mapa, circuito ou sensor simulado, modelo 3D, protótipo estrutural, instalação, planilha física/digital ou investigação de campo conforme o tema.
 - Desenvolvimento e montagem deve ter exatamente estes títulos:
 ${stageTitles}
 - Cada etapa: máximo 3 frases curtas.
@@ -495,9 +499,45 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
 }`
 }
 
+const DAILY_LIMIT = 5
+const UNLIMITED_EMAIL = 'marceldancini@gmail.com'
+
+function dailyLocalKey(userId) {
+  const today = new Date().toISOString().split('T')[0]
+  return `steam-daily-gen-${userId}-${today}`
+}
+
 export class PedagogicalPlannerService {
+  static async getDailyUsageCount(userId) {
+    const today = new Date().toISOString().split('T')[0]
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data } = await supabase
+          .from('pedagogical_usage')
+          .select('count')
+          .eq('user_id', userId)
+          .eq('date', today)
+        if (data) return data.reduce((sum, row) => sum + (Number(row.count) || 0), 0)
+      } catch {
+        // fall through to localStorage
+      }
+    }
+    return parseInt(localStorage.getItem(dailyLocalKey(userId)) || '0', 10)
+  }
+
+  static async checkDailyLimit(userId, userEmail) {
+    if (userEmail === UNLIMITED_EMAIL) return
+    if (!userId) return
+    const count = await this.getDailyUsageCount(userId)
+    if (count >= DAILY_LIMIT) {
+      throw new Error(`Limite diário de ${DAILY_LIMIT} atividades atingido. Tente novamente amanhã.`)
+    }
+  }
+
   static async generatePedagogicalActivity(params) {
-    const { discipline, grade, theme, steamCompetencies, numberOfClasses, modality, customInstructions, personalization, userId } = params
+    const { discipline, grade, theme, steamCompetencies, numberOfClasses, modality, customInstructions, personalization, userId, userEmail } = params
+
+    await this.checkDailyLimit(userId, userEmail)
 
     const bnccSuggestions = selectBnccHabilidades({
       grade,
@@ -579,7 +619,9 @@ export class PedagogicalPlannerService {
     }
   }
 
-  static async generateClassroomActivity(project) {
+  static async generateClassroomActivity(project, userEmail) {
+    await this.checkDailyLimit(project.ownerId || project.owner_id || project.userId, userEmail)
+
     const prompt = buildClassroomPrompt(project)
 
     const response = await AIProviderManager.request({
@@ -614,11 +656,25 @@ export class PedagogicalPlannerService {
 
     validateActivity(normalized)
 
+    const userId = project.ownerId || project.owner_id || project.userId
+    if (userId) {
+      this.incrementUsage(userId, project.discipline, project.steam || []).catch(() => {})
+    }
+
     return normalized
   }
 
   // Incrementa contador só após o projeto ser salvo com sucesso
   static async incrementUsage(userId, discipline, steamCompetencies) {
+    // Sempre incrementa localStorage para funcionar como fallback
+    try {
+      const key = dailyLocalKey(userId)
+      const local = parseInt(localStorage.getItem(key) || '0', 10)
+      localStorage.setItem(key, String(local + 1))
+    } catch { /* ignora */ }
+
+    if (!isSupabaseConfigured || !supabase) return
+
     try {
       const today = new Date().toISOString().split('T')[0]
 

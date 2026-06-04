@@ -164,7 +164,6 @@ export default function Dashboard({
         competencies: result.competencies || []
       }).catch(console.error);
 
-      setShowPedagogicalModal(false);
       onOpenActivityViewer(
         { ...result, activity: { ...data, generatedAt } },
         newProject.id

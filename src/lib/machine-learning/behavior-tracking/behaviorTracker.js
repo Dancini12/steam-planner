@@ -213,7 +213,16 @@ export async function trackActivityRating(userId, projectId, rating, metadata = 
     grade: metadata.grade || '',
     steam: metadata.steam || [],
     theme: metadata.theme || '',
+    materials: metadata.materials || [],
   });
+}
+
+function normalizeMaterial(raw = '') {
+  return String(raw)
+    .toLowerCase()
+    .replace(/:\s*\d+.*$/, '')
+    .replace(/[-–]\s*\d+.*$/, '')
+    .trim();
 }
 
 function buildPatternsFromRatings(ratings = []) {
@@ -223,12 +232,19 @@ function buildPatternsFromRatings(ratings = []) {
   let disciplines = [];
   let grades = [];
   let steamAreas = [];
+  let materials = [];
 
   for (const m of positive) {
     disciplines = bumpTopList(disciplines, m.discipline);
     grades = bumpTopList(grades, m.grade);
     for (const area of (m.steam || [])) {
       steamAreas = bumpTopList(steamAreas, area);
+    }
+    for (const mat of (m.materials || [])) {
+      const normalized = normalizeMaterial(mat);
+      if (normalized.length > 2) {
+        materials = bumpTopList(materials, normalized);
+      }
     }
   }
 
@@ -238,6 +254,7 @@ function buildPatternsFromRatings(ratings = []) {
     topDisciplines: disciplines.slice(0, 3).map((d) => d.value).filter(Boolean),
     topGrades: grades.slice(0, 2).map((g) => g.value).filter(Boolean),
     topSteamAreas: steamAreas.slice(0, 4).map((s) => s.value).filter(Boolean),
+    topMaterials: materials.slice(0, 6).map((mat) => mat.value).filter(Boolean),
   };
 }
 

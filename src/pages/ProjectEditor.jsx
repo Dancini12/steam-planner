@@ -181,7 +181,7 @@ export default function ProjectEditor({
     try {
       const updates = handleSave();
       const fullProject = { ...project, ...updates };
-      const activity = await PedagogicalPlannerService.generateClassroomActivity(fullProject);
+      const activity = await PedagogicalPlannerService.generateClassroomActivity(fullProject, currentUser?.email);
       openClassroomActivityWindow({ ...activity, bibliography: fullProject.bibliography || [] }, fullProject.title);
       trackEvent(currentUser?.id, "classroom_activity_generated", { projectId });
     } catch (error) {
