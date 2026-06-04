@@ -4,7 +4,7 @@ const STEAM_AREAS = [
   { letter: "S", name: "Ciência", color: "#10B981", desc: "Investigação, experimentos, método científico e observação do mundo natural." },
   { letter: "T", name: "Tecnologia", color: "#3B82F6", desc: "Criação e uso de ferramentas digitais, programação e automação de processos." },
   { letter: "E", name: "Engenharia", color: "#F59E0B", desc: "Design de soluções, construção de protótipos e ciclos de teste e melhoria." },
-  { letter: "A", name: "Artes", color: "#EC4899", desc: "Expressão criativa, design visual, comunicação e pensamento estético." },
+  { letter: "A", name: "Arte", color: "#EC4899", desc: "Expressão criativa, design visual, comunicação e pensamento estético." },
   { letter: "M", name: "Matemática", color: "#8B5CF6", desc: "Lógica, cálculo, modelagem de problemas e identificação de padrões." },
 ];
 
@@ -62,7 +62,7 @@ export default function CreationTipsModal({ isOpen, onClose }) {
         <section style={s.section}>
           <div style={s.sectionLabel}>O que é STEAM?</div>
           <p style={s.sectionDesc}>
-            STEAM integra Ciência, Tecnologia, Engenharia, Artes e Matemática em experiências de aprendizagem interdisciplinares. Você não abandona o currículo — transforma o conteúdo em um desafio real que o aluno quer resolver.
+            STEAM integra Ciência, Tecnologia, Engenharia, Arte e Matemática em experiências de aprendizagem interdisciplinares. Você não abandona o currículo — transforma o conteúdo em um desafio real que o aluno quer resolver.
           </p>
           <div style={s.steamGrid}>
             {STEAM_AREAS.map((a) => (

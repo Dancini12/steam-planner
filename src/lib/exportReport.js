@@ -38,7 +38,7 @@ function parseActivityManual(text) {
   }
 }
 
-const STEAM_AREA_NAMES = { S: 'Ciências', T: 'Tecnologia', E: 'Engenharia', A: 'Artes', M: 'Matemática' };
+const STEAM_AREA_NAMES = { S: 'Ciências', T: 'Tecnologia', E: 'Engenharia', A: 'Arte', M: 'Matemática' };
 const FALLBACK_REFERENCE =
   "BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.";
 const FINANCIAL_REFERENCES = [

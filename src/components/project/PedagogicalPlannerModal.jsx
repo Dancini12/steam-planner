@@ -29,7 +29,7 @@ const DISCIPLINES = [
   'Geografia',
   'Língua Portuguesa',
   'Inglês',
-  'Artes',
+  'Arte',
   'Educação Física',
   'Robótica',
   'Educação Financeira',
@@ -51,7 +51,7 @@ const STEAM_COMPETENCIES = [
   { id: 'science', label: 'Ciência', icon: '🔬', color: '#10B981' },
   { id: 'technology', label: 'Tecnologia', icon: '💻', color: '#3B82F6' },
   { id: 'engineering', label: 'Engenharia', icon: '⚙️', color: '#F59E0B' },
-  { id: 'arts', label: 'Artes', icon: '🎨', color: '#EF4444' },
+  { id: 'arts', label: 'Arte', icon: '🎨', color: '#EF4444' },
   { id: 'mathematics', label: 'Matemática', icon: '🔢', color: '#8B5CF6' }
 ]
 
@@ -155,7 +155,7 @@ function MultiSelectDropdown({ label, placeholder, options, selectedValues, onTo
 }
 
 function generateActivityTips(formData) {
-  const steamNames = { science: 'Ciência', technology: 'Tecnologia', engineering: 'Engenharia', arts: 'Artes', mathematics: 'Matemática' }
+  const steamNames = { science: 'Ciência', technology: 'Tecnologia', engineering: 'Engenharia', arts: 'Arte', mathematics: 'Matemática' }
   const steamDescs = {
     science: 'investigação e método científico',
     technology: 'criação e uso de ferramentas digitais',

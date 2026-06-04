@@ -1,4 +1,4 @@
-const STEAM_AREA_NAMES = { S: 'Ciências', T: 'Tecnologia', E: 'Engenharia', A: 'Artes', M: 'Matemática' };
+const STEAM_AREA_NAMES = { S: 'Ciências', T: 'Tecnologia', E: 'Engenharia', A: 'Arte', M: 'Matemática' };
 const ALL_STEAM = ['S', 'T', 'E', 'A', 'M'];
 
 export function suggestProjectContinuity(project = {}, profile = null, limit = 4) {

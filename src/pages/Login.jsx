@@ -619,7 +619,7 @@ export default function Login({ onLogin }) {
                   <option value="ciencias">Ciências</option>
                   <option value="matematica">Matemática</option>
                   <option value="tecnologia">Tecnologia / Informática</option>
-                  <option value="artes">Artes</option>
+                  <option value="artes">Arte</option>
                   <option value="engenharia">Engenharia / Robótica</option>
                   <option value="pedagogia">Pedagogia</option>
                   <option value="outra">Outra</option>
@@ -689,7 +689,7 @@ export default function Login({ onLogin }) {
             O STEAM Planner é uma plataforma educacional destinada ao
             planejamento, acompanhamento, registro e avaliação de projetos
             pedagógicos fundamentados na metodologia STEAM, que integra
-            Ciências, Tecnologia, Engenharia, Artes e Matemática em propostas
+            Ciências, Tecnologia, Engenharia, Arte e Matemática em propostas
             interdisciplinares, investigativas e contextualizadas.
           </p>
           <div style={aboutSectionTitleStyle}>Importância pedagógica</div>
