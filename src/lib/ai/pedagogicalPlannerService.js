@@ -499,8 +499,8 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
 }`
 }
 
-const DAILY_LIMIT = 5
-const UNLIMITED_EMAIL = 'marceldancini@gmail.com'
+export const DAILY_LIMIT = 5
+export const UNLIMITED_EMAIL = 'marceldancini@gmail.com'
 
 function dailyLocalKey(userId) {
   const today = new Date().toISOString().split('T')[0]

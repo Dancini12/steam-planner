@@ -54,7 +54,9 @@ export default function Dashboard({
   onOpenProject,
   onOpenLibrary,
   onOpenBNCC,
-  onOpenActivityViewer
+  onOpenActivityViewer,
+  autoOpenModal,
+  onAutoOpenModalHandled,
 }) {
   const { projects, addProjectFromTemplate, isLoaded } = useProjects(currentUser?.id);
   const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
@@ -67,6 +69,13 @@ export default function Dashboard({
   const professorName = currentUser?.name || currentUser?.email?.split("@")[0] || "Professor";
   const firstName = professorName.split(" ")[0] || "Professor";
   const isLightMode = themeMode === "light";
+
+  useEffect(() => {
+    if (autoOpenModal && isLoaded) {
+      setShowPedagogicalModal(true);
+      onAutoOpenModalHandled?.();
+    }
+  }, [autoOpenModal, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return undefined;
@@ -290,6 +299,7 @@ export default function Dashboard({
         isOpen={showPedagogicalModal}
         onClose={() => setShowPedagogicalModal(false)}
         onActivityGenerated={handlePedagogicalActivityGenerated}
+        currentUser={currentUser}
       />
 
     </div>

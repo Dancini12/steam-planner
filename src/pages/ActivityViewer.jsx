@@ -21,7 +21,7 @@ function getSteamLetters(activity) {
   );
 }
 
-export default function ActivityViewer({ activityData, formData, projectId, currentUser, onBack }) {
+export default function ActivityViewer({ activityData, formData, projectId, currentUser, onBack, onNewActivity, onLogout }) {
   const initialActivity = normalizeLearningExperience(activityData || {}, {
     theme: activityData?.theme || formData?.theme,
     grade: activityData?.grade || formData?.grade,
@@ -44,6 +44,9 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
   const [bibliographyText, setBibliographyText] = useState((initialActivity.bibliography || []).join("\n"));
   const [savedMsg, setSavedMsg] = useState("");
   const [feedbackGiven, setFeedbackGiven] = useState(null);
+  const [improvementText, setImprovementText] = useState("");
+  const [improvementSent, setImprovementSent] = useState(false);
+  const [improvementSending, setImprovementSending] = useState(false);
 
   const steamLetters = getSteamLetters(initialActivity);
 
@@ -128,6 +131,28 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
       grade: formData?.grade || initialActivity.grade || "",
       discipline: formData?.discipline || initialActivity.discipline || ""
     });
+  };
+
+  const handleSendImprovement = async () => {
+    if (!improvementText.trim()) return;
+    setImprovementSending(true);
+    try {
+      await fetch("https://formsubmit.co/ajax/marceldancini@gmail.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          _subject: "Sugestão de melhoria — STEAM Planner",
+          _replyto: currentUser?.email || "anonimo",
+          usuario: currentUser?.email || "anônimo",
+          atividade: title,
+          disciplina: formData?.discipline || "",
+          serie: formData?.grade || "",
+          sugestao: improvementText.trim(),
+        }),
+      });
+    } catch { /* silencia — usuário não precisa saber */ }
+    setImprovementSent(true);
+    setImprovementSending(false);
   };
 
   const containerStyle = { maxWidth: "860px", margin: "0 auto", padding: "2rem 1.5rem" };
@@ -385,8 +410,62 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
         )}
       </div>
 
-      <div style={footerStyle}>
-        <button style={backButtonStyle} onClick={onBack}>← Voltar</button>
+      {/* Seção de sugestão de melhoria */}
+      <div style={{ marginBottom: "1.5rem", padding: "1.25rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "8px" }}>
+        {improvementSent ? (
+          <p style={{ margin: 0, fontSize: "0.88rem", color: "#6EE7B7", textAlign: "center" }}>
+            Obrigado pela sua sugestão! Ela nos ajuda a melhorar o sistema.
+          </p>
+        ) : (
+          <>
+            <p style={{ margin: "0 0 0.75rem", fontSize: "0.85rem", color: "rgba(255,255,255,0.5)" }}>
+              Tem alguma sugestão de melhoria para esta atividade ou para o sistema?
+            </p>
+            <textarea
+              style={{ ...textareaStyle("80px"), marginBottom: "0.75rem" }}
+              placeholder="Descreva sua sugestão…"
+              value={improvementText}
+              onChange={(e) => setImprovementText(e.target.value)}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                variant="secondary"
+                onClick={handleSendImprovement}
+                disabled={improvementSending || !improvementText.trim()}
+              >
+                {improvementSending ? "Enviando…" : "Enviar sugestão"}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Rodapé de navegação */}
+      <div style={{ ...footerStyle, flexWrap: "wrap", gap: "0.75rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          <button
+            style={{ ...backButtonStyle, border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", padding: "0.5rem 1rem" }}
+            onClick={onBack}
+          >
+            Tela inicial
+          </button>
+          {onNewActivity && (
+            <button
+              style={{ ...backButtonStyle, border: "1px solid rgba(57,255,136,0.3)", borderRadius: "8px", padding: "0.5rem 1rem", color: "#6EE7B7" }}
+              onClick={onNewActivity}
+            >
+              Gerar nova atividade
+            </button>
+          )}
+          {onLogout && (
+            <button
+              style={{ ...backButtonStyle, border: "1px solid rgba(255,79,216,0.3)", borderRadius: "8px", padding: "0.5rem 1rem", color: "#F9A8D4" }}
+              onClick={onLogout}
+            >
+              Sair
+            </button>
+          )}
+        </div>
         <div style={{ display: "flex", gap: "0.75rem" }}>
           {projectId && (
             <Button variant="secondary" onClick={handleSave}>Salvar alterações</Button>

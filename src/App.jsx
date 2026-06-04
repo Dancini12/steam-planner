@@ -64,6 +64,7 @@ export default function App() {
   const [activePhaseId, setActivePhaseId] = useState(null);
   const [activeActivityResult, setActiveActivityResult] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [autoOpenModal, setAutoOpenModal] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [showCookieBanner, setShowCookieBanner] = useState(() => !hasConsent());
 
@@ -151,6 +152,12 @@ export default function App() {
     setActiveProjectId(null);
     setActivePhaseId(null);
     setActiveActivityResult(null);
+  };
+
+  // Vai para o dashboard e abre o modal de geração imediatamente
+  const goToDashboardAndGenerate = () => {
+    setAutoOpenModal(true);
+    goToDashboard();
   };
 
   // Abre o visualizador/editor da atividade gerada
@@ -259,6 +266,8 @@ export default function App() {
           onOpenLibrary={goToLibrary}
           onOpenBNCC={goToBNCC}
           onOpenActivityViewer={goToActivityViewer}
+          autoOpenModal={autoOpenModal}
+          onAutoOpenModalHandled={() => setAutoOpenModal(false)}
         />
       )}
 
@@ -277,6 +286,8 @@ export default function App() {
           projectId={activeProjectId}
           currentUser={currentUser}
           onBack={goToDashboard}
+          onNewActivity={goToDashboardAndGenerate}
+          onLogout={handleLogout}
         />
       )}
 

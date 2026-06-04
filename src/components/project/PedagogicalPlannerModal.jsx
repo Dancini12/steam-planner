@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { PedagogicalPlannerService } from '../../lib/ai/pedagogicalPlannerService.js'
+import { PedagogicalPlannerService, DAILY_LIMIT, UNLIMITED_EMAIL } from '../../lib/ai/pedagogicalPlannerService.js'
 import { AIProviderManager } from '../../lib/ai/AIProviderManager.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import { buildUserLearningProfile } from '../../lib/machine-learning/user-profile/profileBuilder.js'
@@ -178,7 +178,7 @@ function generateActivityTips(formData) {
   ]
 }
 
-function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
+function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, currentUser }) {
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState({
     discipline: '',
@@ -195,12 +195,20 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
   const [activeProviders, setActiveProviders] = useState([])
   const [usedProvider, setUsedProvider] = useState(null)
   const [error, setError] = useState('')
+  const [remainingCount, setRemainingCount] = useState(null)
+
+  const isUnlimited = currentUser?.email === UNLIMITED_EMAIL
 
   useEffect(() => {
     if (isOpen) {
       resetForm()
+      if (!isUnlimited && currentUser?.id) {
+        PedagogicalPlannerService.getDailyUsageCount(currentUser.id)
+          .then((used) => setRemainingCount(Math.max(0, DAILY_LIMIT - used)))
+          .catch(() => setRemainingCount(null))
+      }
     }
-  }, [isOpen])
+  }, [isOpen, currentUser?.id, isUnlimited])
 
   const resetForm = () => {
     setCurrentStep(0)
@@ -895,12 +903,25 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated }) {
                   Próximo →
                 </Button>
               ) : (
-                <Button
-                  onClick={handleGenerate}
-                  disabled={!validateCurrentStep()}
-                >
-                  ✨ Gerar Atividade Completa
-                </Button>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                  {!isUnlimited && remainingCount !== null && (
+                    <span style={{
+                      fontSize: '0.72rem',
+                      color: remainingCount <= 1 ? '#EF4444' : remainingCount <= 2 ? '#F59E0B' : '#6B7280',
+                      fontWeight: 600
+                    }}>
+                      {remainingCount === 0
+                        ? 'Limite diário atingido'
+                        : `${remainingCount} de ${DAILY_LIMIT} atividade${remainingCount !== 1 ? 's' : ''} disponível${remainingCount !== 1 ? 'is' : ''} hoje`}
+                    </span>
+                  )}
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={!validateCurrentStep() || remainingCount === 0}
+                  >
+                    ✨ Gerar Atividade Completa
+                  </Button>
+                </div>
               )}
             </div>
           </>
