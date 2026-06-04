@@ -42,7 +42,7 @@ const STAGE_TITLES = [
 ]
 
 const DEFAULT_STAGE_DESCRIPTIONS = [
-  'O professor entrega a missão e os materiais. A equipe usa a base mais rígida, divide áreas de problema, solução, teste e melhoria, e separa peças móveis.',
+  'O professor entrega a missão e os materiais. A equipe escolhe a base mais adequada ao produto, divide áreas de problema, solução, teste e melhoria, e separa peças móveis.',
   'Os alunos montam as partes principais do protótipo. Cada peça deve ter função visível: entrada de dados, decisão, fluxo, medida, comparação ou registro.',
   'A equipe cria a interação com cartões, fichas, abas, setas, encaixes, escala, planilha ou simulação simples. O protótipo precisa ser manipulado durante o teste.',
   'Aplique o Cenário 1 e registre o resultado. Depois aplique o Cenário 2 ou 3 para comparar, observar falhas e medir se a solução funciona.',
@@ -57,14 +57,6 @@ const DEFAULT_ASSESSMENT = [
   'Teste | O grupo aplicou o cenário e registrou resultado?',
   'Melhoria | O grupo ajustou o protótipo após identificar falha?',
   'Comunicação | O grupo explicou solução, teste e melhoria?',
-]
-
-const DEFAULT_MATERIALS = [
-  'Materiais recicláveis ou de papelaria - quantidade por grupo',
-  'Fita adesiva ou cola - 1 por grupo',
-  'Tesoura sem ponta - 1 por grupo',
-  'Régua, lápis e papel para registro',
-  'Cronômetro ou celular do professor para teste',
 ]
 
 const FALLBACK_REFERENCE = 'BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.'
@@ -143,6 +135,96 @@ function isBudgetTheme(theme: string): boolean {
   return /or[cç]amento|financeir|renda|despesa|dinheiro|fam[ií]lia/.test(cleanText(theme).toLowerCase())
 }
 
+function buildDefaultMaterials(theme: string): string[] {
+  const cleanTheme = cleanText(theme).toLowerCase()
+
+  if (isBudgetTheme(cleanTheme)) {
+    return [
+      'Fichas de receita e despesa - 12 a 18 por grupo',
+      'Envelopes ou divisorias de papel - 4 por grupo',
+      'Calculadora simples ou celular do professor - 1 por grupo',
+      'Planilha impressa de orçamento - 1 por grupo',
+      'Lapis, borracha e regua - 1 conjunto por grupo',
+    ]
+  }
+
+  if (/mapa|territ[oó]rio|bairro|cidade|rota|clima|temperatura|ru[ií]do|cartografia/.test(cleanTheme)) {
+    return [
+      'Mapa impresso, croqui ou planta baixa - 1 por grupo',
+      'Adesivos ou marcadores removiveis - 8 a 12 por grupo',
+      'Barbante ou fita crepe - 1 por grupo',
+      'Regua ou trena - 1 por grupo',
+      'Planilha de coleta de dados - 1 por grupo',
+    ]
+  }
+
+  if (/agua|solo|planta|filtro|decomposi[cç][aã]o|mistura|energia|calor|experimento|ambiente/.test(cleanTheme)) {
+    return [
+      'Recipiente transparente reaproveitado - 1 por grupo',
+      'Amostras ou elementos de teste seguros - conforme disponibilidade',
+      'Conta-gotas, copo medidor ou colher - 1 por grupo',
+      'Filtro de cafe, tecido ou peneira - 1 por grupo',
+      'Ficha de observacao e tabela de resultados - 1 por grupo',
+    ]
+  }
+
+  if (/hist[oó]ria|mem[oó]ria|patrim[oô]nio|fonte|tempo|cultura|biografia/.test(cleanTheme)) {
+    return [
+      'Cartoes de fonte, personagem ou evento - 8 a 12 por grupo',
+      'Barbante, pregadores ou fita crepe - 1 conjunto por grupo',
+      'Imagens impressas ou registros autorizados - conforme disponibilidade',
+      'Etiquetas adesivas ou marcadores - 1 conjunto por grupo',
+      'Celular do professor para registro - 1 para a turma',
+    ]
+  }
+
+  if (/rob[oó]tica|circuito|sensor|programa|algoritmo|tecnologia|digital/.test(cleanTheme)) {
+    return [
+      'Cartoes de comando ou componentes simulados - 8 a 12 por grupo',
+      'LED, pilha ou material de circuito seguro - conforme disponibilidade',
+      'Fios, conectores ou tiras de papel condutor simulado - 1 conjunto por grupo',
+      'Fluxograma impresso ou quadro de sequencia - 1 por grupo',
+      'Cronometro ou celular do professor - 1 para a turma',
+    ]
+  }
+
+  return [
+    'Suporte reaproveitado, bandeja ou superficie de teste - 1 por grupo',
+    'Pecas moveis, marcadores ou objetos cotidianos - 8 a 12 por grupo',
+    'Fita crepe, barbante ou prendedores - 1 conjunto por grupo',
+    'Regua, lapis e ficha de registro - 1 conjunto por grupo',
+    'Cronometro ou celular do professor para teste - 1 para a turma',
+  ]
+}
+
+function isGenericCartolinaMaterial(material: string): boolean {
+  const text = cleanText(material).toLowerCase()
+  return /\bcartolinas?\b/.test(text)
+}
+
+function hasDefaultStationeryBundle(materials: string[]): boolean {
+  const text = materials.join(' ').toLowerCase()
+  return [
+    /fichas?\s+de\s+papel|cart[oõ]es?|tarjetas?/.test(text),
+    /canetinhas?|marcadores?|l[aá]pis\s+colorido/.test(text),
+    /notas?\s+adesivas?/.test(text),
+    /tesouras?\s+sem\s+ponta|cola\s+bast[aã]o|fita\s+adesiva/.test(text),
+  ].filter(Boolean).length >= 2
+}
+
+function diversifyDefaultMaterialBundle(materials: string[], theme: string): { materials: string[], diversified: boolean } {
+  const cartolinaIndex = materials.findIndex(isGenericCartolinaMaterial)
+  if (cartolinaIndex === -1 || !hasDefaultStationeryBundle(materials)) {
+    return { materials, diversified: false }
+  }
+
+  const replacements = buildDefaultMaterials(theme)
+  const replacement = replacements.find((item) => !/\bcartolinas?\b/i.test(item)) || replacements[0]
+  const nextMaterials = [...materials]
+  nextMaterials[cartolinaIndex] = replacement
+  return { materials: nextMaterials, diversified: true }
+}
+
 function buildDefaultReadyMaterials(theme: string): string[] {
   const cleanTheme = cleanText(theme || 'problema investigado').toLowerCase()
 
@@ -175,7 +257,7 @@ function buildDefaultAssemblyDescriptions(theme: string, materials: string[]): s
   const materialText = materialNamesForText(materials)
 
   return [
-    `Use cartolina, papelão ou folha como base. Divida em áreas: problema, solução, teste e melhoria; separe ${materialText} antes da montagem.`,
+    `Escolha a base de acordo com o produto final: mesa de teste, caixa, bandeja, mapa impresso, folha de registro, planilha ou suporte reaproveitado. Divida problema, solução, teste e melhoria; separe ${materialText} antes da montagem.`,
     `Monte as partes principais com ${materialText}. Defina a função de cada peça: entrada de dados, fluxo, decisão, medida, comparação ou registro.`,
     'Crie a interação com cartões, fichas, abas, setas, encaixes, escala, planilha ou simulação simples. O protótipo deve mudar quando o aluno aplica um cenário.',
     `Aplique os cenários prontos sobre ${cleanTheme}. Registre resultado, falha e comparação entre o teste esperado e o teste com imprevisto.`,
@@ -395,11 +477,12 @@ function normalizeActivity(raw: Record<string, unknown>, request: PedagogicalReq
   const mission = limitText(raw.mission || `Sua equipe deverá investigar ${theme}, construir uma solução simples, testar e melhorar o resultado.`, 320)
   const makerChallenge = limitText(raw.makerChallenge || raw.guidingQuestion || `Construir uma primeira solução para ${theme.toLowerCase()}, testar, registrar falhas e melhorar pelo menos um elemento.`, 380)
   const finalProduct = limitText(raw.finalProduct || `Protótipo físico, visual ou digital sobre ${theme.toLowerCase()}, com registro do teste e da melhoria feita.`, 300)
-  const materials = toTextArray(raw.materials).length ? toTextArray(raw.materials) : DEFAULT_MATERIALS
-  const normalizedMaterials = materials.slice(0, 6).map((item) => limitText(item, 120))
+  const rawMaterials = toTextArray(raw.materials).length ? toTextArray(raw.materials) : buildDefaultMaterials(theme)
+  const materialBundle = diversifyDefaultMaterialBundle(rawMaterials.slice(0, 6).map((item) => limitText(item, 120)), theme)
+  const normalizedMaterials = materialBundle.materials
   const stages = normalizeStages(raw, normalizedMaterials, theme)
   const assemblySteps = stages
-  const sourceMaterialFunctions = toTextArray(raw.materialFunctions)
+  const sourceMaterialFunctions = materialBundle.diversified ? [] : toTextArray(raw.materialFunctions)
   const materialFunctions = (sourceMaterialFunctions.length >= normalizedMaterials.length ? sourceMaterialFunctions : buildDefaultMaterialFunctions(normalizedMaterials))
     .slice(0, normalizedMaterials.length || 6)
     .map((item) => limitText(item, 200))
@@ -541,6 +624,12 @@ ${
 REGRA CENTRAL:
 Toda atividade deve nascer de um problema real, desafio investigativo, missão prática, construção/prototipagem, teste e melhoria da solução.
 
+VARIAÇÃO E FLEXIBILIDADE:
+- Não use cartolina como material-padrão; inclua cartolina apenas se ela for a escolha mais coerente para o produto final.
+- Não repita automaticamente a ideia de painel com fichas e canetinhas.
+- Escolha o tipo de atividade conforme o tema: experimento, maquete, jogo, mapa, circuito ou sensor simulado, modelo 3D, protótipo estrutural, instalação, planilha física/digital ou investigação de campo.
+- Os materiais devem servir à mecânica de teste da atividade, não a um formato fixo.
+
 LIMITE:
 - Máximo de 2 páginas A4.
 - Texto compacto, leitura rápida e aplicação imediata.
@@ -565,7 +654,7 @@ Regras:
 - "objective": 1 frase, até 20 palavras.
 - "problem": problema real e concreto, até 45 palavras.
 - "mission": frase curta começando com "Sua equipe deverá..." quando for grupo.
-- "materials": máximo 6 itens acessíveis, com quantidade por grupo.
+- "materials": máximo 6 itens acessíveis, com quantidade por grupo. Varie os materiais de acordo com o problema, o produto final, a disciplina, a série e o tempo disponível.
 - "materialFunctions": função prática de cada material listado.
 - "readyMaterials": gere os cenários, fichas, cartões, tabela de teste ou perguntas citadas. Nunca cite material complementar sem entregar o conteúdo pronto.
 - "stages": exatamente 6 etapas de desenvolvimento e montagem, na ordem acima. Explique como preparar base, dividir materiais, construir, interagir, testar, ajustar e apresentar.
@@ -680,7 +769,7 @@ async function generateActivity(request: PedagogicalRequest): Promise<object> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
+        generationConfig: { temperature: 0.8, maxOutputTokens: 8192 },
       }),
     }
   )

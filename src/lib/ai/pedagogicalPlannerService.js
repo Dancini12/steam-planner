@@ -81,6 +81,12 @@ Toda experiência precisa nascer de:
 5. um teste prático com observação/comparação;
 6. uma melhoria/redesign da solução.
 
+VARIAÇÃO E FLEXIBILIDADE:
+- Não use cartolina como material-padrão; inclua cartolina apenas se ela for a escolha mais coerente para o produto final.
+- Não repita automaticamente a ideia de painel com fichas e canetinhas.
+- Escolha o tipo de atividade conforme o tema: experimento, maquete, jogo, mapa, circuito ou sensor simulado, modelo 3D, protótipo estrutural, instalação, planilha física/digital ou investigação de campo.
+- Os materiais devem servir à mecânica de teste da atividade, não a um formato fixo.
+
 LIMITE OBRIGATÓRIO:
 - A atividade final deve caber em no máximo 2 páginas A4.
 - Escreva conteúdo compacto, leitura rápida e aplicação imediata.
@@ -108,7 +114,7 @@ Regras de conteúdo:
 - "objective": 1 frase, até 20 palavras.
 - "problem": problema real, concreto e contextualizado, até 45 palavras.
 - "mission": frase curta começando com "Sua equipe deverá..." ou equivalente individual.
-- "materials": máximo 6 itens acessíveis, com quantidade precisa por grupo sempre que possível. Exemplos: cartolina: 1 folha por grupo; fichas de papel: 8 a 12 por grupo; canetinhas coloridas: 1 conjunto por grupo; notas adesivas coloridas: 1 bloco por grupo; tesoura sem ponta: 1 por grupo; cola bastão: 1 por grupo.
+- "materials": máximo 6 itens acessíveis, com quantidade precisa por grupo sempre que possível. Varie os materiais de acordo com o problema, o produto final, a disciplina, a série e o tempo disponível; exemplos são apenas de formato, não de lista fixa.
 - "materialFunctions": explique a função prática de cada material listado, em 1 frase curta por material.
 - "readyMaterials": entregue os cenários, fichas, cartões, tabela de teste, perguntas ou dados citados. Nunca cite material complementar sem gerar o conteúdo pronto. Para atividades com cálculo financeiro, orçamento familiar, renda, despesas, poupança ou investimento, use exatamente: "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
 - "stages": exatamente 6 etapas de desenvolvimento e montagem, na ordem obrigatória acima. Cada etapa deve explicar como preparar base, dividir materiais, construir, interagir, testar, ajustar ou apresentar.
@@ -151,14 +157,14 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "mission": "Sua equipe deverá desenvolver uma solução prática para o problema.",
   "bncc": ${JSON.stringify(getBnccCodes(bnccSuggestions))},
   "materials": [
-    "Cartolina - 1 folha por grupo",
-    "Fichas de papel - 8 a 12 por grupo",
-    "Canetinhas coloridas - 1 conjunto por grupo"
+    "Material estrutural adequado ao desafio - quantidade por grupo",
+    "Elementos móveis ou marcadores - quantidade por grupo",
+    "Instrumento de medida, registro ou simulação - quantidade por grupo"
   ],
   "materialFunctions": [
-    "Cartolina: 1 folha por grupo — base do protótipo.",
-    "Fichas de papel: 8 a 12 por grupo — cartões de simulação.",
-    "Canetinhas coloridas: 1 conjunto por grupo — registro visual."
+    "Material estrutural adequado ao desafio: quantidade por grupo — sustenta a solução.",
+    "Elementos móveis ou marcadores: quantidade por grupo — permitem simular decisões e testar cenários.",
+    "Instrumento de medida, registro ou simulação: quantidade por grupo — coleta evidências do teste."
   ],
   "readyMaterials": [
     "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
@@ -388,6 +394,8 @@ Regras:
 - Deve caber em no máximo 2 páginas A4.
 - Toda etapa deve ter ação prática, não explicação longa.
 - A experiência deve incluir problema real, missão, investigação, construção/prototipagem, teste, comparação e melhoria.
+- Não use cartolina como material-padrão; inclua cartolina apenas se ela for a escolha mais coerente para o produto final.
+- Não repita automaticamente a ideia de painel com fichas e canetinhas. Escolha experimento, maquete, jogo, mapa, circuito ou sensor simulado, modelo 3D, protótipo estrutural, instalação, planilha física/digital ou investigação de campo conforme o tema.
 - Desenvolvimento e montagem deve ter exatamente estes títulos:
 ${stageTitles}
 - Cada etapa: máximo 3 frases curtas.
@@ -417,14 +425,14 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "problem": "Problema real que inicia a atividade.",
   "mission": "Sua equipe deverá construir e melhorar uma solução.",
   "materials": [
-    "Cartolina - 1 folha por grupo",
-    "Fichas de papel - 8 a 12 por grupo",
-    "Canetinhas coloridas - 1 conjunto por grupo"
+    "Material estrutural adequado ao desafio - quantidade por grupo",
+    "Elementos móveis ou marcadores - quantidade por grupo",
+    "Instrumento de medida, registro ou simulação - quantidade por grupo"
   ],
   "materialFunctions": [
-    "Cartolina: 1 folha por grupo — base do protótipo.",
-    "Fichas de papel: 8 a 12 por grupo — cartões de simulação.",
-    "Canetinhas coloridas: 1 conjunto por grupo — registro visual."
+    "Material estrutural adequado ao desafio: quantidade por grupo — sustenta a solução.",
+    "Elementos móveis ou marcadores: quantidade por grupo — permitem simular decisões e testar cenários.",
+    "Instrumento de medida, registro ou simulação: quantidade por grupo — coleta evidências do teste."
   ],
   "readyMaterials": [
     "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",

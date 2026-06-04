@@ -40,7 +40,7 @@ Regras obrigatórias:
 2. Máximo de 2 páginas A4, com texto compacto e aplicação imediata.
 3. Não gerar apostila, fundamentação acadêmica, matriz STEAM, Design Thinking, material do aluno, vocabulário ou anexos.
 4. Use no campo "bncc" apenas códigos da lista BNCC offline fornecida acima; não invente códigos.
-5. Materiais acessíveis, máximo 6 itens, com quantidades precisas sempre que possível. Formato obrigatório para "materialFunctions": "Nome: quantidade por grupo — finalidade." Exemplos: "Cartolina: 1 folha por grupo — base do protótipo.", "Fichas de papel: 8 a 12 por grupo — cartões de simulação.", "Canetinhas coloridas: 1 conjunto por grupo — registro visual.", "Tesoura sem ponta: 1 por grupo — recorte das peças." Para uso coletivo: "Projetor: 1 para a turma — apresentação inicial." Para materiais de risco (cola quente, estilete, solda), adicionar: " — uso com supervisão do professor."
+5. Materiais acessíveis, máximo 6 itens, com quantidades precisas sempre que possível. Não use cartolina como material-padrão; inclua cartolina apenas quando ela for realmente a melhor escolha para o produto final. Varie o formato conforme o tema: experimento, maquete, circuito ou sensor simulado, jogo, mapa, modelo 3D, protótipo estrutural, planilha física/digital ou instalação. Formato obrigatório para "materialFunctions": "Nome: quantidade por grupo — finalidade." Exemplos de formato, não de lista fixa: "Material estrutural escolhido: quantidade por grupo — base ou suporte.", "Elementos móveis: quantidade por grupo — simulação e teste.", "Instrumento de medida ou registro: quantidade por grupo — coleta de evidências." Para uso coletivo: "Projetor: 1 para a turma — apresentação inicial." Para materiais de risco (cola quente, estilete, solda), adicionar: " — uso com supervisão do professor."
 6. Desenvolvimento e montagem com exatamente estas etapas:
 ${stageTitles}
 7. Explique como preparar base, dividir materiais, construir, interagir, testar, ajustar e apresentar.
@@ -64,6 +64,7 @@ ${stageTitles}
 25. Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
 26. Sempre que listar materiais com tesoura, use "Tesouras sem ponta" em vez de "Tesouras". Exemplo correto: "Tesouras sem ponta: 1 por grupo".
 27. Em cenários financeiros, nunca escreva como se a decisão já fosse tomada automaticamente. Use "a família avalia comprar" ou "a família considera comprar", nunca "a família decide comprar".
+28. Não repita automaticamente a ideia de painel com cartolina, fichas e canetinhas. Escolha materiais e mecânica de teste coerentes com o problema, a disciplina, a série e o tempo disponível.
 
 Responda APENAS com JSON válido:
 
@@ -75,8 +76,8 @@ Responda APENAS com JSON válido:
   "problem": "Problema real que inicia a experiência.",
   "mission": "Sua equipe deverá desenvolver uma solução prática para o problema.",
   "bncc": ${JSON.stringify(getBnccCodes(bnccSuggestions))},
-  "materials": ["Cartolina: 1 folha por grupo", "Fichas de papel: 8 a 12 por grupo", "Canetinhas coloridas: 1 conjunto por grupo"],
-  "materialFunctions": ["Cartolina: 1 folha por grupo — base do protótipo.", "Fichas de papel: 8 a 12 por grupo — cartões de simulação.", "Canetinhas coloridas: 1 conjunto por grupo — registro visual."],
+  "materials": ["Material estrutural adequado ao desafio: quantidade por grupo", "Elementos móveis ou marcadores: quantidade por grupo", "Instrumento de medida, registro ou simulação: quantidade por grupo"],
+  "materialFunctions": ["Material estrutural adequado ao desafio: quantidade por grupo — sustenta a solução.", "Elementos móveis ou marcadores: quantidade por grupo — permitem simular decisões e testar cenários.", "Instrumento de medida, registro ou simulação: quantidade por grupo — coleta evidências do teste."],
   "readyMaterials": [
     "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
     "CENÁRIO 2 - Imprevisto: restrição, falha ou mudança para comparar.",

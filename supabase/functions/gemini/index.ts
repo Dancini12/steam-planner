@@ -5,6 +5,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+function getTemperature(type?: string) {
+  const normalized = String(type || 'generic').toLowerCase().replace(/\s+/g, '')
+  if (normalized === 'summarize') return 0.4
+  if (/pedagogicalactivity|classroomactivity|steamproject|lessonplan|atividade|activity/.test(normalized)) return 0.8
+  return 0.7
+}
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -34,7 +41,7 @@ serve(async (req) => {
         parts: []
       }],
       generationConfig: {
-        temperature: type === 'summarize' ? 0.4 : 0.7,
+        temperature: getTemperature(type),
         maxOutputTokens: 8192
       }
     }

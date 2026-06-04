@@ -8,7 +8,7 @@ const STAGE_TITLES = [
 ];
 
 const DEFAULT_STAGE_DESCRIPTIONS = [
-  "O professor entrega a missão e os materiais. A equipe usa a base mais rígida, divide áreas de problema, solução, teste e melhoria, e separa peças móveis.",
+  "O professor entrega a missão e os materiais. A equipe escolhe a base mais adequada ao produto, divide áreas de problema, solução, teste e melhoria, e separa peças móveis.",
   "Os alunos montam as partes principais do protótipo. Cada peça deve ter função visível: entrada de dados, decisão, fluxo, medida, comparação ou registro.",
   "A equipe cria a interação com cartões, fichas, abas, setas, encaixes, escala, planilha ou simulação simples. O protótipo precisa ser manipulado durante o teste.",
   "Aplique o Cenário 1 e registre o resultado. Depois aplique o Cenário 2 ou 3 para comparar, observar falhas e medir se a solução funciona.",
@@ -259,6 +259,96 @@ function inferMaterialQuantity(materialName, fallback = "1 por grupo") {
   return fallback;
 }
 
+function buildDefaultMaterials(theme) {
+  const cleanTheme = cleanText(theme).toLowerCase();
+
+  if (isBudgetTheme(cleanTheme)) {
+    return [
+      "Fichas de receita e despesa - 12 a 18 por grupo",
+      "Envelopes ou divisorias de papel - 4 por grupo",
+      "Calculadora simples ou celular do professor - 1 por grupo",
+      "Planilha impressa de orçamento - 1 por grupo",
+      "Lapis, borracha e regua - 1 conjunto por grupo"
+    ];
+  }
+
+  if (/mapa|territ[oó]rio|bairro|cidade|rota|clima|temperatura|ru[ií]do|cartografia/.test(cleanTheme)) {
+    return [
+      "Mapa impresso, croqui ou planta baixa - 1 por grupo",
+      "Adesivos ou marcadores removiveis - 8 a 12 por grupo",
+      "Barbante ou fita crepe - 1 por grupo",
+      "Regua ou trena - 1 por grupo",
+      "Planilha de coleta de dados - 1 por grupo"
+    ];
+  }
+
+  if (/agua|solo|planta|filtro|decomposi[cç][aã]o|mistura|energia|calor|experimento|ambiente/.test(cleanTheme)) {
+    return [
+      "Recipiente transparente reaproveitado - 1 por grupo",
+      "Amostras ou elementos de teste seguros - conforme disponibilidade",
+      "Conta-gotas, copo medidor ou colher - 1 por grupo",
+      "Filtro de cafe, tecido ou peneira - 1 por grupo",
+      "Ficha de observacao e tabela de resultados - 1 por grupo"
+    ];
+  }
+
+  if (/hist[oó]ria|mem[oó]ria|patrim[oô]nio|fonte|tempo|cultura|biografia/.test(cleanTheme)) {
+    return [
+      "Cartoes de fonte, personagem ou evento - 8 a 12 por grupo",
+      "Barbante, pregadores ou fita crepe - 1 conjunto por grupo",
+      "Imagens impressas ou registros autorizados - conforme disponibilidade",
+      "Etiquetas adesivas ou marcadores - 1 conjunto por grupo",
+      "Celular do professor para registro - 1 para a turma"
+    ];
+  }
+
+  if (/rob[oó]tica|circuito|sensor|programa|algoritmo|tecnologia|digital/.test(cleanTheme)) {
+    return [
+      "Cartoes de comando ou componentes simulados - 8 a 12 por grupo",
+      "LED, pilha ou material de circuito seguro - conforme disponibilidade",
+      "Fios, conectores ou tiras de papel condutor simulado - 1 conjunto por grupo",
+      "Fluxograma impresso ou quadro de sequencia - 1 por grupo",
+      "Cronometro ou celular do professor - 1 para a turma"
+    ];
+  }
+
+  return [
+    "Suporte reaproveitado, bandeja ou superficie de teste - 1 por grupo",
+    "Pecas moveis, marcadores ou objetos cotidianos - 8 a 12 por grupo",
+    "Fita crepe, barbante ou prendedores - 1 conjunto por grupo",
+    "Regua, lapis e ficha de registro - 1 conjunto por grupo",
+    "Cronometro ou celular do professor para teste - 1 para a turma"
+  ];
+}
+
+function isGenericCartolinaMaterial(material) {
+  const text = cleanText(material).toLowerCase();
+  return /\bcartolinas?\b/.test(text);
+}
+
+function hasDefaultStationeryBundle(materials) {
+  const text = materials.join(" ").toLowerCase();
+  return [
+    /fichas?\s+de\s+papel|cart[oõ]es?|tarjetas?/.test(text),
+    /canetinhas?|marcadores?|l[aá]pis\s+colorido/.test(text),
+    /notas?\s+adesivas?/.test(text),
+    /tesouras?\s+sem\s+ponta|cola\s+bast[aã]o|fita\s+adesiva/.test(text)
+  ].filter(Boolean).length >= 2;
+}
+
+function diversifyDefaultMaterialBundle(materials, theme) {
+  const cartolinaIndex = materials.findIndex(isGenericCartolinaMaterial);
+  if (cartolinaIndex === -1 || !hasDefaultStationeryBundle(materials)) {
+    return { materials, diversified: false };
+  }
+
+  const replacements = buildDefaultMaterials(theme);
+  const replacement = replacements.find((item) => !/\bcartolinas?\b/i.test(item)) || replacements[0];
+  const nextMaterials = [...materials];
+  nextMaterials[cartolinaIndex] = replacement;
+  return { materials: nextMaterials, diversified: true };
+}
+
 function buildDefaultMaterialFunctions(materials) {
   const roles = [
     "base ou superfície principal do protótipo",
@@ -356,7 +446,7 @@ function buildDefaultAssemblyDescriptions(theme, materials) {
   const materialText = materialNamesForText(materials);
 
   return [
-    `Use cartolina, papelão ou folha como base. Divida em áreas: problema, solução, teste e melhoria; separe ${materialText} antes da montagem.`,
+    `Escolha a base de acordo com o produto final: mesa de teste, caixa, bandeja, mapa impresso, folha de registro, planilha ou suporte reaproveitado. Divida problema, solução, teste e melhoria; separe ${materialText} antes da montagem.`,
     `Monte as partes principais com ${materialText}. Defina a função de cada peça: entrada de dados, fluxo, decisão, medida, comparação ou registro.`,
     "Crie a interação com cartões, fichas, abas, setas, encaixes, escala, planilha ou simulação simples. O protótipo deve mudar quando o aluno aplica um cenário.",
     `Aplique os cenários prontos sobre ${cleanTheme}. Registre resultado, falha e comparação entre o teste esperado e o teste com imprevisto.`,
@@ -613,17 +703,13 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
     LIMITS.mission
   );
 
-  const materials = compactArray(activity.materials, 6, LIMITS.material, [
-    "Materiais recicláveis ou de papelaria - quantidade por grupo",
-    "Fita adesiva ou cola - 1 por grupo",
-    "Tesoura sem ponta - 1 por grupo",
-    "Régua, lápis e papel para registro",
-    "Cronômetro ou celular do professor para teste"
-  ]);
+  const rawMaterials = compactArray(activity.materials, 6, LIMITS.material, buildDefaultMaterials(theme));
+  const materialBundle = diversifyDefaultMaterialBundle(rawMaterials, theme);
+  const materials = materialBundle.materials;
 
   let stages = normalizeStages(activity, materials, theme);
   let assemblySteps = stages;
-  const sourceMaterialFunctions = toTextArray(activity.materialFunctions);
+  const sourceMaterialFunctions = materialBundle.diversified ? [] : toTextArray(activity.materialFunctions);
   const rawMaterialFunctions = compactArray(
     sourceMaterialFunctions.length >= materials.length ? sourceMaterialFunctions : [],
     materials.length || 6,

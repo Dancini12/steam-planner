@@ -12,7 +12,7 @@ function getGenerationConfig(type?: string) {
   const normalized = String(type || 'generic').toLowerCase().replace(/\s+/g, '')
 
   if (normalized === 'classroomactivity') {
-    return { max_tokens: 4096, temperature: 0.4 }
+    return { max_tokens: 4096, temperature: 0.65 }
   }
 
   if (normalized === 'bibliographyverification') {

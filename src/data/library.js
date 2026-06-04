@@ -797,7 +797,7 @@ export const LIBRARY = [
     ],
     materials: [
       "Computadores para pesquisa e produção digital",
-      "Materiais para exposição (cartolinas, telas, painéis)",
+      "Materiais para exposição (telas, painéis digitais, tecidos, suportes reaproveitados)",
       "Equipamentos audiovisuais (projetor, caixas de som)",
       "Arduino e sensores (para módulo científico interativo)",
       "Materiais de arte diversos (tintas, tecidos, materiais de cada cultura)",
@@ -880,7 +880,7 @@ export const LIBRARY = [
       "Mapa impresso da escola",
       "Celulares para registro fotográfico",
       "Planilha eletrônica",
-      "Cartolina ou ferramenta digital de mapa"
+      "Mapa impresso, croqui ampliado ou ferramenta digital de mapa"
     ],
     bibliography: [
       REF_BNCC,
@@ -1438,7 +1438,7 @@ export const LIBRARY = [
     bncc: ["EF07HI16", "EF08HI21", "EF69LP35"],
     materials: [
       "Entrevistas e fotos antigas",
-      "Cartolinas ou ferramenta digital",
+      "Linha do tempo em barbante, mural modular ou ferramenta digital",
       "Scanner ou celular",
       "Fichas de fonte histórica",
       "Mapa do bairro"
@@ -1469,8 +1469,8 @@ export const LIBRARY = [
     bncc: ["EF06GE08", "EF06MA24", "EF69AR05"],
     materials: [
       "Planta baixa ou croqui da escola",
-      "Post-its e adesivos coloridos",
-      "Canetas e cartolinas",
+      "Notas adesivas e adesivos coloridos",
+      "Canetas, croqui ampliado ou painel digital",
       "Questionário breve",
       "Painel para exposição"
     ],
@@ -2060,7 +2060,7 @@ export const LIBRARY = [
     bncc: ["EF05CI08", "EF06CI04", "EF06MA24"],
     materials: [
       "Guia alimentar",
-      "Cartolinas e materiais de arte",
+      "Materiais de arte variados e imagens de alimentos",
       "Imagens de alimentos",
       "Planilha simples",
       "Questionário anônimo"
@@ -2219,7 +2219,7 @@ export const LIBRARY = [
       "Fichas de catalogação",
       "Régua, balança e câmera",
       "Etiquetas e materiais de exposição",
-      "Cartolina ou ferramenta digital"
+      "Etiquetas, suportes de exposição ou ferramenta digital"
     ],
     bibliography: [
       REF_BNCC,
@@ -2278,7 +2278,7 @@ export const LIBRARY = [
     bncc: ["EF08HI19", "EF09HI09", "EF69LP35"],
     materials: [
       "Computadores para pesquisa",
-      "Cartolinas ou painéis digitais",
+      "Painéis digitais, áudios, QR codes ou suportes de exposição",
       "QR codes ou gravadores de áudio",
       "Materiais de montagem",
       "Rubrica de curadoria"

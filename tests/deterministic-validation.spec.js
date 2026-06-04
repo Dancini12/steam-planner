@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { openActivityPrintWindow } from "../src/lib/exportReport.js";
+import { normalizeLearningExperience } from "../src/lib/learningExperience.js";
 import { validationActivities } from "./fixtures/steamActivities.js";
 
 const REQUIRED_SECTIONS = [
@@ -164,5 +165,27 @@ test.describe("validacao deterministica sem IA para exportacao", () => {
     expect(text).not.toContain("Exportação bloqueada");
     expect(text).toContain("construindo uma solução testável com registro de evidências e melhoria");
     expect(text).toContain("GABARITO DO PROFESSOR");
+  });
+
+  test("diversifica pacote generico quando a IA retorna cartolina como padrão", () => {
+    const normalized = normalizeLearningExperience({
+      theme: "Orçamento familiar",
+      materials: [
+        "Cartolina: 1 folha por grupo",
+        "Fichas de papel: 8 a 12 por grupo",
+        "Canetinhas coloridas: 1 conjunto por grupo",
+        "Tesoura sem ponta: 1 por grupo"
+      ],
+      materialFunctions: [
+        "Cartolina: 1 folha por grupo — base do protótipo.",
+        "Fichas de papel: 8 a 12 por grupo — cartões de simulação.",
+        "Canetinhas coloridas: 1 conjunto por grupo — registro visual.",
+        "Tesoura sem ponta: 1 por grupo — recorte das peças."
+      ]
+    });
+
+    expect(normalized.materials.join(" ")).not.toMatch(/\bcartolina\b/i);
+    expect(normalized.materialFunctions.join(" ")).not.toMatch(/\bcartolina\b/i);
+    expect(normalized.materials.join(" ")).toMatch(/Fichas de receita e despesa|Envelopes|Planilha impressa/i);
   });
 });
