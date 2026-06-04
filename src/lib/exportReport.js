@@ -680,7 +680,8 @@ function renderMaterialsForExperience(experience) {
     : renderSimpleList(lines);
 
   return `${table}
-    ${displayedReadyMaterials.length ? `<div class="ready-materials"><strong>Materiais prontos:</strong>${renderSimpleList(displayedReadyMaterials)}</div>` : ""}`;
+    ${displayedReadyMaterials.length ? `<div class="ready-materials"><strong>Materiais prontos:</strong>${renderSimpleList(displayedReadyMaterials)}</div>` : ""}
+    ${renderIllustrativeFigures(experience)}`;
 }
 
 function renderSteamConnection(steamConnection) {
@@ -764,6 +765,288 @@ function getScenarioItems(readyMaterials) {
 
   finishCurrent();
   return scenarios;
+}
+
+function getIllustrativeFigureMode(experience = {}) {
+  const nivelVisual = normalizeSearchText(experience.nivelVisual || experience.visualLevel || "");
+  if (experience.incluirFigurasIlustrativas === false || /sem\s+figuras?/.test(nivelVisual)) return "none";
+  if (/figuras?\s+sempre|sempre\s+que\s+possivel/.test(nivelVisual)) return "always";
+  return "when-needed";
+}
+
+function getIllustrativeSourceText(experience = {}) {
+  const materials = normalizeTextItems(experience.materials || []);
+  const readyMaterials = normalizeTextItems(experience.readyMaterials || []);
+  return normalizeTextItems([
+    experience.title,
+    experience.theme,
+    experience.discipline,
+    experience.problem,
+    experience.mission,
+    experience.makerChallenge,
+    experience.finalProduct,
+    ...materials,
+    ...readyMaterials
+  ]).join(" ");
+}
+
+function isVisualPedagogicalActivity(text) {
+  return /sequ[eê]ncia|padr[aã]o\s+visual|express[aã]o\s+alg[eé]brica|geometr|gr[aá]fico|mapa|croqui|experimento|circuito|rob[oó]tica|sensor|fluxograma|algoritmo|organiza[cç][aã]o\s+espacial|maquete|modelo\s+3d|montagem/i.test(text);
+}
+
+function parseSequenceSteps(text) {
+  const cleaned = stripDecorativeMarkers(text);
+  const explicit = [...cleaned.matchAll(/(?:etapa|figura|passo)\s*(\d+)\s*[:\-–—]?\s*(?:com\s*)?(\d+)\s*(?:blocos?|quadradinhos?|pe[cç]as?|cubos?|unidades?)/gi)]
+    .map((match) => ({ label: `Etapa ${Number(match[1])}`, count: Number(match[2]) }))
+    .filter((step) => step.count > 0 && step.count <= 80);
+
+  if (explicit.length >= 2) return explicit.slice(0, 3);
+
+  const counts = [...cleaned.matchAll(/(\d+)\s*(?:blocos?|quadradinhos?|pe[cç]as?|cubos?|unidades?)/gi)]
+    .map((match) => Number(match[1]))
+    .filter((count) => count > 0 && count <= 80);
+  const uniqueCounts = counts.filter((count, index) => counts.indexOf(count) === index);
+
+  if (uniqueCounts.length >= 2) {
+    return uniqueCounts.slice(0, 3).map((count, index) => ({ label: `Etapa ${index + 1}`, count }));
+  }
+
+  return [];
+}
+
+function isPerfectSquare(value) {
+  const root = Math.sqrt(value);
+  return Number.isInteger(root);
+}
+
+function detectSequenceShape(text, steps) {
+  const normalized = normalizeSearchText(text);
+  if (/\bforma\s+de\s+l\b|\bem\s+l\b|sequencia\s+em\s+l/.test(normalized)) return "l";
+  if (steps.length >= 2 && steps.every((step) => isPerfectSquare(step.count))) return "square";
+  if (steps.length >= 3 && steps.every((step) => step.count % 2 === 1) && steps.every((step, index) => index === 0 || step.count - steps[index - 1].count === 2)) return "l";
+  return "linear";
+}
+
+function renderSvgCell(x, y, size) {
+  return `<rect x="${x}" y="${y}" width="${size}" height="${size}" fill="#f3f4f6" stroke="#4b5563" stroke-width="0.8" />`;
+}
+
+function renderSquarePatternCells(count, originX, originY, cell, gap, maxRows) {
+  const columns = Math.max(1, Math.ceil(Math.sqrt(count)));
+  const rows = Math.ceil(count / columns);
+  const top = originY + (maxRows - rows) * (cell + gap);
+  return Array.from({ length: count }, (_, index) => {
+    const x = originX + (index % columns) * (cell + gap);
+    const y = top + Math.floor(index / columns) * (cell + gap);
+    return renderSvgCell(x, y, cell);
+  }).join("");
+}
+
+function renderLPatternCells(count, originX, originY, cell, gap, maxRows) {
+  const arm = Math.max(2, Math.min(7, Math.round((count + 1) / 2)));
+  const top = originY + (maxRows - arm) * (cell + gap);
+  const bottom = top + (arm - 1) * (cell + gap);
+  const cells = [];
+  for (let row = 0; row < arm; row += 1) {
+    cells.push(renderSvgCell(originX, top + row * (cell + gap), cell));
+  }
+  for (let col = 1; col < arm; col += 1) {
+    cells.push(renderSvgCell(originX + col * (cell + gap), bottom, cell));
+  }
+  return cells.join("");
+}
+
+function renderLinearPatternCells(count, originX, originY, cell, gap) {
+  const visible = Math.min(count, 10);
+  const cells = Array.from({ length: visible }, (_, index) => (
+    renderSvgCell(originX + index * (cell + gap), originY, cell)
+  ));
+  if (count > visible) {
+    cells.push(`<text x="${originX + visible * (cell + gap) + 2}" y="${originY + cell - 1}" font-size="10" fill="#555">+${count - visible}</text>`);
+  }
+  return cells.join("");
+}
+
+function renderSequenceSvg(steps, shape, ariaLabel) {
+  const width = 520;
+  const height = 138;
+  const cell = 12;
+  const gap = 2;
+  const groupWidth = 150;
+  const maxRows = Math.max(
+    1,
+    ...steps.map((step) => shape === "l" ? Math.round((step.count + 1) / 2) : Math.ceil(Math.sqrt(step.count)))
+  );
+
+  const groups = steps.map((step, index) => {
+    const x = 22 + index * groupWidth;
+    const label = escapeHtml(step.label);
+    const cells = shape === "l"
+      ? renderLPatternCells(step.count, x, 40, cell, gap, maxRows)
+      : shape === "square"
+        ? renderSquarePatternCells(step.count, x, 40, cell, gap, maxRows)
+        : renderLinearPatternCells(step.count, x, 70, cell, gap);
+    return `<g>
+      <text x="${x}" y="18" font-size="10" font-weight="700" fill="#333">${label}</text>
+      <text x="${x}" y="31" font-size="9" fill="#555">${step.count} bloco${step.count === 1 ? "" : "s"}</text>
+      ${cells}
+    </g>`;
+  }).join("");
+
+  return `<svg class="illustrative-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(ariaLabel)}" xmlns="http://www.w3.org/2000/svg">${groups}</svg>`;
+}
+
+function renderGenericPedagogicalSvg(type, ariaLabel) {
+  const svgByType = {
+    circuit: `<svg class="illustrative-svg" viewBox="0 0 520 112" role="img" aria-label="${escapeHtml(ariaLabel)}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="38" y="42" width="54" height="28" fill="#f8fafc" stroke="#4b5563" />
+      <text x="50" y="60" font-size="9" fill="#333">Pilha</text>
+      <line x1="92" y1="56" x2="200" y2="56" stroke="#4b5563" stroke-width="2" />
+      <circle cx="226" cy="56" r="18" fill="#f3f4f6" stroke="#4b5563" />
+      <text x="217" y="60" font-size="9" fill="#333">LED</text>
+      <line x1="244" y1="56" x2="350" y2="56" stroke="#4b5563" stroke-width="2" />
+      <rect x="350" y="42" width="70" height="28" fill="#f8fafc" stroke="#4b5563" />
+      <text x="362" y="60" font-size="9" fill="#333">Sensor</text>
+      <path d="M420 56 H462 V86 H38 V56" fill="none" stroke="#4b5563" stroke-width="2" />
+    </svg>`,
+    experiment: `<svg class="illustrative-svg" viewBox="0 0 520 112" role="img" aria-label="${escapeHtml(ariaLabel)}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="54" y="34" width="86" height="58" rx="4" fill="#f8fafc" stroke="#4b5563" />
+      <line x1="54" y1="60" x2="140" y2="60" stroke="#9ca3af" />
+      <text x="68" y="82" font-size="9" fill="#333">Amostra</text>
+      <path d="M210 28 h82 l-14 64 h-54 z" fill="#f8fafc" stroke="#4b5563" />
+      <line x1="221" y1="60" x2="281" y2="60" stroke="#9ca3af" />
+      <text x="231" y="82" font-size="9" fill="#333">Teste</text>
+      <path d="M344 36 h74 l-10 56 h-54 z" fill="#f8fafc" stroke="#4b5563" />
+      <path d="M352 56 h58" stroke="#9ca3af" />
+      <text x="360" y="82" font-size="9" fill="#333">Registro</text>
+      <path d="M152 62 H198 M304 62 H336" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow)" />
+      <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#4b5563"/></marker></defs>
+    </svg>`,
+    flowchart: `<svg class="illustrative-svg" viewBox="0 0 520 112" role="img" aria-label="${escapeHtml(ariaLabel)}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="36" y="38" width="92" height="36" rx="4" fill="#f8fafc" stroke="#4b5563" />
+      <text x="57" y="60" font-size="10" fill="#333">Entrada</text>
+      <rect x="202" y="38" width="92" height="36" rx="4" fill="#f8fafc" stroke="#4b5563" />
+      <text x="224" y="60" font-size="10" fill="#333">Regra</text>
+      <rect x="368" y="38" width="92" height="36" rx="4" fill="#f8fafc" stroke="#4b5563" />
+      <text x="389" y="60" font-size="10" fill="#333">Saída</text>
+      <path d="M128 56 H196 M294 56 H362" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arrow-flow)" />
+      <defs><marker id="arrow-flow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#4b5563"/></marker></defs>
+    </svg>`,
+    map: `<svg class="illustrative-svg" viewBox="0 0 520 112" role="img" aria-label="${escapeHtml(ariaLabel)}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="48" y="24" width="390" height="66" fill="#f8fafc" stroke="#4b5563" />
+      <path d="M80 78 C140 32, 184 88, 240 48 S340 38, 404 74" fill="none" stroke="#4b5563" stroke-width="2" />
+      <circle cx="102" cy="64" r="5" fill="#d1d5db" stroke="#4b5563" />
+      <circle cx="250" cy="47" r="5" fill="#d1d5db" stroke="#4b5563" />
+      <circle cx="390" cy="72" r="5" fill="#d1d5db" stroke="#4b5563" />
+      <text x="56" y="105" font-size="9" fill="#555">Marcar pontos, rotas, riscos e evidências</text>
+    </svg>`,
+    geometry: `<svg class="illustrative-svg" viewBox="0 0 520 112" role="img" aria-label="${escapeHtml(ariaLabel)}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="64" y="30" width="92" height="58" fill="#f8fafc" stroke="#4b5563" />
+      <text x="86" y="62" font-size="10" fill="#333">Área</text>
+      <path d="M228 88 L274 30 L322 88 Z" fill="#f8fafc" stroke="#4b5563" />
+      <text x="257" y="72" font-size="10" fill="#333">Forma</text>
+      <line x1="382" y1="88" x2="462" y2="88" stroke="#4b5563" />
+      <line x1="382" y1="88" x2="382" y2="24" stroke="#4b5563" />
+      <polyline points="386,76 408,64 430,44 456,34" fill="none" stroke="#4b5563" stroke-width="2" />
+    </svg>`,
+    prototype: `<svg class="illustrative-svg" viewBox="0 0 520 112" role="img" aria-label="${escapeHtml(ariaLabel)}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="72" y="42" width="86" height="44" fill="#f8fafc" stroke="#4b5563" />
+      <rect x="86" y="30" width="58" height="18" fill="#f3f4f6" stroke="#4b5563" />
+      <line x1="158" y1="64" x2="244" y2="64" stroke="#4b5563" stroke-width="1.6" marker-end="url(#arrow-proto)" />
+      <rect x="252" y="34" width="94" height="58" fill="#f8fafc" stroke="#4b5563" />
+      <line x1="266" y1="48" x2="332" y2="48" stroke="#9ca3af" />
+      <line x1="266" y1="62" x2="332" y2="62" stroke="#9ca3af" />
+      <line x1="266" y1="76" x2="312" y2="76" stroke="#9ca3af" />
+      <text x="372" y="58" font-size="10" fill="#333">Testar</text>
+      <text x="372" y="74" font-size="10" fill="#333">Ajustar</text>
+      <defs><marker id="arrow-proto" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#4b5563"/></marker></defs>
+    </svg>`
+  };
+  return svgByType[type] || "";
+}
+
+function detectGenericFigureType(text) {
+  if (/circuito|led|sensor|rob[oó]tica|arduino/i.test(text)) return "circuit";
+  if (/experimento|filtro|mistura|amostra|recipiente|hip[oó]tese|observa[cç][aã]o|agua|água/i.test(text)) return "experiment";
+  if (/fluxograma|algoritmo|depurar|comandos?|sequ[eê]ncia\s+l[oó]gica/i.test(text)) return "flowchart";
+  if (/mapa|croqui|planta\s+baixa|territ[oó]rio|rota|bairro|cartografia/i.test(text)) return "map";
+  if (/geometr|[aá]rea|per[ií]metro|escala|gr[aá]fico|eixo|medidas?/i.test(text)) return "geometry";
+  if (/maquete|modelo\s+3d|montagem\s+do\s+prot[oó]tipo|estrutura\s+do\s+prot[oó]tipo/i.test(text)) return "prototype";
+  return "";
+}
+
+function getGenericFigureCaption(type) {
+  const captions = {
+    circuit: "Circuito simplificado a ser montado.",
+    experiment: "Esquema simplificado do experimento.",
+    flowchart: "Fluxo simplificado de teste da solução.",
+    map: "Esquema simplificado para organizar o mapa ou croqui.",
+    geometry: "Apoio visual para medidas, formas ou dados.",
+    prototype: "Esquema simplificado da montagem e teste do protótipo."
+  };
+  return captions[type] || "";
+}
+
+function buildSequenceFigures(experience, figureStart = 1) {
+  const sourceText = getIllustrativeSourceText(experience);
+  if (!/sequ[eê]ncia|padr[aã]o|alg[eé]br|blocos?|quadradinhos?|pe[cç]as?|cubos?/i.test(sourceText)) return [];
+
+  const scenarios = getScenarioItems(experience.readyMaterials || []);
+  const candidates = scenarios.length
+    ? scenarios.map((scenario) => ({ label: `Cenário ${scenario.number}`, text: scenario.text }))
+    : [{ label: "Atividade", text: sourceText }];
+
+  return candidates
+    .map((candidate) => {
+      const steps = parseSequenceSteps(candidate.text);
+      if (steps.length < 2) return null;
+      const shape = detectSequenceShape(candidate.text, steps);
+      const shapeText = shape === "l" ? "em forma de L" : shape === "square" ? "de torres quadradas" : "visual";
+      const caption = `Figura ${figureStart} — Etapas iniciais da sequência ${shapeText}.`;
+      const svg = renderSequenceSvg(steps, shape, caption);
+      figureStart += 1;
+      return {
+        type: "sequence",
+        caption,
+        svg
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 2);
+}
+
+function buildGenericIllustrativeFigure(experience, figureNumber = 1) {
+  const sourceText = getIllustrativeSourceText(experience);
+  if (!isVisualPedagogicalActivity(sourceText)) return null;
+  const type = detectGenericFigureType(sourceText);
+  if (!type) return null;
+  const caption = `Figura ${figureNumber} — ${getGenericFigureCaption(type)}`;
+  const svg = renderGenericPedagogicalSvg(type, caption);
+  return svg && caption ? { type, caption, svg } : null;
+}
+
+function buildIllustrativeFigures(experience = {}) {
+  const mode = getIllustrativeFigureMode(experience);
+  if (mode === "none") return [];
+
+  const sequenceFigures = buildSequenceFigures(experience, 1);
+  if (sequenceFigures.length) return sequenceFigures;
+
+  const genericFigure = buildGenericIllustrativeFigure(experience, 1);
+  if (!genericFigure || mode === "none") return [];
+
+  return [genericFigure];
+}
+
+function renderIllustrativeFigures(experience = {}) {
+  const figures = buildIllustrativeFigures(experience);
+  if (!figures.length) return "";
+  return `<div class="illustrative-figures" aria-label="Figuras ilustrativas da atividade">
+    ${figures.map((figure) => `<figure class="illustrative-figure" data-figure-type="${escapeHtml(figure.type)}">
+      ${figure.svg}
+      <figcaption>${escapeHtml(figure.caption)}</figcaption>
+    </figure>`).join("")}
+  </div>`;
 }
 
 function getScenarioNumbersFromGabarito(gabarito) {
@@ -3433,8 +3716,9 @@ function buildActivityPrintHTMLFromExperience(experience) {
     .section { margin-top: 0.28cm; }
     .protected-section,
     .table-section,
-    .materials-table,
-    .test-table-wrapper,
+	    .materials-table,
+	    .illustrative-figure,
+	    .test-table-wrapper,
     .rubric-table,
     .gabarito-card {
       break-inside: avoid;
@@ -3470,8 +3754,24 @@ function buildActivityPrintHTMLFromExperience(experience) {
     .stage-header { background: #f6f7f8; font-weight: 700; font-size: 8pt; padding: 0.08cm 0.12cm; border-bottom: 1px solid #aeb4bd; }
     .stage-body { padding: 0.1cm 0.12cm; }
     .stage-body p { margin-bottom: 0; }
-    .ready-materials { margin-top: 0.12cm; border-left: 2px solid #777; padding-left: 0.2cm; }
-    .ready-materials strong { display: block; margin-bottom: 0.05cm; }
+	    .ready-materials { margin-top: 0.12cm; border-left: 2px solid #777; padding-left: 0.2cm; }
+	    .ready-materials strong { display: block; margin-bottom: 0.05cm; }
+	    .illustrative-figures { margin-top: 0.14cm; display: grid; grid-template-columns: 1fr; gap: 0.12cm; }
+	    .illustrative-figure {
+	      margin: 0;
+	      padding: 0.12cm 0.16cm 0.1cm;
+	      border: 1px solid #b6bbc3;
+	      border-radius: 3px;
+	      background: #fff;
+	    }
+	    .illustrative-svg { display: block; width: 100%; max-height: 3.1cm; }
+	    .illustrative-figure figcaption {
+	      margin-top: 0.06cm;
+	      font-size: 7.6pt;
+	      color: #444;
+	      line-height: 1.25;
+	      font-style: italic;
+	    }
     .materials-table { width: 100%; border-collapse: collapse; font-size: 8.1pt; margin-bottom: 0.11cm; table-layout: fixed; }
     .materials-table th { background: #f1f1f1; border: 1px solid #888; padding: 0.07cm 0.09cm; font-weight: 700; text-align: left; white-space: nowrap; }
     .materials-table td { border: 1px solid #aaa; padding: 0.07cm 0.09cm; vertical-align: top; word-break: break-word; }
@@ -3533,7 +3833,7 @@ function buildActivityPrintHTMLFromExperience(experience) {
         min-height: 100vh;
       }
       .section-heading { page-break-after: avoid; break-after: avoid; }
-      .protected-section, .table-section, .stage, .materials-table, .test-table-wrapper, .rubric-table, .gabarito-card {
+	      .protected-section, .table-section, .stage, .materials-table, .illustrative-figure, .test-table-wrapper, .rubric-table, .gabarito-card {
         page-break-inside: avoid;
         break-inside: avoid;
       }

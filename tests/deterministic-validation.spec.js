@@ -188,4 +188,102 @@ test.describe("validacao deterministica sem IA para exportacao", () => {
     expect(normalized.materialFunctions.join(" ")).not.toMatch(/\bcartolina\b/i);
     expect(normalized.materials.join(" ")).toMatch(/Fichas de receita e despesa|Envelopes|Planilha impressa/i);
   });
+
+  test("insere figuras SVG para sequencias algebricas com padroes visuais", () => {
+    const { html, text } = captureExport({
+      title: "Sequencias algebricas visuais",
+      theme: "Sequencias algebricas e padroes visuais",
+      discipline: "Matemática",
+      duration: "2 aulas",
+      objective: "Representar padroes visuais por expressoes algebricas.",
+      problem: "Como descobrir a regra de crescimento de uma sequencia visual usando blocos?",
+      mission: "Sua equipe devera montar as primeiras etapas, testar a contagem, registrar a regra e justificar a expressao.",
+      makerChallenge: "Construir duas sequencias com blocos, comparar crescimento, testar a etapa seguinte e melhorar a explicacao visual.",
+      finalProduct: "Modelo visual das sequencias com registro da regra algebrica, teste da etapa seguinte e melhoria da justificativa.",
+      materials: [
+        "Blocos de papel: 20 por grupo — representar etapas da sequencia — —",
+        "Fita crepe: 1 por grupo — organizar a area de teste — —",
+        "Regua: 1 por grupo — alinhar os blocos — —",
+        "Ficha de registro: 1 por grupo — anotar contagens e expressoes — —"
+      ],
+      materialFunctions: [
+        "Blocos de papel: 20 por grupo — representar etapas da sequencia — —",
+        "Fita crepe: 1 por grupo — organizar a area de teste — —",
+        "Regua: 1 por grupo — alinhar os blocos — —",
+        "Ficha de registro: 1 por grupo — anotar contagens e expressoes — —"
+      ],
+      readyMaterials: [
+        "CENÁRIO 1 - Torres quadradas: Etapa 1: 1 bloco; Etapa 2: 4 blocos; Etapa 3: 9 blocos. Pergunta: qual expressao representa a etapa n?",
+        "CENÁRIO 2 - Sequencia em forma de L: Etapa 1: 3 blocos; Etapa 2: 5 blocos; Etapa 3: 7 blocos. Pergunta: qual expressao representa a etapa n?",
+        "TABELA DE TESTE - Cenário/Teste | Resultado Inicial | Falha Observada | Melhoria Aplicada | Resultado Após Melhoria."
+      ],
+      teacherGabarito: [
+        "Cenario 1: as tres etapas possuem 1, 4 e 9 blocos; a regra esperada e n².",
+        "Cenario 2: as tres etapas possuem 3, 5 e 7 blocos; a regra esperada e 2n + 1."
+      ],
+      bibliography: ["BRASIL. Ministerio da Educacao. Base Nacional Comum Curricular. Brasilia: MEC, 2018."],
+      steamConnection: {
+        science: "Observa regularidades no crescimento.",
+        technology: "Organiza registros de teste.",
+        engineering: "Monta e ajusta os modelos visuais.",
+        art: "Comunica o padrao de forma clara.",
+        mathematics: "Generaliza a regra algebrica."
+      },
+      assessmentRubric: [
+        { criterion: "Representacao", observation: "Monta as etapas com contagem coerente." },
+        { criterion: "Regra", observation: "Relaciona a contagem com expressao algebrica." },
+        { criterion: "Teste", observation: "Testa etapa seguinte e registra evidencia." },
+        { criterion: "Comunicacao", observation: "Explica o padrao com clareza." }
+      ],
+      stages: [
+        { number: 1, title: "Preparar blocos", description: "Separar blocos, organizar grupos e registrar a hipotese inicial para cada sequencia." },
+        { number: 2, title: "Construir etapas", description: "Montar as tres primeiras etapas das torres quadradas e da sequencia em L." },
+        { number: 3, title: "Criar interacao", description: "Mover blocos para prever a etapa seguinte e comparar a contagem esperada." },
+        { number: 4, title: "Testar regra", description: "Aplicar a regra na etapa 4, contar blocos e registrar erro ou acerto." },
+        { number: 5, title: "Ajustar explicacao", description: "Corrigir a regra, melhorar o desenho e testar novamente com outro valor de n." },
+        { number: 6, title: "Apresentar evidencias", description: "Apresentar modelos, regra algebrica, teste realizado e melhoria feita." }
+      ]
+    });
+
+    expect(text).not.toContain("Exportação bloqueada");
+    expect(html).toContain('class="illustrative-figure"');
+    expect(html).toContain('data-figure-type="sequence"');
+    expect(text).toContain("Figura 1");
+    expect(text).toContain("Figura 2");
+    expect(text).toContain("9 blocos");
+    expect(text).toContain("7 blocos");
+  });
+
+  test("respeita configuracao sem figuras ilustrativas", () => {
+    const { html, text } = captureExport({
+      title: "Sequencias sem figuras",
+      theme: "Sequencias algebricas e padroes visuais",
+      discipline: "Matemática",
+      duration: "1 aula",
+      incluirFigurasIlustrativas: false,
+      objective: "Representar padroes visuais por expressoes algebricas.",
+      problem: "Como descobrir a regra de crescimento de uma sequencia visual usando blocos?",
+      mission: "Sua equipe devera montar etapas, testar contagens, registrar a regra e justificar a expressao.",
+      makerChallenge: "Construir uma sequencia com blocos, testar a etapa seguinte e melhorar a explicacao.",
+      finalProduct: "Modelo visual com registro da regra algebrica, teste da etapa seguinte e melhoria aplicada.",
+      materials: ["Blocos de papel: 20 por grupo — representar etapas da sequencia — —", "Ficha de registro: 1 por grupo — anotar contagens — —"],
+      materialFunctions: ["Blocos de papel: 20 por grupo — representar etapas da sequencia — —", "Ficha de registro: 1 por grupo — anotar contagens — —"],
+      readyMaterials: ["CENÁRIO 1 - Etapa 1: 1 bloco; Etapa 2: 4 blocos; Etapa 3: 9 blocos.", "TABELA DE TESTE - Cenário/Teste | Resultado Inicial | Falha Observada | Melhoria Aplicada | Resultado Após Melhoria."],
+      teacherGabarito: ["Cenario 1: regra esperada n²."],
+      bibliography: ["BRASIL. Ministerio da Educacao. Base Nacional Comum Curricular. Brasilia: MEC, 2018."],
+      steamConnection: { science: "Observa regularidades.", technology: "Registra dados.", engineering: "Monta modelos.", art: "Comunica visualmente.", mathematics: "Generaliza a regra." },
+      assessmentRubric: [{ criterion: "Regra", observation: "Relaciona contagem e expressao." }],
+      stages: [
+        { number: 1, title: "Preparar", description: "Separar materiais e organizar grupos." },
+        { number: 2, title: "Construir", description: "Construir as etapas da sequencia." },
+        { number: 3, title: "Interagir", description: "Mover blocos para simular nova etapa." },
+        { number: 4, title: "Testar", description: "Testar a regra com outra etapa." },
+        { number: 5, title: "Ajustar", description: "Melhorar a regra apos comparar resultados." },
+        { number: 6, title: "Apresentar", description: "Apresentar produto, evidencia e melhoria." }
+      ]
+    });
+
+    expect(text).not.toContain("Exportação bloqueada");
+    expect(html).not.toContain('class="illustrative-figure"');
+  });
 });
