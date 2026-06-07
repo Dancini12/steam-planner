@@ -565,7 +565,7 @@ function parseMaterialItem(item) {
     name = cleaned.slice(0, colonIdx).trim();
     rest = cleaned.slice(colonIdx + 1).trim();
   } else {
-    const dashMatch = cleaned.match(/^(.+?)\s+-\s+(.+)$/);
+    const dashMatch = cleaned.match(/^(.+?)\s+[-–—]\s+(.+)$/);
     if (dashMatch) {
       name = dashMatch[1].trim();
       rest = dashMatch[2].trim();
