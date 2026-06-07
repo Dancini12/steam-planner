@@ -3,6 +3,7 @@ import { useProjects } from "../hooks/useProjects.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 import { trackEvent } from "../lib/analytics.js";
 import PedagogicalPlannerModal from "../components/project/PedagogicalPlannerModal.jsx";
+import FeedbackModal from "../components/project/FeedbackModal.jsx";
 
 const COMPETENCY_TO_LETTER = {
   science: "S",
@@ -60,6 +61,7 @@ export default function Dashboard({
 }) {
   const { projects, addProjectFromTemplate, isLoaded } = useProjects(currentUser?.id);
   const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [creationError, setCreationError] = useState("");
   const computerRef = useRef(null);
   const [themeMode, setThemeMode] = useState(
@@ -284,6 +286,13 @@ export default function Dashboard({
             color="#FDE047"
             onClick={onOpenBNCC}
           />
+          <DashboardCard
+            title="FEEDBACK"
+            icon="feedback"
+            text="Compartilhe sua experiência e ajude a melhorar a plataforma"
+            color="#A78BFA"
+            onClick={() => setShowFeedbackModal(true)}
+          />
         </section>
 
         <footer className="retro-footer">
@@ -299,6 +308,12 @@ export default function Dashboard({
         isOpen={showPedagogicalModal}
         onClose={() => setShowPedagogicalModal(false)}
         onActivityGenerated={handlePedagogicalActivityGenerated}
+        currentUser={currentUser}
+      />
+
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
         currentUser={currentUser}
       />
 
@@ -611,7 +626,7 @@ const retroCss = `
   .primary-grid {
     display: grid;
     gap: 22px;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     margin-bottom: 22px;
   }
 
@@ -756,6 +771,15 @@ const retroCss = `
       linear-gradient(#CBD5E1 0 0) 52px 8px / 8px 12px no-repeat,
       linear-gradient(#39FF88 0 0) 29px 32px / 20px 8px no-repeat,
       linear-gradient(#39FF88 0 0) 35px 26px / 8px 20px no-repeat;
+  }
+
+  .pixel-feedback {
+    background:
+      linear-gradient(#A78BFA 0 0) 8px 10px / 58px 44px no-repeat,
+      linear-gradient(#A78BFA 0 0) 18px 54px / 16px 10px no-repeat,
+      linear-gradient(#A78BFA 0 0) 14px 60px / 10px 6px no-repeat,
+      linear-gradient(#1E1B4B 0 0) 18px 22px / 36px 6px no-repeat,
+      linear-gradient(#1E1B4B 0 0) 18px 34px / 24px 6px no-repeat;
   }
 
   .retro-footer {
@@ -997,6 +1021,12 @@ const retroCss = `
 
   .theme-light .pixel-stars {
     opacity: 0.18;
+  }
+
+  @media (max-width: 1200px) {
+    .primary-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
   }
 
   @media (max-width: 1040px) {
