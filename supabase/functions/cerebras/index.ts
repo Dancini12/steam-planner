@@ -11,8 +11,16 @@ const CEREBRAS_MODEL = Deno.env.get('CEREBRAS_MODEL') || 'llama-3.3-70b'
 function getGenerationConfig(type?: string) {
   const normalized = String(type || 'generic').toLowerCase().replace(/\s+/g, '')
 
+  if (/^(project|steamproject|lessonplan|pedagogicalactivity|activity|atividade)$/.test(normalized)) {
+    return { max_tokens: 8192, temperature: 0.8 }
+  }
+
   if (normalized === 'classroomactivity') {
     return { max_tokens: 4096, temperature: 0.65 }
+  }
+
+  if (/^(bibliography|justification|methodology|assessment|bncc)$/.test(normalized)) {
+    return { max_tokens: 3000, temperature: 0.5 }
   }
 
   if (normalized === 'bibliographyverification') {
