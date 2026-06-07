@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { supabase } from "../lib/supabaseClient.js";
 import { useProjects } from "../hooks/useProjects.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
 import { trackEvent } from "../lib/analytics.js";
+import Modal from "../components/ui/Modal.jsx";
 import PedagogicalPlannerModal from "../components/project/PedagogicalPlannerModal.jsx";
 import FeedbackModal from "../components/project/FeedbackModal.jsx";
 
@@ -62,6 +64,11 @@ export default function Dashboard({
   const { projects, addProjectFromTemplate, isLoaded } = useProjects(currentUser?.id);
   const [showPedagogicalModal, setShowPedagogicalModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showFeedbackListModal, setShowFeedbackListModal] = useState(false);
+  const [feedbackList, setFeedbackList] = useState([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackError, setFeedbackError] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [creationError, setCreationError] = useState("");
   const computerRef = useRef(null);
   const [themeMode, setThemeMode] = useState(
@@ -78,6 +85,80 @@ export default function Dashboard({
       onAutoOpenModalHandled?.();
     }
   }, [autoOpenModal, isLoaded]);
+
+  useEffect(() => {
+    if (!currentUser?.email) {
+      setIsAdmin(false);
+      return undefined;
+    }
+
+    let isMounted = true;
+    const checkAdmin = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("app_admins")
+          .select("email")
+          .ilike("email", currentUser.email)
+          .limit(1);
+
+        if (!isMounted) return;
+        if (error) {
+          console.error("Erro ao verificar admin:", error);
+          setIsAdmin(false);
+          return;
+        }
+
+        setIsAdmin(Array.isArray(data) && data.length > 0);
+      } catch (error) {
+        if (!isMounted) return;
+        console.error("Erro ao verificar admin:", error);
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdmin();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.email]);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setFeedbackList([]);
+      setFeedbackError("");
+      setFeedbackLoading(false);
+      return undefined;
+    }
+
+    let isMounted = true;
+    const loadFeedback = async () => {
+      setFeedbackLoading(true);
+      setFeedbackError("");
+
+      const { data, error } = await supabase
+        .from("feedback")
+        .select("id, category, message, sender_name, sender_email, user_id, created_at")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (!isMounted) return;
+
+      if (error) {
+        console.error("Erro ao carregar feedbacks:", error);
+        setFeedbackError("Não foi possível carregar os feedbacks.");
+        setFeedbackList([]);
+      } else {
+        setFeedbackList(data || []);
+      }
+
+      setFeedbackLoading(false);
+    };
+
+    loadFeedback();
+    return () => {
+      isMounted = false;
+    };
+  }, [isAdmin]);
 
   useEffect(() => {
     if (!isLoaded) return undefined;
@@ -286,6 +367,15 @@ export default function Dashboard({
             color="#FDE047"
             onClick={onOpenBNCC}
           />
+          {isAdmin && (
+            <DashboardCard
+              title="FEEDBACKS RECEBIDOS"
+              icon="feedback"
+              text="Veja os feedbacks enviados pelos usuários"
+              color="#F97316"
+              onClick={() => setShowFeedbackListModal(true)}
+            />
+          )}
           <DashboardCard
             title="FEEDBACK"
             icon="feedback"
@@ -310,6 +400,41 @@ export default function Dashboard({
         onActivityGenerated={handlePedagogicalActivityGenerated}
         currentUser={currentUser}
       />
+
+      <Modal
+        isOpen={showFeedbackListModal}
+        onClose={() => setShowFeedbackListModal(false)}
+        title="Feedbacks recebidos"
+        maxWidth="760px"
+      >
+        {feedbackLoading && <p>Carregando feedbacks...</p>}
+        {feedbackError && <div className="retro-error">{feedbackError}</div>}
+        {!feedbackLoading && !feedbackError && feedbackList.length === 0 && (
+          <p>Nenhum feedback encontrado.</p>
+        )}
+        {!feedbackLoading && feedbackList.length > 0 && (
+          <div className="feedback-list">
+            {feedbackList.map((item) => (
+              <article key={item.id} className="feedback-card">
+                <header className="feedback-card-header">
+                  <strong>{item.category || "Geral"}</strong>
+                  <span>
+                    {item.created_at
+                      ? new Date(item.created_at).toLocaleString("pt-BR")
+                      : ""}
+                  </span>
+                </header>
+                <p className="feedback-message">{item.message}</p>
+                <div className="feedback-meta">
+                  <span>{item.sender_name || "Usuário"}</span>
+                  {item.sender_email && <span>{item.sender_email}</span>}
+                  {item.user_id && <span>{item.user_id}</span>}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </Modal>
 
       <FeedbackModal
         isOpen={showFeedbackModal}
@@ -365,6 +490,43 @@ const retroCss = `
     pointer-events: none;
     z-index: 1;
     background: radial-gradient(circle at center, transparent 58%, rgba(0, 0, 0, 0.48));
+  }
+
+  .feedback-list {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .feedback-card {
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.96);
+  }
+
+  .feedback-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+    color: #f8fafc;
+  }
+
+  .feedback-message {
+    white-space: pre-wrap;
+    line-height: 1.65;
+    color: #e2e8f0;
+    margin: 0 0 0.75rem;
+  }
+
+  .feedback-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    color: #94a3b8;
+    font-size: 0.9rem;
   }
 
   .retro-shell {
