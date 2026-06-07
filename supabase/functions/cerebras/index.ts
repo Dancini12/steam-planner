@@ -65,7 +65,7 @@ serve(async (req) => {
 
     const generationConfig = getGenerationConfig(type)
 
-    const response = await fetch('https://api.cerebras.net/v1/chat/completions', {
+    const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
