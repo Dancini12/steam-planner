@@ -3184,6 +3184,7 @@ function hasAbsurdGabaritoResult(experience, budgetData) {
 
 function validateFinancialSummary(data, allData = []) {
   const blocking = [];
+  const warnings = [];
   const summary = data.summary || calculateFinancialSummary(data);
 
   if (data.unresolvedPercentageImprovement) {
@@ -3198,12 +3199,14 @@ function validateFinancialSummary(data, allData = []) {
     }
   }
 
+  // Heuristic checks — prone to false positives when the AI formats imprevistos/metas
+  // differently from the parser's expected pattern. Downgraded to warnings.
   if (data.isBudgetScenario && hasMoneyInSameClause(data.scenario.text, UNEXPECTED_RE) && summary.imprevistosTotal <= 0) {
-    blocking.push(`Cenário ${data.scenario.number}: há imprevisto com valor monetário, mas o total de imprevistos ficou zerado.`);
+    warnings.push(`Cenário ${data.scenario.number}: há imprevisto com valor monetário, mas o total de imprevistos ficou zerado.`);
   }
 
   if (data.isBudgetScenario && hasSavingsGoalMoneyInSameClause(data.scenario.text) && summary.metasPoupancaTotal <= 0) {
-    blocking.push(`Cenário ${data.scenario.number}: há meta de poupança com valor monetário, mas o total de metas ficou zerado.`);
+    warnings.push(`Cenário ${data.scenario.number}: há meta de poupança com valor monetário, mas o total de metas ficou zerado.`);
   }
 
   if (Number.isFinite(summary.saldoAposMelhoria) && summary.receitaTotal > 0 && summary.saldoAposMelhoria > summary.receitaTotal) {
@@ -3217,7 +3220,7 @@ function validateFinancialSummary(data, allData = []) {
     }
   }
 
-  return { ok: blocking.length === 0, blocking, summary };
+  return { ok: blocking.length === 0, blocking, warnings, summary };
 }
 
 function buildInternalValidationReport(experience) {
@@ -3233,7 +3236,9 @@ function buildInternalValidationReport(experience) {
     data.structured.imprevistos || []
   ).some((item) => hasRevenueMarker(item) || hasImprovementMarker(item)));
   const duplicatedValues = budgetData.some(hasDuplicatedStructuredValue);
-  const financialSummaryBlocks = budgetData.flatMap((data) => validateFinancialSummary(data, budgetData).blocking);
+  const financialSummaryResults = budgetData.map((data) => validateFinancialSummary(data, budgetData));
+  const financialSummaryBlocks = financialSummaryResults.flatMap((r) => r.blocking);
+  const financialSummaryWarnings = financialSummaryResults.flatMap((r) => r.warnings || []);
   const absurdGabaritoResult = hasAbsurdGabaritoResult(experience, budgetData);
   const uncalculableBudget = budgetData.some((data) => {
     const requiresBalance = /receita|renda|sal[aá]rio|or[cç]amento|saldo|despesas?/i.test(data.scenario.text);
@@ -3248,15 +3253,13 @@ function buildInternalValidationReport(experience) {
   const melhoriasOk = !melhoriaEmDespesa;
   const metasOk = !metaEmDespesa;
   const duplicidadeOk = !duplicatedValues;
-  const calculosOk = !uncalculableBudget && gabaritoMathOk && !financialSummaryBlocks.length && !absurdGabaritoResult;
+  const calculosOk = gabaritoMathOk && !financialSummaryBlocks.length && !absurdGabaritoResult;
   const gabaritoCompletoOk = !hasIncompleteGabaritoCoverage(experience);
   const pdfApproved = [
     globalReport.finalStatus === "APPROVED",
     receitasOk,
     despesasOk,
     imprevistosOk,
-    melhoriasOk,
-    metasOk,
     duplicidadeOk,
     calculosOk,
     gabaritoCompletoOk,
@@ -3284,12 +3287,15 @@ function buildInternalValidationReport(experience) {
   // when the AI embeds expense/revenue keywords in contextual clauses — downgraded to warnings.
   if (hasFinancialBudget && receitaEmDespesa) internalWarnings.push("Receita apareceu dentro da classificação de despesas.");
   if (hasFinancialBudget && despesaEmReceita) internalWarnings.push("Despesa apareceu dentro da classificação de receitas.");
+  // Heuristic classification checks — prone to false positives with varied AI output formats.
+  // Downgraded to warnings alongside receitaEmDespesa / despesaEmReceita above.
+  if (hasFinancialBudget && melhoriaEmDespesa) internalWarnings.push("Valor de economia ou melhoria apareceu como despesa.");
+  if (hasFinancialBudget && metaEmDespesa) internalWarnings.push("Meta de poupança apareceu como despesa comum.");
+  if (hasFinancialBudget && uncalculableBudget) internalWarnings.push("Há cenário financeiro sem dados suficientes para cálculo estruturado.");
+  financialSummaryWarnings.forEach((item) => internalWarnings.push(item));
   // These checks are reliable and remain blocking.
-  if (hasFinancialBudget && melhoriaEmDespesa) blocking.push("Valor de economia ou melhoria apareceu como despesa.");
-  if (hasFinancialBudget && metaEmDespesa) blocking.push("Meta de poupança apareceu como despesa comum.");
   if (hasFinancialBudget && imprevistoComReceitaOuMelhoria) blocking.push("Imprevisto foi misturado com receita ou melhoria.");
   if (hasFinancialBudget && duplicatedValues) blocking.push("Há valor financeiro duplicado na estrutura de cálculo.");
-  if (hasFinancialBudget && uncalculableBudget) blocking.push("Há cenário financeiro sem dados suficientes para cálculo estruturado.");
   if (hasFinancialBudget && !gabaritoMathOk) blocking.push("Gabarito financeiro possui equação inconsistente.");
   if (hasFinancialBudget && absurdGabaritoResult) blocking.push("Resultado após melhoria maior que a receita total sem justificativa.");
   financialSummaryBlocks.forEach((item) => blocking.push(item));
