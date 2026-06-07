@@ -78,6 +78,7 @@ export default function Dashboard({
   const professorName = currentUser?.name || currentUser?.email?.split("@")[0] || "Professor";
   const firstName = professorName.split(" ")[0] || "Professor";
   const isLightMode = themeMode === "light";
+  const ADMIN_EMAIL_FALLBACK = (import.meta.env.VITE_ADMIN_EMAIL || "").toLowerCase() || null;
 
   useEffect(() => {
     if (autoOpenModal && isLoaded) {
@@ -94,6 +95,15 @@ export default function Dashboard({
 
     let isMounted = true;
     const checkAdmin = async () => {
+      // Allow a simple local fallback using VITE_ADMIN_EMAIL for testing
+      try {
+        if (ADMIN_EMAIL_FALLBACK && currentUser.email?.toLowerCase() === ADMIN_EMAIL_FALLBACK) {
+          setIsAdmin(true);
+          return;
+        }
+      } catch (e) {
+        // ignore
+      }
       try {
         const { data, error } = await supabase
           .from("app_admins")
