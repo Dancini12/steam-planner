@@ -8,7 +8,7 @@ const CATEGORIES = [
   "Outro",
 ];
 
-export default function FeedbackModal({ isOpen, onClose, currentUser }) {
+export default function FeedbackModal({ isOpen, onClose, currentUser, onSubmitted }) {
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("idle");
@@ -40,6 +40,7 @@ export default function FeedbackModal({ isOpen, onClose, currentUser }) {
       });
       if (error) throw error;
       setStatus("success");
+      onSubmitted?.();
     } catch {
       setStatus("error");
       setErrorMsg("Não foi possível enviar o feedback. Tente novamente.");

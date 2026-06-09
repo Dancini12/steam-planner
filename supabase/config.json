@@ -16,6 +16,9 @@
     },
     "ai-router": {
       "verify_jwt": false
+    },
+    "feedback": {
+      "verify_jwt": true
     }
   }
 }

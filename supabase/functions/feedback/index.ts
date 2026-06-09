@@ -6,10 +6,21 @@ const corsHeaders = {
 }
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
-const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "marceldancini@gmail.com"
+const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || Deno.env.get("VITE_ADMIN_EMAIL") || "marceldancini@gmail.com"
+const ADMIN_EMAILS = ADMIN_EMAIL
+  .split(",")
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean)
 const EMAIL_FROM = Deno.env.get("EMAIL_FROM") || "STEAM Planner <onboarding@resend.dev>"
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(
+    JSON.stringify(body),
+    { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  )
+}
 
 function escapeHtml(value = "") {
   return String(value)
@@ -58,6 +69,81 @@ async function storeFeedback(payload: Record<string, unknown>) {
   return { stored: response.ok }
 }
 
+function getRequesterEmail(req: Request) {
+  const authHeader = req.headers.get("Authorization") || ""
+  const token = authHeader.replace(/^Bearer\s+/i, "")
+  const payload = token.split(".")[1]
+
+  if (!payload) return ""
+
+  try {
+    const base64 = payload.replaceAll("-", "+").replaceAll("_", "/")
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=")
+    const parsed = JSON.parse(atob(padded)) as Record<string, unknown>
+    return typeof parsed.email === "string" ? parsed.email.toLowerCase() : ""
+  } catch {
+    return ""
+  }
+}
+
+async function isAdminEmail(email: string) {
+  if (!email) return false
+  if (ADMIN_EMAILS.includes(email.toLowerCase())) return true
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return false
+
+  const params = new URLSearchParams({
+    select: "email",
+    email: `ilike.${email}`,
+    limit: "1",
+  })
+
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/app_admins?${params.toString()}`, {
+    headers: {
+      "apikey": SUPABASE_SERVICE_ROLE_KEY,
+      "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    },
+  })
+
+  if (!response.ok) {
+    console.warn("Falha ao verificar administrador:", await response.text())
+    return false
+  }
+
+  const admins = await response.json()
+  return Array.isArray(admins) && admins.length > 0
+}
+
+async function listFeedback(limit: unknown) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Supabase não configurado para listar feedbacks.")
+  }
+
+  const parsedLimit = Number(limit)
+  const safeLimit = Number.isFinite(parsedLimit)
+    ? Math.min(Math.max(Math.trunc(parsedLimit), 1), 200)
+    : 50
+
+  const params = new URLSearchParams({
+    select: "id,category,message,sender_name,sender_email,user_id,created_at",
+    order: "created_at.desc",
+    limit: String(safeLimit),
+  })
+
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/feedback?${params.toString()}`, {
+    headers: {
+      "apikey": SUPABASE_SERVICE_ROLE_KEY,
+      "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    },
+  })
+
+  if (!response.ok) {
+    const details = await response.text()
+    throw new Error(`Falha ao carregar feedbacks: ${details}`)
+  }
+
+  return response.json()
+}
+
 function buildFeedbackEmail(category: string, message: string, senderName: string, senderEmail: string) {
   const timestamp = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
   return `
@@ -91,42 +177,53 @@ serve(async (req) => {
   }
 
   try {
-    const { category, message, senderName, senderEmail, userId } = await req.json()
-
-    if (!message?.trim()) {
-      return new Response(
-        JSON.stringify({ error: "Mensagem é obrigatória." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
+    if (!["GET", "POST"].includes(req.method)) {
+      return jsonResponse({ error: "Método não permitido." }, 405)
     }
 
-    const resolvedCategory = category || "Geral"
-    const resolvedName = senderName || "Usuário"
-    const resolvedEmail = senderEmail || ""
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {}
+
+    if (req.method === "GET" || body.action === "list") {
+      const requesterEmail = getRequesterEmail(req)
+      const isAdmin = await isAdminEmail(requesterEmail)
+
+      if (!isAdmin) {
+        return jsonResponse({ error: "Acesso restrito a administradores." }, 403)
+      }
+
+      const feedback = await listFeedback(body.limit)
+      return jsonResponse({ ok: true, feedback })
+    }
+
+    const { category, message, senderName, senderEmail, userId } = body
+    const trimmedMessage = typeof message === "string" ? message.trim() : ""
+
+    if (!trimmedMessage) {
+      return jsonResponse({ error: "Mensagem é obrigatória." }, 400)
+    }
+
+    const resolvedCategory = typeof category === "string" && category.trim() ? category.trim() : "Geral"
+    const resolvedName = typeof senderName === "string" && senderName.trim() ? senderName.trim() : "Usuário"
+    const resolvedEmail = typeof senderEmail === "string" ? senderEmail.trim() : ""
+    const resolvedUserId = typeof userId === "string" && userId.trim() ? userId.trim() : null
 
     await Promise.allSettled([
       sendEmail({
         to: ADMIN_EMAIL,
         subject: `[Feedback] ${resolvedCategory} — STEAM Planner`,
-        html: buildFeedbackEmail(resolvedCategory, message.trim(), resolvedName, resolvedEmail),
+        html: buildFeedbackEmail(resolvedCategory, trimmedMessage, resolvedName, resolvedEmail),
       }),
       storeFeedback({
-        user_id: userId || null,
+        user_id: resolvedUserId,
         category: resolvedCategory,
-        message: message.trim(),
+        message: trimmedMessage,
         sender_name: resolvedName,
         sender_email: resolvedEmail,
       }),
     ])
 
-    return new Response(
-      JSON.stringify({ ok: true }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    )
+    return jsonResponse({ ok: true })
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message || "Erro ao enviar feedback." }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    )
+    return jsonResponse({ error: error.message || "Erro ao enviar feedback." }, 500)
   }
 })

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient.js";
 import { useProjects } from "../hooks/useProjects.js";
 import { PedagogicalPlannerService } from "../lib/ai/pedagogicalPlannerService.js";
@@ -132,43 +132,46 @@ export default function Dashboard({
     };
   }, [currentUser?.email]);
 
+  const loadFeedback = useCallback(async () => {
+    if (!isAdmin || !supabase) {
+      setFeedbackList([]);
+      return;
+    }
+
+    setFeedbackLoading(true);
+    setFeedbackError("");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("feedback", {
+        body: {
+          action: "list",
+          limit: 50,
+        },
+      });
+
+      if (error) throw error;
+      setFeedbackList(Array.isArray(data?.feedback) ? data.feedback : []);
+    } catch (error) {
+      console.error("Erro ao carregar feedbacks:", error);
+      setFeedbackError("Não foi possível carregar os feedbacks.");
+      setFeedbackList([]);
+    } finally {
+      setFeedbackLoading(false);
+    }
+  }, [isAdmin]);
+
   useEffect(() => {
     if (!isAdmin) {
       setFeedbackList([]);
       setFeedbackError("");
       setFeedbackLoading(false);
-      return undefined;
+      return;
     }
 
-    let isMounted = true;
-    const loadFeedback = async () => {
-      setFeedbackLoading(true);
-      setFeedbackError("");
-
-      const { data, error } = await supabase
-        .from("feedback")
-        .select("id, category, message, sender_name, sender_email, user_id, created_at")
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (!isMounted) return;
-
-      if (error) {
-        console.error("Erro ao carregar feedbacks:", error);
-        setFeedbackError("Não foi possível carregar os feedbacks.");
-        setFeedbackList([]);
-      } else {
-        setFeedbackList(data || []);
-      }
-
-      setFeedbackLoading(false);
-    };
-
-    loadFeedback();
-    return () => {
-      isMounted = false;
-    };
-  }, [isAdmin]);
+    if (showFeedbackListModal) {
+      loadFeedback();
+    }
+  }, [isAdmin, loadFeedback, showFeedbackListModal]);
 
   useEffect(() => {
     if (!isLoaded) return undefined;
@@ -417,6 +420,17 @@ export default function Dashboard({
         title="Feedbacks recebidos"
         maxWidth="760px"
       >
+        <div className="feedback-toolbar">
+          <span>{feedbackList.length} feedback{feedbackList.length === 1 ? "" : "s"}</span>
+          <button
+            type="button"
+            className="feedback-refresh"
+            onClick={loadFeedback}
+            disabled={feedbackLoading}
+          >
+            {feedbackLoading ? "Atualizando..." : "Atualizar"}
+          </button>
+        </div>
         {feedbackLoading && <p>Carregando feedbacks...</p>}
         {feedbackError && <div className="retro-error">{feedbackError}</div>}
         {!feedbackLoading && !feedbackError && feedbackList.length === 0 && (
@@ -450,6 +464,7 @@ export default function Dashboard({
         isOpen={showFeedbackModal}
         onClose={() => setShowFeedbackModal(false)}
         currentUser={currentUser}
+        onSubmitted={isAdmin ? loadFeedback : undefined}
       />
 
     </div>
@@ -506,6 +521,31 @@ const retroCss = `
     display: grid;
     gap: 1rem;
     margin-top: 1rem;
+  }
+
+  .feedback-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+
+  .feedback-refresh {
+    border: 1px solid rgba(249, 115, 22, 0.38);
+    border-radius: 10px;
+    background: rgba(249, 115, 22, 0.12);
+    color: #fed7aa;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    padding: 0.55rem 0.8rem;
+  }
+
+  .feedback-refresh:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 
   .feedback-card {
