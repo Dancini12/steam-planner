@@ -308,3 +308,63 @@ with check (
 );
 
 grant select, insert on public.app_metric_snapshots to authenticated;
+
+create table if not exists public.feedback (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid references auth.users(id) on delete set null,
+  category     text,
+  message      text not null,
+  sender_name  text,
+  sender_email text,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists idx_feedback_created_at on public.feedback(created_at desc);
+
+alter table public.feedback enable row level security;
+
+drop policy if exists "Service role full access" on public.feedback;
+create policy "Service role full access"
+on public.feedback
+using (auth.role() = 'service_role');
+
+drop policy if exists "Administradores consultam feedback" on public.feedback;
+create policy "Administradores consultam feedback"
+on public.feedback
+for select
+using (
+  exists (
+    select 1 from public.app_admins admins
+    where lower(admins.email) = lower(auth.jwt() ->> 'email')
+  )
+);
+
+grant select on public.feedback to authenticated;
+
+create table if not exists public.feedbacks (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid references auth.users(id) on delete set null,
+  mensagem   text not null,
+  nota       numeric,
+  category   text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_feedbacks_created_at on public.feedbacks(created_at desc);
+
+alter table public.feedbacks enable row level security;
+
+drop policy if exists "Service role full access" on public.feedbacks;
+create policy "Service role full access"
+on public.feedbacks
+using (auth.role() = 'service_role')
+with check (auth.role() = 'service_role');
+
+drop policy if exists "Painel admin le feedbacks" on public.feedbacks;
+create policy "Painel admin le feedbacks"
+on public.feedbacks
+for select
+using (true);
+
+grant select on public.feedbacks to anon;
+grant select on public.feedbacks to authenticated;

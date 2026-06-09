@@ -69,6 +69,24 @@ async function storeFeedback(payload: Record<string, unknown>) {
   return { stored: response.ok }
 }
 
+async function storeDashboardFeedback(payload: Record<string, unknown>) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return { skipped: true }
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/feedbacks`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_SERVICE_ROLE_KEY,
+      "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      "Prefer": "return=minimal",
+    },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    console.warn("Falha ao armazenar feedback no painel de análise:", await response.text())
+  }
+  return { stored: response.ok }
+}
+
 function getRequesterEmail(req: Request) {
   const authHeader = req.headers.get("Authorization") || ""
   const token = authHeader.replace(/^Bearer\s+/i, "")
@@ -207,7 +225,7 @@ serve(async (req) => {
     const resolvedEmail = typeof senderEmail === "string" ? senderEmail.trim() : ""
     const resolvedUserId = typeof userId === "string" && userId.trim() ? userId.trim() : null
 
-    await Promise.allSettled([
+    const [, primaryStoreResult, dashboardStoreResult] = await Promise.allSettled([
       sendEmail({
         to: ADMIN_EMAIL,
         subject: `[Feedback] ${resolvedCategory} — STEAM Planner`,
@@ -220,7 +238,22 @@ serve(async (req) => {
         sender_name: resolvedName,
         sender_email: resolvedEmail,
       }),
+      storeDashboardFeedback({
+        user_id: resolvedUserId,
+        mensagem: trimmedMessage,
+        category: resolvedCategory,
+        nota: null,
+      }),
     ])
+
+    const primaryStored =
+      primaryStoreResult.status === "fulfilled" && primaryStoreResult.value?.stored === true
+    const dashboardStored =
+      dashboardStoreResult.status === "fulfilled" && dashboardStoreResult.value?.stored === true
+
+    if (!primaryStored || !dashboardStored) {
+      throw new Error("Não foi possível registrar o feedback no banco de dados.")
+    }
 
     return jsonResponse({ ok: true })
   } catch (error) {
