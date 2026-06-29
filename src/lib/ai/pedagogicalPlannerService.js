@@ -230,27 +230,80 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
 }`
 }
 
-function extractJson(text) {
-  const start = text.indexOf('{')
-  if (start === -1) throw new Error('Nenhum JSON encontrado na resposta da IA')
+function cleanJsonResponse(text) {
+  if (typeof text !== 'string') {
+    throw new Error('Texto da resposta inesperado. Não foi possível extrair JSON.')
+  }
 
-  let depth = 0
+  let cleaned = text.trim()
+  cleaned = cleaned.replace(/```(?:json)?/gi, '').trim()
+
+  const start = cleaned.indexOf('{')
+  if (start === -1) {
+    throw new Error(`Nenhum objeto JSON encontrado na resposta da IA. Texto recebido: ${cleaned.slice(0, 200)}`)
+  }
+
+  let braceCount = 0
   let inString = false
   let escaped = false
+  let endIndex = -1
 
-  for (let i = start; i < text.length; i++) {
-    const char = text[i]
-    if (escaped) { escaped = false; continue }
-    if (char === '\\') { escaped = true; continue }
-    if (char === '"') { inString = !inString; continue }
-    if (inString) continue
-    if (char === '{') depth++
+  for (let i = start; i < cleaned.length; i++) {
+    const char = cleaned[i]
+
+    if (escaped) {
+      escaped = false
+      continue
+    }
+
+    if (char === '\\') {
+      escaped = true
+      continue
+    }
+
+    if (char === '"') {
+      inString = !inString
+      continue
+    }
+
+    if (inString) {
+      continue
+    }
+
+    if (char === '{') {
+      braceCount += 1
+    }
+
     if (char === '}') {
-      depth--
-      if (depth === 0) return text.slice(start, i + 1)
+      braceCount -= 1
+      if (braceCount === 0) {
+        endIndex = i
+        break
+      }
     }
   }
-  throw new Error('JSON incompleto na resposta da IA')
+
+  if (endIndex !== -1) {
+    return cleaned.slice(start, endIndex + 1).trim()
+  }
+
+  const partial = cleaned.slice(start)
+  const repairBraceCount = braceCount
+  if (repairBraceCount > 0) {
+    const repaired = `${partial}${'}'.repeat(repairBraceCount)}`
+    try {
+      JSON.parse(repaired)
+      return repaired.trim()
+    } catch (repairError) {
+      // continue to throw below
+    }
+  }
+
+  throw new Error(`JSON incompleto na resposta da IA. Texto recebido: ${partial.slice(0, 200)}`)
+}
+
+function extractJson(text) {
+  return cleanJsonResponse(text)
 }
 
 function repairJson(raw) {
@@ -297,7 +350,8 @@ function repairJson(raw) {
 
 function safeParseJson(raw) {
   try { return JSON.parse(raw) } catch { /* try repair */ }
-  try { return JSON.parse(repairJson(raw)) } catch (e) {
+  try { return JSON.parse(repairJson(raw)) } catch { /* try clean response */ }
+  try { return JSON.parse(cleanJsonResponse(raw)) } catch (e) {
     throw new Error(`JSON inválido na resposta da IA: ${e.message}`)
   }
 }
