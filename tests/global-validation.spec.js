@@ -231,4 +231,24 @@ test.describe("validação global STEAM + Maker", () => {
     expect(text).not.toContain("Exportação bloqueada");
     expect(text).toContain("Saldo final: R$ 4.500,00 - R$ 3.500,00 = R$ 1.000,00.");
   });
+
+  test("abrevia quantidades e impede que a célula invada a coluna vizinha", () => {
+    const materials = [
+      "Fita crepe: 1 rolo pequeno por grupo — fixar as partes do protótipo — —",
+      "Tesoura sem ponta: 1 unidade por grupo — recortar elementos móveis — Segura para o E.F.",
+      "Fichas de papel: 8 a 12 fichas por grupo — registrar os resultados — —",
+      "Canetinhas coloridas: 1 conjunto por grupo — destacar as informações — —"
+    ];
+    const { html, text } = captureExport(buildActivity({
+      materials,
+      materialFunctions: materials
+    }));
+
+    expect(text).not.toContain("Exportação bloqueada");
+    expect(html).toContain('<td class="mat-qty">1 RL peq.</td>');
+    expect(html).toContain('<td class="mat-qty">1 UN</td>');
+    expect(html).toContain('<td class="mat-qty">8 a 12 FCH</td>');
+    expect(html).toContain('<td class="mat-qty">1 CJ</td>');
+    expect(html).toMatch(/\.materials-table \.mat-qty\s*\{[^}]*white-space:\s*normal;[^}]*overflow-wrap:\s*anywhere;/i);
+  });
 });

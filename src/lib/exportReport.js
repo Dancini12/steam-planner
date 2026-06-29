@@ -470,6 +470,9 @@ function looksLikeQuantity(text) {
 function getPreciseMaterialQuantity(name, qty, unit) {
   const normalizedName = stripDecorativeMarkers(name || "").toLowerCase();
   const current = `${qty || ""} ${unit || ""}`.toLowerCase();
+  const explicitUnitType = stripDecorativeMarkers(unit || "")
+    .replace(/\b(por\s+grupo|por\s+aluno|por\s+turma|para\s+a\s+turma|conforme\s+disponibilidade)\b/i, "")
+    .trim();
   const isGeneric = !qty
     || !unit
     || current === "1 por grupo"
@@ -477,7 +480,7 @@ function getPreciseMaterialQuantity(name, qty, unit) {
     || /quantidade|variad|conforme/.test(current);
   const qtyNeedsType = /^\d+(?:\s+a\s+\d+)?$/.test(stripDecorativeMarkers(qty || ""));
 
-  if (!isGeneric && qtyNeedsType) {
+  if (!isGeneric && qtyNeedsType && !explicitUnitType) {
     if (/cartolina|papel[-\s]?cart[aã]o|papel[aã]o|folha\s+a3|folha\s+a4/.test(normalizedName)) {
       return { qty: `${qty} folha`, unit };
     }
@@ -520,6 +523,21 @@ function getPreciseMaterialQuantity(name, qty, unit) {
   }
 
   return { qty: qty || "1", unit: unit || "por grupo" };
+}
+
+function abbreviateMaterialQuantity(qty) {
+  return stripDecorativeMarkers(qty || "")
+    .replace(/\bunidades?\b/gi, "UN")
+    .replace(/\bfolhas?\b/gi, "FL")
+    .replace(/\bfichas?\b/gi, "FCH")
+    .replace(/\bconjuntos?\b/gi, "CJ")
+    .replace(/\bblocos?\b/gi, "BL")
+    .replace(/\brolos?\b/gi, "RL")
+    .replace(/\bpequenos?\b/gi, "peq.")
+    .replace(/\bm[eé]dios?\b/gi, "méd.")
+    .replace(/\bgrandes?\b/gi, "gr.")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function normalizeMaterialQuantityUnit(qty, unit) {
@@ -636,7 +654,7 @@ function parseMaterialItem(item) {
   qty = precise.qty;
   unit = precise.unit;
   const normalized = normalizeMaterialQuantityUnit(qty, unit);
-  qty = normalized.qty;
+  qty = abbreviateMaterialQuantity(normalized.qty);
   unit = normalized.unit;
 
   return {
@@ -3786,7 +3804,7 @@ function buildActivityPrintHTMLFromExperience(experience) {
     .materials-table th:nth-child(3) { width: 18%; }
     .materials-table th:nth-child(4) { width: 34%; }
     .materials-table th:nth-child(5) { width: 18%; }
-    .materials-table .mat-qty { text-align: center; white-space: nowrap; }
+    .materials-table .mat-qty { text-align: center; white-space: normal; overflow-wrap: anywhere; word-break: normal; }
     .rubric-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
     .rubric-table th, .rubric-table td { border: 1px solid #999; padding: 0.08cm 0.11cm; text-align: left; vertical-align: top; }
     .rubric-table th { background: #f1f1f1; font-weight: 700; }
