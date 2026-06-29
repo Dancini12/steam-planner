@@ -184,6 +184,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
     discipline: '',
     grade: '',
     theme: '',
+    availableMaterials: '',
     steamCompetencies: [],
     numberOfClasses: '',
     modality: 'grupo',
@@ -216,6 +217,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       discipline: '',
       grade: '',
       theme: '',
+      availableMaterials: '',
       steamCompetencies: [],
       numberOfClasses: '',
       modality: 'grupo',
@@ -269,10 +271,10 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
   }
 
   const handleNext = () => {
-    if (currentStep === 6) {
+    if (currentStep === 7) {
       generatePreviewData()
     }
-    if (currentStep < 7) {
+    if (currentStep < 8) {
       setCurrentStep(currentStep + 1)
       setError('')
     }
@@ -297,6 +299,11 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
 
   const handleThemeChange = (theme) => {
     setFormData(prev => ({ ...prev, theme }))
+    setError('')
+  }
+
+  const handleAvailableMaterialsChange = (availableMaterials) => {
+    setFormData(prev => ({ ...prev, availableMaterials }))
     setError('')
   }
 
@@ -349,14 +356,16 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       case 2:
         return formData.theme.trim().length >= 3
       case 3:
-        return formData.steamCompetencies.length > 0
-      case 4:
-        return formData.numberOfClasses !== '' && parseInt(formData.numberOfClasses) > 0
-      case 5:
         return true
+      case 4:
+        return formData.steamCompetencies.length > 0
+      case 5:
+        return formData.numberOfClasses !== '' && parseInt(formData.numberOfClasses) > 0
       case 6:
         return true
       case 7:
+        return true
+      case 8:
         return !!previewData
       default:
         return false
@@ -494,6 +503,26 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       case 3:
         return (
           <div style={stepContentStyle}>
+            <h3 style={stepTitleStyle}>📦 Materiais disponíveis</h3>
+            <p style={stepDescriptionStyle}>
+              Informe quais materiais e quantidades você já possui para montar a atividade. Assim a IA pode propor uma atividade mais alinhada à sua realidade.
+            </p>
+            <TextField
+              label="Materiais e quantidades"
+              placeholder="Ex: 10 canetas esferográficas, 30 folhas A4, 5 kits de circuito básico, 2 metros de barbante..."
+              hint="Um material por linha é ideal. Inclua quantidades aproximadas para ajudar na geração." 
+              value={formData.availableMaterials}
+              onChange={handleAvailableMaterialsChange}
+              multiline
+              rows={4}
+              fullWidth
+            />
+          </div>
+        )
+
+      case 4:
+        return (
+          <div style={stepContentStyle}>
             <h3 style={stepTitleStyle}>🔬 Competências STEAM</h3>
             <p style={stepDescriptionStyle}>
               Selecione as competências STEAM que deseja utilizar. A Cultura Maker será incluída automaticamente.
@@ -511,7 +540,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
           </div>
         )
 
-      case 4:
+      case 5:
         return (
           <div style={stepContentStyle}>
             <h3 style={stepTitleStyle}>⏱️ Quantas aulas?</h3>
@@ -547,7 +576,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
           </div>
         )
 
-      case 5:
+      case 6:
         return (
           <div style={stepContentStyle}>
             <h3 style={stepTitleStyle}>👥 Como será desenvolvida?</h3>
@@ -586,7 +615,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
           </div>
         )
 
-      case 6:
+      case 7:
         return (
           <div style={stepContentStyle}>
             <h3 style={stepTitleStyle}>⚙️ Como você quer personalizar?</h3>
@@ -622,7 +651,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
           </div>
         )
 
-      case 7:
+      case 8:
         return (
           <div style={stepContentStyle}>
             <h3 style={stepTitleStyle}>👁️ Prévia da Atividade</h3>
@@ -689,7 +718,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
   }
 
   const renderStepTip = (step) => {
-    if (step === 7) {
+    if (step === 8) {
       const tips = generateActivityTips(formData)
       return (
         <div style={{ marginTop: '1rem' }}>
@@ -715,6 +744,14 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       },
       2: { icon: '🔍', title: 'Transforme em desafio', color: '#EC4899', text: 'Um bom tema STEAM começa com uma pergunta real: "Como podemos resolver...?" Isso coloca os alunos como protagonistas da investigação, não receptores de conteúdo.' },
       3: {
+        icon: '📦',
+        title: 'Materiais reais',
+        color: '#F59E0B',
+        text: formData.availableMaterials.trim()
+          ? 'Use os materiais que você já tem para tornar a atividade mais prática e adequada à sua realidade.'
+          : 'Se você não souber ao certo, a IA ainda sugerirá uma atividade, mas incluir os materiais disponíveis melhora a proposta.'
+      },
+      4: {
         icon: '⚡',
         title: 'Sinergia STEAM',
         color: '#4F46E5',
@@ -722,13 +759,13 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
           ? `Combinar ${formData.steamCompetencies.length} áreas cria conexões interdisciplinares poderosas. Os alunos percebem que desafios reais exigem múltiplos olhares.`
           : 'Selecione mais áreas STEAM para criar conexões interdisciplinares mais ricas. A Cultura Maker estará presente automaticamente em toda a atividade.'
       },
-      4: {
+      5: {
         icon: '🗓️',
         title: 'Jornada Maker',
         color: '#8B5CF6',
         text: `Com ${formData.numberOfClasses || '?'} aula(s) sugerimos: exploração do problema → investigação → construção → testes e ajustes → apresentação. Cada fase aprofunda o aprendizado progressivamente.`
       },
-      5: {
+      6: {
         icon: '👥',
         title: 'Modo de Trabalho',
         color: '#10B981',
@@ -736,7 +773,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
           ? 'Atividades individuais fortalecem autonomia, autoavaliação e o ritmo próprio de cada aluno. A IA adaptará as etapas, desafios e a Atividade do Aluno para trabalho solo.'
           : 'Atividades em grupo desenvolvem colaboração, comunicação e aprendizagem entre pares. A IA distribuirá papéis (construtor, testador, registrador, apresentador) entre os membros.'
       },
-      6: { icon: '⚙️', title: 'Ajustes finais', color: '#06B6D4', text: 'Use este passo para definir nível de detalhe, materiais, avaliação e qualquer orientação específica da turma.' }
+      7: { icon: '⚙️', title: 'Ajustes finais', color: '#06B6D4', text: 'Use este passo para definir nível de detalhe, materiais, avaliação e qualquer orientação específica da turma.' }
     }
 
     const tip = byStep[step]
@@ -747,6 +784,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
     { title: 'Disciplina', icon: '📚' },
     { title: 'Série', icon: '🎓' },
     { title: 'Tema', icon: '🎯' },
+    { title: 'Materiais', icon: '📦' },
     { title: 'STEAM', icon: '🔬' },
     { title: 'Aulas', icon: '⏱️' },
     { title: 'Modo', icon: '👥' },
@@ -895,7 +933,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
 
               <div style={spacerStyle} />
 
-              {currentStep < 7 ? (
+              {currentStep < 8 ? (
                 <Button
                   onClick={handleNext}
                   disabled={!validateCurrentStep()}

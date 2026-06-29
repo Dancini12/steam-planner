@@ -27,7 +27,7 @@ const COMPETENCY_TO_LETTER = {
   mathematics: 'M',
 }
 
-function buildPrompt({ discipline, grade, theme, steamCompetencies, numberOfClasses, modality, customInstructions, bnccSuggestions, verifiedSources = [], knowledgeContext = '', qualityPatterns = null }) {
+function buildPrompt({ discipline, grade, theme, steamCompetencies, availableMaterials, numberOfClasses, modality, customInstructions, bnccSuggestions, verifiedSources = [], knowledgeContext = '', qualityPatterns = null }) {
   const steamLetters = steamCompetencies
     .map((c) => COMPETENCY_TO_LETTER[String(c).toLowerCase()])
     .filter(Boolean)
@@ -58,6 +58,7 @@ Dados da experiência:
 - Disciplina principal: ${discipline}
 - Série/Ano: ${grade}
 - Tema central: ${theme}
+- Materiais disponíveis do professor: ${availableMaterials?.trim() || 'Não informado'}
 - Áreas STEAM envolvidas: ${uniqueLetters.join(', ')}
 ${classesInfo}
 ${complexityGuide}
@@ -569,7 +570,7 @@ export class PedagogicalPlannerService {
 
     // ── 3. Gera prompt com contexto local + padrões aprendidos ──
     const prompt = buildPrompt({
-      discipline, grade, theme, steamCompetencies, numberOfClasses, modality,
+      discipline, grade, theme, steamCompetencies, availableMaterials: params.availableMaterials, numberOfClasses, modality,
       customInstructions, bnccSuggestions, verifiedSources,
       knowledgeContext: kb.contextSummary,
       qualityPatterns,
