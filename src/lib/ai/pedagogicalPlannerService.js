@@ -119,16 +119,16 @@ Regras de conteúdo:
 - "mission": frase curta começando com "Sua equipe deverá..." ou equivalente individual.
 - "materials": máximo 6 itens acessíveis, com quantidade precisa por grupo sempre que possível. PROIBIDO base de papelão, caixas ou cartolina como padrão. Varie completamente os materiais a cada geração: escolha de acordo com o problema, o produto final, a disciplina, a série e o tempo disponível. Exemplos de tipos possíveis (não lista fixa): lápis+papel, dados, elásticos, fios, sementes, água, régua, calculadora, fichas de papel simples, palitos, tampas, barbante, materiais recicláveis, instrumentos de medição simples.
 - "materialFunctions": explique a função prática de cada material listado, em 1 frase curta por material.
-- "readyMaterials": entregue os cenários, fichas, cartões, tabela de teste, perguntas ou dados citados. Nunca cite material complementar sem gerar o conteúdo pronto. Para atividades com cálculo financeiro, orçamento familiar, renda, despesas, poupança ou investimento, use exatamente: "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
+- "readyMaterials": entregue cenários mais complexos, com um problema concreto, uma restrição ou falha inicial e uma solução a ser desenvolvida ou ajustada. Nunca cite material complementar sem gerar o conteúdo pronto. Para atividades com cálculo financeiro, orçamento familiar, renda, despesas, poupança ou investimento, use exatamente: "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
 - "stages": exatamente 6 etapas de desenvolvimento e montagem, na ordem obrigatória acima. Cada etapa deve explicar como preparar base, dividir materiais, construir, interagir, testar, ajustar ou apresentar.
-- "makerChallenge": deve dizer claramente o que construir, como testar e o que melhorar.
+- "makerChallenge": deve dizer claramente o que construir, como testar, qual problema resolver e o que melhorar.
 - "finalProduct": protótipo ou produto concreto final.
 - "assessmentRubric": mini rubrica com "criterion" e "observation", máximo 4 linhas. Não use ponto final no nome do critério.
 - "bibliography": use fontes verificadas abaixo quando houver relação direta com o tema. Nunca use Wikipedia. Nunca use referência fora do assunto apenas para preencher espaço. Se não houver fonte específica adequada, inclua apenas a BNCC como referência oficial.
 - "bncc": use APENAS códigos da lista offline acima; não invente códigos.
 - Não use emojis, slogans, texto promocional ou linguagem de apostila.
 - Não escreva frases genéricas como "faça um protótipo", "use os materiais disponíveis", "teste a solução" ou "melhore o projeto" sem explicar exatamente como.
-- Crie pelo menos 2 testes concretos dentro da montagem ou do desafio maker. Ex.: Teste 1 com cenário esperado; Teste 2 com imprevisto, restrição ou falha.
+- Crie pelo menos 2 testes concretos dentro da montagem ou do desafio maker. Ex.: Teste 1 com cenário esperado; Teste 2 com imprevisto, restrição ou falha. Cada cenário deve apresentar uma situação que exige uma solução prática, não apenas uma observação.
 - Não use reticências. Nenhuma frase pode terminar cortada com "...".
 - Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
 - Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
@@ -170,8 +170,8 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Instrumento de medida, registro ou simulação: quantidade por grupo — coleta evidências do teste."
   ],
   "readyMaterials": [
-    "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
-    "CENÁRIO 2 - Imprevisto: restrição, falha ou mudança para comparar.",
+    "CENÁRIO 1 - Problema inicial: situação concreta, restrição ou falha e solução a ser desenvolvida.",
+    "CENÁRIO 2 - Imprevisto: nova condição, limite ou falha que exige ajuste da solução.",
     "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
   ],
   "stages": [
@@ -494,8 +494,8 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "Instrumento de medida, registro ou simulação: quantidade por grupo — coleta evidências do teste."
   ],
   "readyMaterials": [
-    "CENÁRIO 1 - Funcionamento esperado: situação, dados e pergunta para testar.",
-    "CENÁRIO 2 - Imprevisto: restrição, falha ou mudança para comparar.",
+    "CENÁRIO 1 - Problema inicial: situação concreta, restrição ou falha e solução a ser desenvolvida.",
+    "CENÁRIO 2 - Imprevisto: nova condição, limite ou falha que exige ajuste da solução.",
     "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
   ],
   "stages": [
