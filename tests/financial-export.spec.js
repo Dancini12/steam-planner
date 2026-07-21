@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import fs from "node:fs";
 import vm from "node:vm";
 import { openActivityPrintWindow } from "../src/lib/exportReport.js";
+import { normalizeBnccCodes, getBnccResumo } from "../src/lib/bnccSelector.js";
 
 function loadExportInternals() {
   const source = fs.readFileSync("src/lib/exportReport.js", "utf8")
@@ -10,7 +11,9 @@ function loadExportInternals() {
   const context = {
     console: { info() {}, warn() {}, log() {} },
     Intl,
-    normalizeLearningExperience: (activity) => activity || {}
+    normalizeLearningExperience: (activity) => activity || {},
+    normalizeBnccCodes,
+    getBnccResumo
   };
 
   vm.runInNewContext(`${source}
