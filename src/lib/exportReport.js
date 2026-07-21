@@ -3718,7 +3718,7 @@ function buildActivityPrintHTMLFromExperience(experience) {
   <title></title>
   <style>
     @page { size: A4; margin: 0; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; overflow-wrap: break-word; word-break: break-word; }
     html {
       background: #fff;
     }
@@ -3821,7 +3821,7 @@ function buildActivityPrintHTMLFromExperience(experience) {
 	      font-style: italic;
 	    }
     .materials-table { width: 100%; border-collapse: collapse; font-size: 8.1pt; margin-bottom: 0.11cm; table-layout: fixed; }
-    .materials-table th { background: #f1f1f1; border: 1px solid #888; padding: 0.07cm 0.09cm; font-weight: 700; text-align: left; white-space: nowrap; }
+    .materials-table th { background: #f1f1f1; border: 1px solid #888; padding: 0.07cm 0.09cm; font-weight: 700; text-align: left; }
     .materials-table td { border: 1px solid #aaa; padding: 0.07cm 0.09cm; vertical-align: top; word-break: break-word; }
     .materials-table th:nth-child(1) { width: 21%; }
     .materials-table th:nth-child(2) { width: 9%; }
@@ -3865,9 +3865,11 @@ function buildActivityPrintHTMLFromExperience(experience) {
     .test-table-wrapper { margin-top: 0.18cm; }
     .test-table-title { margin-bottom: 0.07cm; }
     .test-table { width: 100%; border-collapse: collapse; font-size: 7.7pt; table-layout: fixed; }
-    .test-table th { background: #f1f1f1; border: 1px solid #888; padding: 0.06cm 0.08cm; text-align: left; font-weight: 700; }
+    .test-table th { background: #f1f1f1; border: 1px solid #888; padding: 0.06cm 0.08cm; text-align: left; font-weight: 700; line-height: 1.2; }
     .test-table td { border: 1px solid #aaa; padding: 0; height: 0.82cm; vertical-align: middle; }
-    .test-table td:first-child { padding: 0.05cm 0.08cm; font-weight: 600; white-space: nowrap; }
+    .test-table td:first-child { padding: 0.05cm 0.08cm; font-weight: 600; }
+    .test-table th:first-child,
+    .test-table td:first-child { width: 2.1cm; }
     .financial-test-table { font-size: 7.1pt; }
     .financial-test-table th:first-child,
     .financial-test-table td:first-child { width: 1.7cm; }
