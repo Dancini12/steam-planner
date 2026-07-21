@@ -4,6 +4,7 @@ import { AIProviderManager } from '../../lib/ai/AIProviderManager.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import { buildUserLearningProfile } from '../../lib/machine-learning/user-profile/profileBuilder.js'
 import { suggestThemesFromProfile } from '../../lib/machine-learning/recommendation/recommendationEngine.js'
+import { selectBnccHabilidades } from '../../lib/bnccSelector.js'
 
 import Modal from '../ui/Modal.jsx'
 import Button from '../ui/Button.jsx'
@@ -228,12 +229,13 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
   }
 
   const generatePreviewData = () => {
-    const bnccMap = {
-      '6º ano - Ensino Fundamental': ['EF06CI01', 'EF06MA01', 'EF06LP01', 'EF06AR01'],
-      '7º ano - Ensino Fundamental': ['EF07CI01', 'EF07MA01', 'EF07LP01', 'EF07AR01'],
-      '8º ano - Ensino Fundamental': ['EF08CI01', 'EF08MA01', 'EF08LP01', 'EF08AR01'],
-      '9º ano - Ensino Fundamental': ['EF09CI01', 'EF09MA01', 'EF09LP01', 'EF09AR01']
-    }
+    const bnccItems = selectBnccHabilidades({
+      grade: formData.grade,
+      discipline: formData.discipline,
+      theme: formData.theme,
+      steamCompetencies: formData.steamCompetencies,
+      limit: 5
+    })
 
     const benefitsMap = {
       science: ['Desenvolvimento do pensamento científico', 'Capacidade de observação e investigação', 'Compreensão de conceitos fundamentais'],
@@ -251,7 +253,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
     })
 
     setPreviewData({
-      bnccCodes: bnccMap[formData.grade] || [],
+      bnccItems,
       studentBenefits: [...new Set(selectedBenefits)],
       makerElements: ['🔨 Prototipagem prática', '🔄 Ciclos de iteração', '🧠 Pensamento crítico', '👥 Trabalho colaborativo', '⚡ Aprendizagem mão na massa']
     })
@@ -664,9 +666,10 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
                 <div style={previewSectionStyle}>
                   <h4 style={previewSubtitleStyle}>📋 Competências da BNCC</h4>
                   <div style={previewListStyle}>
-                    {previewData.bnccCodes.map((code, idx) => (
+                    {previewData.bnccItems.map((item, idx) => (
                       <div key={idx} style={previewItemStyle}>
-                        <span style={previewBadgeStyle}>{code}</span>
+                        <span style={previewBadgeStyle}>{item.codigo}</span>
+                        <div style={{ marginTop: '6px' }}>{item.descricao}</div>
                       </div>
                     ))}
                   </div>

@@ -225,16 +225,20 @@ function truncateBnccResumo(text, maxChars = 120) {
   return `${slice.slice(0, cutAt > 0 ? cutAt : maxChars).trimEnd()}…`;
 }
 
-function renderBnccSummaryLine(bncc) {
+function renderBnccChips(bncc) {
   const items = getBnccResumo(bncc || []);
   if (!items.length) return "";
-  const lines = items
+  const chips = items
     .map(
       ({ codigo, resumo }) =>
-        `<strong>${escapeHtml(codigo)}</strong> — ${escapeHtml(truncateBnccResumo(resumo))}`
+        `<div class="bncc-chip"><span class="bncc-chip-code">${escapeHtml(codigo)}</span>${escapeHtml(truncateBnccResumo(resumo))}</div>`
     )
-    .join("<br>");
-  return `<div class="bncc-line">${lines}</div>`;
+    .join("");
+  return `
+  <div class="section protected-section bncc-section">
+    <div class="section-heading"><div class="section-title">Habilidades BNCC</div></div>
+    <div class="bncc-chips">${chips}</div>
+  </div>`;
 }
 
 function normalizeTextItems(value) {
@@ -3835,8 +3839,29 @@ function buildActivityPrintHTMLFromExperience(experience) {
     .steam-connection { padding-left: 0.42cm; margin: 0; }
     .steam-connection li { margin-bottom: 0.05cm; }
     .duration-line { font-size: 8.5pt; color: #444; margin-top: 0.06cm; }
-    .bncc-line { font-size: 7.6pt; color: #333; margin-top: 0.08cm; line-height: 1.3; }
-    .bncc-line strong { color: #111; }
+    .bncc-section { margin-top: 0.14cm; }
+    .bncc-chips { display: flex; flex-wrap: wrap; gap: 0.14cm; }
+    .bncc-chip {
+      flex: 1 1 auto;
+      min-width: 6.5cm;
+      font-size: 7.6pt;
+      line-height: 1.3;
+      color: #333;
+      background: #f6f7f8;
+      border: 1px solid #d5d8dd;
+      border-radius: 3px;
+      padding: 0.08cm 0.14cm;
+    }
+    .bncc-chip-code {
+      display: inline-block;
+      margin-right: 0.12cm;
+      padding: 0.02cm 0.12cm;
+      background: #DBEAFE;
+      color: #1E40AF;
+      border-radius: 3px;
+      font-weight: 700;
+      font-size: 7.4pt;
+    }
     .test-table-wrapper { margin-top: 0.18cm; }
     .test-table-title { margin-bottom: 0.07cm; }
     .test-table { width: 100%; border-collapse: collapse; font-size: 7.7pt; table-layout: fixed; }
@@ -3896,9 +3921,10 @@ function buildActivityPrintHTMLFromExperience(experience) {
       <div class="doc-type">Experiência de Aprendizagem STEAM + Cultura Maker</div>
       <h1>${cleanHtml(experience.title || 'Atividade Pedagógica')}</h1>
       ${experience.duration ? `<div class="duration-line">Duração estimada: ${cleanHtml(experience.duration)}</div>` : ""}
-      ${renderBnccSummaryLine(experience.bncc)}
     </div>
   </div>
+
+  ${renderBnccChips(experience.bncc)}
 
   <div class="section protected-section">
     <div class="section-heading"><span class="section-number">2</span><div class="section-title">Objetivo geral</div></div>
