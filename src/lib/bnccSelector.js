@@ -150,3 +150,14 @@ export function normalizeBnccCodes(values = []) {
 export function getBnccCodes(habilidades = []) {
   return habilidades.map((habilidade) => habilidade.codigo);
 }
+
+export function getBnccResumo(codes = []) {
+  return normalizeBnccCodes(codes)
+    .map((codigo) => bnccHabilidades.find((habilidade) => habilidade.codigo === codigo))
+    .filter(Boolean)
+    .map((habilidade) => ({
+      codigo: habilidade.codigo,
+      componente: habilidade.componente,
+      resumo: habilidade.descricao
+    }));
+}

@@ -36,14 +36,24 @@ serve(async (req) => {
       )
     }
 
+    const model = Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash'
+
     let requestBody: any = {
       contents: [{
         parts: []
       }],
       generationConfig: {
         temperature: getTemperature(type),
-        maxOutputTokens: 8192
+        maxOutputTokens: 16384
       }
+    }
+
+    // Modelos 2.5 gastam parte do maxOutputTokens com raciocínio interno ("thinking").
+    // Sem um limite, prompts complexos podem consumir todo o orçamento pensando e
+    // cortar a resposta JSON antes mesmo de começar. Limitamos o thinking para
+    // garantir espaço suficiente para a saída estruturada.
+    if (model.startsWith('gemini-2.5')) {
+      requestBody.generationConfig.thinkingConfig = { thinkingBudget: 1024 }
     }
 
     // Handle text prompt
@@ -76,7 +86,6 @@ serve(async (req) => {
       }
     }
 
-    const model = Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash'
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {

@@ -14,7 +14,7 @@
 
 import { PHASES } from "../data/phases.js";
 import { STEAM_AREAS } from "../data/steamAreas.js";
-import { normalizeBnccCodes } from "./bnccSelector.js";
+import { normalizeBnccCodes, getBnccResumo } from "./bnccSelector.js";
 import { normalizeLearningExperience } from "./learningExperience.js";
 
 function renderBulletText(text) {
@@ -215,6 +215,26 @@ function renderReferenceList(references) {
 function renderBnccCodes(bncc) {
   const codes = normalizeBnccCodes(bncc || []);
   return codes.length ? `<p><strong>Habilidades BNCC:</strong> ${escapeHtml(codes.join(", "))}</p>` : "";
+}
+
+function truncateBnccResumo(text, maxChars = 120) {
+  const clean = String(text || "").trim();
+  if (clean.length <= maxChars) return clean;
+  const slice = clean.slice(0, maxChars + 1);
+  const cutAt = slice.lastIndexOf(" ");
+  return `${slice.slice(0, cutAt > 0 ? cutAt : maxChars).trimEnd()}…`;
+}
+
+function renderBnccSummaryLine(bncc) {
+  const items = getBnccResumo(bncc || []);
+  if (!items.length) return "";
+  const lines = items
+    .map(
+      ({ codigo, resumo }) =>
+        `<strong>${escapeHtml(codigo)}</strong> — ${escapeHtml(truncateBnccResumo(resumo))}`
+    )
+    .join("<br>");
+  return `<div class="bncc-line">${lines}</div>`;
 }
 
 function normalizeTextItems(value) {
@@ -3815,6 +3835,8 @@ function buildActivityPrintHTMLFromExperience(experience) {
     .steam-connection { padding-left: 0.42cm; margin: 0; }
     .steam-connection li { margin-bottom: 0.05cm; }
     .duration-line { font-size: 8.5pt; color: #444; margin-top: 0.06cm; }
+    .bncc-line { font-size: 7.6pt; color: #333; margin-top: 0.08cm; line-height: 1.3; }
+    .bncc-line strong { color: #111; }
     .test-table-wrapper { margin-top: 0.18cm; }
     .test-table-title { margin-bottom: 0.07cm; }
     .test-table { width: 100%; border-collapse: collapse; font-size: 7.7pt; table-layout: fixed; }
@@ -3874,6 +3896,7 @@ function buildActivityPrintHTMLFromExperience(experience) {
       <div class="doc-type">Experiência de Aprendizagem STEAM + Cultura Maker</div>
       <h1>${cleanHtml(experience.title || 'Atividade Pedagógica')}</h1>
       ${experience.duration ? `<div class="duration-line">Duração estimada: ${cleanHtml(experience.duration)}</div>` : ""}
+      ${renderBnccSummaryLine(experience.bncc)}
     </div>
   </div>
 
