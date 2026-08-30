@@ -20,14 +20,26 @@ export const PHASE_STATUS = {
   COMPLETED: "completed"
 };
 
+// Converte qualquer valor em texto de forma segura.
+// Alguns projetos antigos (ou gerados por IA) guardaram
+// campos como objeto/array em vez de string; sem isso o
+// app quebra ao chamar .trim() nesses valores.
+function toText(value) {
+  if (typeof value === "string") return value;
+  if (value == null) return "";
+  if (Array.isArray(value)) return value.filter(Boolean).join(" ");
+  if (typeof value === "object") return Object.values(value).map(toText).join(" ");
+  return String(value);
+}
+
 // Verifica se o plano da fase tem conteúdo significativo.
 function hasPlan(phase) {
-  return phase?.plan && phase.plan.trim().length > 0;
+  return toText(phase?.plan).trim().length > 0;
 }
 
 // Verifica se há ao menos um registro no diário.
 function hasDiary(phase) {
-  return phase?.entries && phase.entries.length > 0;
+  return Array.isArray(phase?.entries) && phase.entries.length > 0;
 }
 
 // Verifica se a avaliação tem campos preenchidos.
@@ -36,11 +48,11 @@ function hasDiary(phase) {
 function hasEvaluation(phase) {
   const e = phase?.evaluation;
   if (!e) return false;
-  const hasLevel = e.level && e.level.length > 0;
+  const hasLevel = toText(e.level).length > 0;
   const hasText =
-    (e.indicators && e.indicators.trim().length > 0) ||
-    (e.evidence && e.evidence.trim().length > 0) ||
-    (e.feedback && e.feedback.trim().length > 0);
+    toText(e.indicators).trim().length > 0 ||
+    toText(e.evidence).trim().length > 0 ||
+    toText(e.feedback).trim().length > 0;
   return hasLevel && hasText;
 }
 

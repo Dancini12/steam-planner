@@ -51,10 +51,13 @@ export default function PhaseEditor({
   // Estado local do plano pedagógico
   const [plan, setPlan] = useState("");
 
-  // Sincroniza plano local com o projeto carregado
+  // Sincroniza plano local com o projeto carregado.
+  // Projetos antigos/gerados por IA podem ter guardado o plano
+  // como objeto/array; garantimos que o textarea receba string.
   useEffect(() => {
     if (project && project.phases[phaseId]) {
-      setPlan(project.phases[phaseId].plan || "");
+      const rawPlan = project.phases[phaseId].plan;
+      setPlan(typeof rawPlan === "string" ? rawPlan : "");
     }
   }, [project, phaseId]);
 
