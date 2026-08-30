@@ -282,6 +282,23 @@ export default function MyProjects({ currentUser, onBack, onOpenProject }) {
     fontSize: "0.8rem"
   };
 
+  const planActionsStyle = {
+    display: "flex",
+    justifyContent: "flex-end",
+    marginTop: "0.5rem"
+  };
+
+  const deletePlanButtonStyle = {
+    background: "transparent",
+    border: "1px solid rgba(232, 53, 138, 0.3)",
+    color: "#E8358A",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: "0.8rem",
+    padding: "0.35rem 0.7rem",
+    borderRadius: "6px"
+  };
+
   const emptyStyle = {
     color: "rgba(255, 255, 255, 0.5)",
     fontSize: "0.95rem",
@@ -439,6 +456,15 @@ export default function MyProjects({ currentUser, onBack, onOpenProject }) {
                 onClick={() => onOpenProject(project.id)}
                 onDelete={() => setDeletePlanTarget(project)}
               />
+              <div style={planActionsStyle}>
+                <button
+                  type="button"
+                  style={deletePlanButtonStyle}
+                  onClick={() => setDeletePlanTarget(project)}
+                >
+                  Excluir plano
+                </button>
+              </div>
             </div>
           ))}
         </div>
