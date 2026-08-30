@@ -23,6 +23,7 @@ import ActivityViewer from "./pages/ActivityViewer.jsx";
 import BNCC from "./pages/BNCC.jsx";
 import Library from "./pages/Library.jsx";
 import RealWorldNews from "./pages/RealWorldNews.jsx";
+import MyProjects from "./pages/MyProjects.jsx";
 import ProjectEditor from "./pages/ProjectEditor.jsx";
 import PhaseEditor from "./pages/PhaseEditor.jsx";
 import BibliographyEditor from "./pages/BibliographyEditor.jsx";
@@ -45,6 +46,7 @@ const SCREENS = {
   BNCC: "bncc",
   LIBRARY: "library",
   REAL_WORLD_NEWS: "real_world_news",
+  MY_PROJECTS: "my_projects",
   PROJECT_EDITOR: "project_editor",
   PHASE_EDITOR: "phase_editor",
   BIBLIOGRAPHY_EDITOR: "bibliography_editor",
@@ -177,6 +179,11 @@ export default function App() {
     setCurrentScreen(SCREENS.BNCC);
   };
 
+  // Abre a tela "Meus Projetos" (lista de planos + pastas)
+  const goToMyProjects = () => {
+    setCurrentScreen(SCREENS.MY_PROJECTS);
+  };
+
   // Abre a central de noticias atuais para inspiracao pedagogica
   const goToRealWorldNews = () => {
     setCurrentScreen(SCREENS.REAL_WORLD_NEWS);
@@ -263,6 +270,7 @@ export default function App() {
           currentUser={currentUser}
           onLogout={handleLogout}
           onOpenProject={goToProjectEditor}
+          onOpenMyProjects={goToMyProjects}
           onOpenLibrary={goToLibrary}
           onOpenBNCC={goToBNCC}
           onOpenActivityViewer={goToActivityViewer}
@@ -288,6 +296,14 @@ export default function App() {
           onBack={goToDashboard}
           onNewActivity={goToDashboardAndGenerate}
           onLogout={handleLogout}
+        />
+      )}
+
+      {currentScreen === SCREENS.MY_PROJECTS && (
+        <MyProjects
+          currentUser={currentUser}
+          onBack={goToDashboard}
+          onOpenProject={goToProjectEditor}
         />
       )}
 

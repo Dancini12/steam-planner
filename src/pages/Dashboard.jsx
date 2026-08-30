@@ -55,6 +55,7 @@ export default function Dashboard({
   currentUser,
   onLogout,
   onOpenProject,
+  onOpenMyProjects,
   onOpenLibrary,
   onOpenBNCC,
   onOpenActivityViewer,
@@ -218,6 +219,12 @@ export default function Dashboard({
   };
 
   const handleOpenProjects = () => {
+    if (onOpenMyProjects) {
+      onOpenMyProjects();
+      return;
+    }
+
+    // Fallback (compatibilidade): abre o primeiro projeto ou a biblioteca
     if (projects.length > 0) {
       onOpenProject(projects[0].id);
       return;
