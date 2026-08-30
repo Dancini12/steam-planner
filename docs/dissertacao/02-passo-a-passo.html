@@ -1,0 +1,299 @@
+<title>Da ideia à atividade pronta — STEAM Planner</title>
+<style>
+  :root {
+    --paper: #f4f5f1;
+    --paper-raised: #ffffff;
+    --ink: #1c2321;
+    --muted: #5b6560;
+    --accent: #3d6b5c;
+    --accent-ink: #ffffff;
+    --line: #d8dad2;
+    --tag-bg: #e4ece8;
+    --step-bg: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #141815;
+      --paper-raised: #1b201c;
+      --ink: #e7e9e3;
+      --muted: #93998f;
+      --accent: #7fb5a1;
+      --accent-ink: #0e1512;
+      --line: #2b322d;
+      --tag-bg: #1f2b25;
+      --step-bg: #191e1a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #141815; --paper-raised: #1b201c; --ink: #e7e9e3; --muted: #93998f;
+    --accent: #7fb5a1; --accent-ink: #0e1512; --line: #2b322d; --tag-bg: #1f2b25; --step-bg: #191e1a;
+  }
+  :root[data-theme="light"] {
+    --paper: #f4f5f1; --paper-raised: #ffffff; --ink: #1c2321; --muted: #5b6560;
+    --accent: #3d6b5c; --accent-ink: #ffffff; --line: #d8dad2; --tag-bg: #e4ece8; --step-bg: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16.5px;
+    line-height: 1.62;
+  }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+  h1, h2, h3 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+  .mono { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; }
+
+  main { max-width: 40rem; margin: 0 auto; padding: 3.4rem 1.6rem 5rem; }
+
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-size: 0.76rem;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.7rem;
+  }
+  h1 { font-size: 2.1rem; margin: 0 0 0.8rem; }
+  .lede { color: var(--muted); font-size: 1.06rem; max-width: 36rem; }
+  .lede .mono { font-size: 0.92em; }
+
+  .example-tag {
+    margin-top: 1.6rem;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    border: 1px solid var(--line);
+    background: var(--tag-bg);
+    border-radius: 5px;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+  .example-tag b { color: var(--ink); font-weight: 600; }
+
+  .timeline {
+    margin-top: 3rem;
+    position: relative;
+  }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 1.35rem;
+    top: 0.4rem;
+    bottom: 0.4rem;
+    width: 1px;
+    background: var(--line);
+  }
+  .step {
+    position: relative;
+    padding-left: 3.6rem;
+    margin-bottom: 2.5rem;
+  }
+  .step-num {
+    position: absolute;
+    left: 0;
+    top: 0.05rem;
+    width: 2.7rem;
+    height: 2.7rem;
+    border-radius: 50%;
+    background: var(--step-bg);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.95rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .step h2 { font-size: 1.15rem; margin: 0.15rem 0 0.5rem; }
+  .step p { margin: 0 0 0.6rem; color: var(--ink); }
+  .step p.muted { color: var(--muted); font-size: 0.93rem; }
+
+  .step.maker {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 1.3rem 1.4rem 1.3rem 3.6rem;
+    margin-left: -1.4rem;
+  }
+  .step.maker .step-num { left: -0.6rem; }
+
+  .cycle {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7.6rem, 1fr));
+    gap: 0.55rem;
+  }
+  .cycle-item {
+    border: 1px solid var(--line);
+    background: var(--tag-bg);
+    border-radius: 5px;
+    padding: 0.55rem 0.65rem;
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+  .cycle-item .n {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    color: var(--accent);
+    font-size: 0.74rem;
+    display: block;
+    margin-bottom: 0.15rem;
+  }
+
+  .takeaways {
+    margin-top: 3.4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--line);
+  }
+  .takeaways h2 { font-size: 1.3rem; margin: 0 0 1.2rem; }
+  .takeaway {
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    border-radius: 6px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 0.9rem;
+  }
+  .takeaway p { margin: 0; }
+  .takeaway p.muted { margin-top: 0.35rem; color: var(--muted); font-size: 0.92rem; }
+
+  footer.end {
+    margin-top: 3.4rem;
+    padding-top: 1.3rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+  footer.end a { color: var(--accent); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<main>
+  <div class="eyebrow">Versão simples · companheiro do documento técnico</div>
+  <h1>Da ideia à atividade pronta</h1>
+  <p class="lede">
+    A jornada completa que o sistema percorre, do formulário que o professor preenche até o PDF impresso em
+    sala de aula. Para o detalhamento técnico (diagramas UML, schema do banco), ver
+    <span class="mono">01-diagramas-uml.html</span>.
+  </p>
+  <div class="example-tag">Exemplo usado do início ao fim: <b>"Padrões Visuais em Movimento: O Robô Desenhista"</b> — Matemática, 8º ano</div>
+
+  <div class="timeline">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h2>O professor define o que quer ensinar</h2>
+      <p>Preenche um formulário curto: disciplina, ano/série, o tema em uma frase, quantas aulas tem, se é
+      trabalho individual ou em grupo, e quais competências STEAM quer priorizar. Não escreve objetivo,
+      problema ou plano — só a intenção.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <h2>O sistema já mostra o que vai ser trabalhado</h2>
+      <p>Antes de acionar qualquer IA, o sistema busca sozinho, por regra, as habilidades reais da BNCC —
+      código e descrição, ex. <span class="mono">EF08MA01</span>. Essa seleção nunca é feita pela IA.</p>
+      <p class="muted">Evita que uma habilidade "inventada" apareça mais tarde na atividade final.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <h2>O sistema monta um briefing rico para a IA</h2>
+      <p>Reúne automaticamente as habilidades BNCC escolhidas, fontes acadêmicas confiáveis sobre o tema, e
+      os padrões de qualidade aprendidos com o histórico do próprio professor — tudo vira contexto escrito
+      dentro do prompt.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <h2>A IA generativa escreve o primeiro rascunho</h2>
+      <p>O briefing vai para um modelo de IA (Google Gemini; se falhar, um modelo reserva assume
+      automaticamente). Ela devolve a atividade inteira: título, objetivo, problema, missão, materiais,
+      etapas, desafio maker, produto final, conexão STEAM, avaliação, referências e gabarito.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <h2>Nada do que a IA escreveu é aceito de olhos fechados</h2>
+      <p>O sistema confere por regra: os códigos BNCC existem mesmo? As frases estão completas? As contas
+      financeiras fecham (quando é o caso)? As referências têm formato correto? Se achar erro, tenta se
+      corrigir sozinho antes de mostrar ao professor.</p>
+    </div>
+
+    <div class="step maker">
+      <div class="step-num">6</div>
+      <h2>O núcleo da metodologia STEAM + Cultura Maker</h2>
+      <p>Toda atividade — qualquer tema, qualquer disciplina — segue um ciclo fixo de 6 etapas, definido no
+      próprio código, não pela IA:</p>
+      <div class="cycle">
+        <div class="cycle-item"><span class="n">01</span>Preparar a base e dividir materiais</div>
+        <div class="cycle-item"><span class="n">02</span>Construir as partes principais</div>
+        <div class="cycle-item"><span class="n">03</span>Criar o mecanismo de interação</div>
+        <div class="cycle-item"><span class="n">04</span>Testar com situação real</div>
+        <div class="cycle-item"><span class="n">05</span>Ajustar e testar novamente</div>
+        <div class="cycle-item"><span class="n">06</span>Apresentar produto e evidências</div>
+      </div>
+      <p style="margin-top:1rem;">No robô desenhista: montam o mecanismo com MDF e elásticos, testam dois
+      cenários matemáticos numa "Tabela de Teste", ajustam o que falhou e apresentam a expressão algébrica
+      encontrada. É o ciclo <strong>investigar → construir → testar → melhorar → apresentar</strong> — a
+      estrutura da Cultura Maker, obrigatória em todo material gerado.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-num">7</div>
+      <h2>O professor revisa e pode ajustar</h2>
+      <p>A atividade aparece na tela para leitura e edição de qualquer campo. Uma avaliação com 👍/👎
+      realimenta o passo 3 na próxima geração — o sistema "aprende" (por contagem de frequência) que tipo
+      de atividade esse professor considerou boa.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-num">8</div>
+      <h2>Exportação para a sala de aula</h2>
+      <p>O sistema monta um documento formatado como material impresso: seções numeradas, materiais em
+      tabela, as 6 etapas lado a lado, tabela de teste em branco para o aluno preencher, e uma página
+      separada só para o professor com o gabarito.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-num">9</div>
+      <h2>O material final vira PDF</h2>
+      <p>O navegador abre o documento pronto para impressão. O professor usa "Salvar como PDF" ou imprime
+      direto — é isso que chega fisicamente à sala de aula.</p>
+    </div>
+  </div>
+
+  <div class="takeaways">
+    <h2>Por que isso importa para o artigo</h2>
+    <div class="takeaway">
+      <p><strong>A IA gera conteúdo, mas não decide o que é curricularmente válido.</strong></p>
+      <p class="muted">Toda validação factual (BNCC, matemática financeira, referências) é feita por código
+      determinístico — ponto forte para discutir mitigação de alucinação em sistemas educacionais com IA
+      generativa.</p>
+    </div>
+    <div class="takeaway">
+      <p><strong>STEAM + Cultura Maker não é um "tema" da atividade — é a estrutura obrigatória do documento.</strong></p>
+      <p class="muted">O ciclo de 6 etapas é fixo no código da aplicação, independente da disciplina ou do
+      que a IA escreve.</p>
+    </div>
+    <div class="takeaway">
+      <p><strong>O sistema tem memória de qualidade por professor, mas não é aprendizado de máquina treinado.</strong></p>
+      <p class="muted">É contagem de frequência simples sobre as avaliações 👍/👎 — vale nomear com precisão
+      no texto.</p>
+    </div>
+  </div>
+
+  <footer class="end">
+    Documento complementar ao mapeamento técnico (diagramas UML, schema do banco, código-fonte real) —
+    ambos disponíveis na pasta <span class="mono">docs/dissertacao/</span> do repositório.
+  </footer>
+</main>

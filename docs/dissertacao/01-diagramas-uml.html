@@ -1,0 +1,1052 @@
+<title>STEAM Planner — Diagramas UML</title>
+<style>
+  :root {
+    --paper: #f4f5f1;
+    --paper-raised: #ffffff;
+    --ink: #1c2321;
+    --muted: #5b6560;
+    --accent: #3d6b5c;
+    --accent-ink: #ffffff;
+    --line: #d8dad2;
+    --code-bg: #eceee7;
+    --code-ink: #2a2f2b;
+    --tag-bg: #e4ece8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #141815;
+      --paper-raised: #1b201c;
+      --ink: #e7e9e3;
+      --muted: #93998f;
+      --accent: #7fb5a1;
+      --accent-ink: #0e1512;
+      --line: #2b322d;
+      --code-bg: #10140f;
+      --code-ink: #d9dcd3;
+      --tag-bg: #1f2b25;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #141815;
+    --paper-raised: #1b201c;
+    --ink: #e7e9e3;
+    --muted: #93998f;
+    --accent: #7fb5a1;
+    --accent-ink: #0e1512;
+    --line: #2b322d;
+    --code-bg: #10140f;
+    --code-ink: #d9dcd3;
+    --tag-bg: #1f2b25;
+  }
+  :root[data-theme="light"] {
+    --paper: #f4f5f1;
+    --paper-raised: #ffffff;
+    --ink: #1c2321;
+    --muted: #5b6560;
+    --accent: #3d6b5c;
+    --accent-ink: #ffffff;
+    --line: #d8dad2;
+    --code-bg: #eceee7;
+    --code-ink: #2a2f2b;
+    --tag-bg: #e4ece8;
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+
+  h1, h2, h3 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-weight: 600;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+
+  .mono {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+
+  header.top {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: color-mix(in srgb, var(--paper) 92%, transparent);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+  }
+  .top-inner {
+    max-width: 56rem;
+    margin: 0 auto;
+    padding: 0.85rem 1.5rem;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .top-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 1.02rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  nav.jump {
+    display: flex;
+    gap: 1.1rem;
+    flex-wrap: wrap;
+  }
+  nav.jump a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.86rem;
+    letter-spacing: 0.01em;
+    border-bottom: 1px solid transparent;
+  }
+  nav.jump a:hover, nav.jump a:focus-visible {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  main {
+    max-width: 56rem;
+    margin: 0 auto;
+    padding: 2.6rem 1.5rem 6rem;
+  }
+
+  .hero-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.76rem;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+  }
+  .hero h1 {
+    font-size: 2rem;
+    margin: 0 0 0.7rem;
+  }
+  .hero p {
+    max-width: 42rem;
+    color: var(--muted);
+    font-size: 1.04rem;
+  }
+
+  .callout {
+    margin-top: 1.6rem;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    background: var(--paper-raised);
+    border-radius: 4px;
+    padding: 1rem 1.2rem;
+  }
+  .callout p { margin: 0; color: var(--muted); font-size: 0.94rem; }
+  .callout strong { color: var(--ink); }
+
+  section.diagram {
+    margin-top: 4rem;
+    padding-top: 0.2rem;
+    border-top: 1px solid var(--line);
+  }
+  .diagram-kicker {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    margin-top: 1.8rem;
+  }
+  .diagram-num {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    border: 1px solid var(--line);
+    background: var(--tag-bg);
+    border-radius: 3px;
+    padding: 0.12rem 0.45rem;
+  }
+  section.diagram h2 { font-size: 1.44rem; margin: 0; }
+  .diagram-dek { color: var(--muted); max-width: 40rem; margin: 0.5rem 0 1.4rem; }
+
+  .figure {
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    border-radius: 6px;
+    padding: 1.1rem 1.1rem 0.9rem;
+  }
+  .figure .scroll {
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
+  }
+  .figure .scroll pre.mermaid { margin: 0; min-width: 560px; }
+  figcaption {
+    margin-top: 0.7rem;
+    padding-top: 0.7rem;
+    border-top: 1px dashed var(--line);
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+  figcaption b { color: var(--ink); }
+
+  .prose { margin-top: 1.3rem; }
+  .prose p { margin: 0 0 0.9rem; }
+  .prose ul { margin: 0 0 0.9rem; padding-left: 1.25rem; }
+  .prose li { margin-bottom: 0.3rem; }
+
+  details.src {
+    margin-top: 1.1rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--paper-raised);
+  }
+  details.src summary {
+    cursor: pointer;
+    padding: 0.65rem 1rem;
+    font-size: 0.86rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    list-style: none;
+  }
+  details.src summary::-webkit-details-marker { display: none; }
+  details.src summary::before {
+    content: "▸";
+    color: var(--accent);
+    transition: transform 0.15s ease;
+  }
+  details.src[open] summary::before { transform: rotate(90deg); }
+  details.src summary .tag {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    background: var(--tag-bg);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.08rem 0.4rem;
+  }
+  details.src .scroll {
+    overflow-x: auto;
+    border-top: 1px solid var(--line);
+  }
+  details.src pre {
+    margin: 0;
+    padding: 1rem 1.1rem;
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: var(--code-ink);
+    background: var(--code-bg);
+    white-space: pre;
+  }
+
+  table.notes {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    font-size: 0.92rem;
+  }
+  table.notes th, table.notes td {
+    text-align: left;
+    padding: 0.55rem 0.7rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  table.notes th {
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  footer.end {
+    margin-top: 4rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<header class="top">
+  <div class="top-inner">
+    <span class="top-title">STEAM Planner — Documentação de Arquitetura</span>
+    <nav class="jump">
+      <a href="#casos-de-uso">Casos de uso</a>
+      <a href="#componentes">Componentes</a>
+      <a href="#sequencia">Sequência</a>
+      <a href="#dados">Dados</a>
+      <a href="#notas">Notas para o artigo</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="hero-eyebrow">Levantamento de arquitetura · base para dissertação</div>
+    <h1>Diagramas UML do STEAM Planner</h1>
+    <p>
+      Este documento reconstrói, a partir do código-fonte real do projeto, os quatro diagramas
+      normalmente usados para apresentar a arquitetura de um sistema numa dissertação: casos de uso,
+      componentes, sequência do fluxo principal e modelo de dados. Cada diagrama vem com uma leitura
+      renderizada (Mermaid) e o código-fonte em PlantUML ou notação Entidade-Relacionamento, pronto
+      para colar em qualquer editor UML e gerar a figura final.
+    </p>
+  </div>
+
+  <div class="callout">
+    <p>
+      <strong>Como este documento foi construído:</strong> mapeamento direto do código — rotas e páginas
+      (<span class="mono">src/pages</span>), serviços de domínio (<span class="mono">src/lib</span>),
+      Edge Functions e schema (<span class="mono">supabase/</span>) e o módulo de personalização
+      (<span class="mono">src/lib/machine-learning</span>). Nenhuma informação aqui é hipotética.
+    </p>
+  </div>
+
+  <!-- ================= CASOS DE USO ================= -->
+  <section class="diagram" id="casos-de-uso">
+    <div class="diagram-kicker"><span class="diagram-num">01</span><h2>Diagrama de casos de uso</h2></div>
+    <p class="diagram-dek">
+      O ator principal é o Professor. O Administrador é uma especialização do Professor (mesma conta,
+      privilégio adicional concedido pela tabela <span class="mono">app_admins</span>), não um papel à parte.
+    </p>
+
+    <figure class="figure">
+      <div class="scroll">
+<pre class="mermaid">
+flowchart LR
+  prof(["Professor"])
+  admin(["Professor-Administrador"])
+  admin -. especializa .-> prof
+
+  subgraph sistema["Sistema STEAM Planner"]
+    direction TB
+    uc1["Cadastrar-se / Entrar"]
+    uc2["Criar projeto via IA"]
+    uc3["Usar projeto da Biblioteca"]
+    uc4["Gerar atividade pedagógica com IA"]
+    uc4a["Selecionar habilidades BNCC"]
+    uc5["Editar projeto e dados BNCC"]
+    uc6["Planejar e registrar uma fase"]
+    uc6a["Registrar diário de bordo"]
+    uc6b["Realizar Avaliação em Fases"]
+    uc7["Gerenciar bibliografia"]
+    uc7a["Verificar referências"]
+    uc8["Exportar atividade/relatório em PDF"]
+    uc9["Consultar BNCC offline"]
+    uc10["Consultar notícias"]
+    uc11["Enviar feedback"]
+    uc12["Configurar provedores de IA"]
+    uc13["Consultar feedbacks recebidos"]
+  end
+
+  prof --> uc1
+  prof --> uc2
+  prof --> uc3
+  prof --> uc4
+  prof --> uc5
+  prof --> uc6
+  prof --> uc7
+  prof --> uc8
+  prof --> uc9
+  prof --> uc10
+  prof --> uc11
+  prof --> uc12
+  admin --> uc13
+
+  uc4 -. include .-> uc4a
+  uc6 -. extend .-> uc6a
+  uc6 -. extend .-> uc6b
+  uc7 -. extend .-> uc7a
+  uc5 -. include .-> uc9
+  uc4 -. extend .-> uc8
+</pre>
+      </div>
+      <figcaption><b>Figura 1.</b> Casos de uso do Professor no STEAM Planner. Setas tracejadas indicam relações <span class="mono">&lt;&lt;include&gt;&gt;</span>/<span class="mono">&lt;&lt;extend&gt;&gt;</span>.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <p>
+        Mermaid não tem notação nativa de ator/elipse UML — a renderização acima é uma aproximação fiel
+        às relações, mas para a figura final da dissertação use o código PlantUML abaixo, que produz a
+        notação UML padrão (boneco de ator, elipses, fronteira de sistema).
+      </p>
+    </div>
+
+    <details class="src">
+      <summary><span class="tag">PlantUML</span> Ver código-fonte do diagrama de casos de uso</summary>
+      <div class="scroll"><pre>@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor Professor as prof
+actor "Professor\n(Administrador)" as admin
+admin --|> prof
+
+rectangle "Sistema STEAM Planner" {
+  usecase "Cadastrar-se / Entrar" as UC1
+  usecase "Criar projeto via IA" as UC2
+  usecase "Usar projeto da Biblioteca" as UC3
+  usecase "Gerar atividade pedagógica com IA" as UC4
+  usecase "Selecionar habilidades BNCC" as UC4a
+  usecase "Editar projeto e dados BNCC" as UC5
+  usecase "Planejar e registrar uma fase" as UC6
+  usecase "Registrar diário de bordo" as UC6a
+  usecase "Realizar Avaliação em Fases" as UC6b
+  usecase "Gerenciar bibliografia" as UC7
+  usecase "Verificar referências" as UC7a
+  usecase "Exportar atividade/relatório em PDF" as UC8
+  usecase "Consultar BNCC offline" as UC9
+  usecase "Consultar notícias" as UC10
+  usecase "Enviar feedback" as UC11
+  usecase "Configurar provedores de IA" as UC12
+  usecase "Consultar feedbacks recebidos" as UC13
+}
+
+prof -- UC1
+prof -- UC2
+prof -- UC3
+prof -- UC4
+prof -- UC5
+prof -- UC6
+prof -- UC7
+prof -- UC8
+prof -- UC9
+prof -- UC10
+prof -- UC11
+prof -- UC12
+admin -- UC13
+
+UC4 ..> UC4a : <<include>>
+UC6 ..> UC6a : <<extend>>
+UC6 ..> UC6b : <<extend>>
+UC7 ..> UC7a : <<extend>>
+UC5 ..> UC9 : <<include>>
+UC4 ..> UC8 : <<extend>>
+@enduml</pre></div>
+    </details>
+
+    <div class="prose">
+      <p><strong>Leitura para o texto:</strong> não existe um ator "Aluno" no sistema — o STEAM Planner é
+      uma ferramenta de planejamento e apoio ao professor; o aluno participa apenas indiretamente, como
+      destinatário do material impresso/exportado. O caso de uso de administração (UC13) não é uma
+      aplicação separada: é um recurso condicional dentro do próprio Dashboard, liberado quando o e-mail
+      do usuário consta na tabela <span class="mono">app_admins</span>.</p>
+    </div>
+  </section>
+
+  <!-- ================= COMPONENTES ================= -->
+  <section class="diagram" id="componentes">
+    <div class="diagram-kicker"><span class="diagram-num">02</span><h2>Diagrama de componentes / arquitetura</h2></div>
+    <p class="diagram-dek">
+      Visão macro do sistema: cliente React, backend como serviço (Supabase) e provedores externos de IA.
+      Não há servidor de aplicação próprio — toda lógica de servidor vive em Edge Functions.
+    </p>
+
+    <figure class="figure">
+      <div class="scroll">
+<pre class="mermaid">
+flowchart TB
+  subgraph client["Cliente (navegador) — React + Vite"]
+    direction TB
+    appjs["App.jsx — roteador por estado (SCREENS)"]
+    subgraph pages["Páginas (src/pages)"]
+      direction LR
+      login["Login"]
+      dash["Dashboard"]
+      projed["ProjectEditor"]
+      phased["PhaseEditor"]
+      actview["ActivityViewer"]
+      libpg["Library"]
+      bnccpg["BNCC"]
+      biblio["BibliographyEditor"]
+    end
+    subgraph services["Serviços de domínio (src/lib)"]
+      direction LR
+      pps["PedagogicalPlannerService"]
+      aim["AIProviderManager"]
+      bnccsel["bnccSelector"]
+      exprep["exportReport"]
+      lexp["learningExperience"]
+      mlmod["machine-learning/*"]
+    end
+    appjs --> login
+    appjs --> dash
+    appjs --> projed
+    appjs --> phased
+    appjs --> actview
+    appjs --> libpg
+    appjs --> bnccpg
+    appjs --> biblio
+    dash -.-> pps
+    actview -.-> exprep
+    projed -.-> exprep
+    pps --> aim
+    pps --> bnccsel
+    pps --> lexp
+    pps --> mlmod
+  end
+
+  subgraph supabase["Supabase (Backend-as-a-Service)"]
+    direction TB
+    auth["Auth"]
+    db[("Postgres + Row Level Security")]
+    subgraph edge["Edge Functions (Deno, servidor)"]
+      direction LR
+      efgemini["gemini"]
+      efcerebras["cerebras"]
+      effeedback["feedback"]
+    end
+  end
+
+  subgraph extia["APIs externas de IA generativa"]
+    direction LR
+    gemapi["Google Gemini API (gemini-2.5-flash)"]
+    cerapi["Cerebras API (gpt-oss-120b)"]
+  end
+
+  browser["Impressão do navegador (Salvar como PDF)"]
+
+  login --> auth
+  appjs --> db
+  mlmod --> db
+  aim --> efgemini
+  aim --> efcerebras
+  efgemini --> gemapi
+  efcerebras --> cerapi
+  exprep --> browser
+</pre>
+      </div>
+      <figcaption><b>Figura 2.</b> Componentes e limites do sistema. Linhas tracejadas indicam dependência lógica (chamada de função); linhas cheias, fluxo de dados/rede.</figcaption>
+    </figure>
+
+    <details class="src">
+      <summary><span class="tag">PlantUML</span> Ver código-fonte do diagrama de componentes</summary>
+      <div class="scroll"><pre>@startuml
+skinparam componentStyle rectangle
+
+package "Cliente (navegador) — React + Vite" {
+  [App.jsx\n(roteador por estado)] as App
+  package "Páginas" {
+    [Login]
+    [Dashboard]
+    [ProjectEditor]
+    [PhaseEditor]
+    [ActivityViewer]
+    [Library]
+    [BNCC]
+    [BibliographyEditor]
+  }
+  package "Serviços de domínio (src/lib)" {
+    [PedagogicalPlannerService] as PPS
+    [AIProviderManager] as AIM
+    [bnccSelector] as BnccSel
+    [exportReport] as ExpRep
+    [learningExperience] as LExp
+    [machine-learning/*] as MLMod
+  }
+}
+
+package "Supabase (BaaS)" {
+  [Auth]
+  database "Postgres\n+ RLS" as DB
+  package "Edge Functions (Deno)" {
+    [gemini]
+    [cerebras]
+    [feedback]
+  }
+}
+
+cloud "APIs externas de IA" {
+  [Google Gemini API]
+  [Cerebras API]
+}
+
+node "Navegador (impressão)" as Print
+
+App --> Login
+App --> Dashboard
+App --> ProjectEditor
+App --> PhaseEditor
+App --> ActivityViewer
+App --> Library
+App --> BNCC
+App --> BibliographyEditor
+
+Dashboard ..> PPS
+ActivityViewer ..> ExpRep
+ProjectEditor ..> ExpRep
+PPS --> AIM
+PPS --> BnccSel
+PPS --> LExp
+PPS --> MLMod
+
+Login --> Auth
+App --> DB : CRUD de projetos (RLS)
+MLMod --> DB : eventos, embeddings, preferências
+AIM --> gemini
+AIM --> cerebras
+gemini --> [Google Gemini API]
+cerebras --> [Cerebras API]
+ExpRep --> Print
+@enduml</pre></div>
+    </details>
+
+    <div class="prose">
+      <p><strong>Pontos a destacar no texto:</strong></p>
+      <ul>
+        <li>Não existe roteador de URL (<span class="mono">react-router</span> ou similar): a navegação é
+        controlada por uma máquina de estados simples em <span class="mono">App.jsx</span> — relevante se a
+        dissertação discutir decisões arquiteturais (SPA de tela única vs. multi-rota).</li>
+        <li>Chaves de API de IA nunca chegam ao cliente: toda chamada passa por uma Edge Function no
+        Supabase, que guarda a credencial no servidor — arquitetura resiliente a vazamento de segredo pelo
+        bundle do frontend.</li>
+        <li>A exportação de PDF não usa nenhuma biblioteca de geração de PDF: o sistema monta HTML e delega
+        a impressão ao próprio navegador (<span class="mono">window.print</span>), o que simplifica a
+        arquitetura mas depende do mecanismo de impressão do navegador do usuário.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= SEQUÊNCIA ================= -->
+  <section class="diagram" id="sequencia">
+    <div class="diagram-kicker"><span class="diagram-num">03</span><h2>Diagrama de sequência — geração de atividade com IA</h2></div>
+    <p class="diagram-dek">
+      O fluxo mais representativo do sistema: do clique do professor até o PDF impresso, passando pela
+      seleção determinística de BNCC, a chamada ao provedor de IA (com fallback) e a validação/autocorreção
+      antes da exportação.
+    </p>
+
+    <figure class="figure">
+      <div class="scroll">
+<pre class="mermaid">
+sequenceDiagram
+    actor Prof as Professor
+    participant Modal as PedagogicalPlannerModal
+    participant Svc as PedagogicalPlannerService
+    participant Bncc as bnccSelector
+    participant Mgr as AIProviderManager
+    participant Edge as Edge Function (gemini)
+    participant Gem as Google Gemini API
+    participant LE as learningExperience
+    participant Viewer as ActivityViewer
+    participant Exp as exportReport
+    participant Nav as Navegador
+
+    Prof->>Modal: preenche wizard e confirma
+    Modal->>Svc: generateActivity(parâmetros)
+    Svc->>Bncc: selectBnccHabilidades()
+    Bncc-->>Svc: habilidades BNCC reais (base offline)
+    Svc->>Svc: buildPrompt() com contexto e BNCC
+    Svc->>Mgr: request(prompt)
+    Mgr->>Edge: functions.invoke("gemini")
+    Edge->>Gem: generateContent()
+    Gem-->>Edge: texto (JSON em markdown)
+    Edge-->>Mgr: { content }
+    alt Gemini indisponível ou JSON inválido
+        Mgr->>Mgr: aciona provedor de fallback (Cerebras)
+    end
+    Mgr-->>Svc: texto bruto da IA
+    Svc->>Svc: extractJson / safeParseJson / repairJson
+    Svc->>Svc: applyOfflineBncc (valida códigos contra base offline)
+    Svc->>LE: normalizeLearningExperience()
+    LE-->>Svc: atividade normalizada
+    Svc->>LE: validateLearningExperience()
+    Svc-->>Modal: atividade pronta
+    Modal->>Viewer: exibe atividade gerada
+    Prof->>Viewer: clica em "Exportar / Imprimir"
+    Viewer->>Exp: openActivityPrintWindow(atividade)
+    loop até 3 tentativas
+        Exp->>Exp: prepareExperienceForExport() valida e autocorrige
+    end
+    Exp->>Exp: buildActivityPrintHTMLFromExperience()
+    Exp->>Nav: window.open + document.write(html)
+    Prof->>Nav: Ctrl+P / Salvar como PDF
+</pre>
+      </div>
+      <figcaption><b>Figura 3.</b> Sequência completa: geração assistida por IA até a exportação final.</figcaption>
+    </figure>
+
+    <details class="src">
+      <summary><span class="tag">PlantUML</span> Ver código-fonte do diagrama de sequência</summary>
+      <div class="scroll"><pre>@startuml
+actor Professor as Prof
+participant "PedagogicalPlannerModal" as Modal
+participant "PedagogicalPlannerService" as Svc
+participant "bnccSelector" as Bncc
+participant "AIProviderManager" as Mgr
+participant "Edge Function (gemini)" as Edge
+participant "Google Gemini API" as Gem
+participant "learningExperience" as LE
+participant "ActivityViewer" as Viewer
+participant "exportReport" as Exp
+participant "Navegador" as Nav
+
+Prof -> Modal : preenche wizard e confirma
+Modal -> Svc : generateActivity(parâmetros)
+Svc -> Bncc : selectBnccHabilidades()
+Bncc --> Svc : habilidades BNCC reais (base offline)
+Svc -> Svc : buildPrompt() com contexto e BNCC
+Svc -> Mgr : request(prompt)
+Mgr -> Edge : functions.invoke("gemini")
+Edge -> Gem : generateContent()
+Gem --> Edge : texto (JSON em markdown)
+Edge --> Mgr : { content }
+alt Gemini indisponível ou JSON inválido
+  Mgr -> Mgr : aciona provedor de fallback (Cerebras)
+end
+Mgr --> Svc : texto bruto da IA
+Svc -> Svc : extractJson / safeParseJson / repairJson
+Svc -> Svc : applyOfflineBncc (valida códigos contra base offline)
+Svc -> LE : normalizeLearningExperience()
+LE --> Svc : atividade normalizada
+Svc -> LE : validateLearningExperience()
+Svc --> Modal : atividade pronta
+Modal -> Viewer : exibe atividade gerada
+Prof -> Viewer : clica em "Exportar / Imprimir"
+Viewer -> Exp : openActivityPrintWindow(atividade)
+loop até 3 tentativas
+  Exp -> Exp : prepareExperienceForExport() valida e autocorrige
+end
+Exp -> Exp : buildActivityPrintHTMLFromExperience()
+Exp -> Nav : window.open + document.write(html)
+Prof -> Nav : Ctrl+P / Salvar como PDF
+@enduml</pre></div>
+    </details>
+
+    <div class="prose">
+      <p><strong>Ponto central para a dissertação:</strong> a IA generativa nunca é a autoridade final.
+      Ela produz um rascunho estruturado; toda validação factual crítica — códigos BNCC, coerência
+      financeira quando o tema é educação financeira, formato de DOI/referências, completude do texto —
+      é feita por regras determinísticas no próprio frontend, com até três tentativas de autocorreção antes
+      de permitir a exportação. Isso é uma escolha de arquitetura relevante para discutir mitigação de
+      alucinação em sistemas educacionais assistidos por IA.</p>
+    </div>
+  </section>
+
+  <!-- ================= DADOS ================= -->
+  <section class="diagram" id="dados">
+    <div class="diagram-kicker"><span class="diagram-num">04</span><h2>Modelo de dados (Supabase / PostgreSQL)</h2></div>
+    <p class="diagram-dek">
+      O schema tem duas metades bem distintas: um núcleo pedagógico (projetos, BNCC, fontes acadêmicas,
+      feedback) e um conjunto de tabelas <span class="mono">ml_*</span> de personalização. Por isso o
+      modelo é apresentado em duas figuras, o que também favorece a legibilidade na dissertação.
+    </p>
+
+    <h3 style="margin-top:2rem;font-size:1.05rem;">4.1 · Núcleo pedagógico</h3>
+    <figure class="figure">
+      <div class="scroll">
+<pre class="mermaid">
+erDiagram
+    auth_users {
+        uuid id PK
+        text email
+    }
+    app_profiles {
+        uuid id PK_FK
+        text email
+        text name
+        text school
+        text area
+        timestamptz created_at
+        timestamptz last_seen_at
+    }
+    projects {
+        text id PK
+        uuid owner_id FK
+        uuid usuario_id FK
+        text title
+        text theme
+        text grade
+        text duration
+        text_array steam
+        text created_via
+        bool is_public
+        jsonb project_data
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    project_private_data {
+        text project_id PK_FK
+        uuid owner_id FK
+        jsonb private_data
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    pedagogical_usage {
+        uuid id PK
+        uuid user_id FK
+        text discipline
+        int count
+        date date
+        text_array steam_competencies
+    }
+    pedagogical_cache {
+        uuid id PK
+        text discipline
+        text grade
+        text theme
+        text activity_content
+        jsonb resources
+    }
+    verified_sources {
+        uuid id PK
+        text project_id FK
+        uuid user_id FK
+        text title
+        text doi
+        text abnt
+        text status
+    }
+    bibliography_references {
+        uuid id PK
+        text project_id FK
+        uuid user_id FK
+        text raw_text
+        text doi
+        text status
+        numeric confidence
+    }
+    feedback {
+        uuid id PK
+        uuid user_id FK
+        text category
+        text message
+        timestamptz created_at
+    }
+    feedbacks {
+        uuid id PK
+        uuid user_id FK
+        text mensagem
+        numeric nota
+        text category
+    }
+    app_usage_events {
+        bigserial id PK
+        uuid user_id FK
+        text event_type
+        jsonb metadata
+    }
+    app_metric_snapshots {
+        bigserial id PK
+        text title
+        jsonb metrics
+    }
+    app_admins {
+        text email PK
+        timestamptz created_at
+    }
+    bncc_habilidades {
+        uuid id PK
+        text codigo UK
+        text etapa
+        text ano
+        text area
+        text componente
+        text descricao
+        bool cultura_maker
+    }
+
+    auth_users ||--o| app_profiles : "1:1"
+    auth_users ||--o{ projects : "owner_id"
+    projects ||--o| project_private_data : "1:1"
+    auth_users ||--o{ project_private_data : "owner_id"
+    auth_users ||--o{ pedagogical_usage : "user_id"
+    projects ||--o{ verified_sources : "project_id"
+    auth_users ||--o{ verified_sources : "user_id"
+    projects ||--o{ bibliography_references : "project_id"
+    auth_users ||--o{ bibliography_references : "user_id"
+    auth_users ||--o{ feedback : "user_id"
+    auth_users ||--o{ feedbacks : "user_id"
+    auth_users ||--o{ app_usage_events : "user_id"
+</pre>
+      </div>
+      <figcaption><b>Figura 4.</b> Núcleo pedagógico. <span class="mono">app_admins</span>, <span class="mono">pedagogical_cache</span>, <span class="mono">app_metric_snapshots</span> e as tabelas <span class="mono">bncc_*</span> não têm chave estrangeira para <span class="mono">auth_users</span>/<span class="mono">projects</span> — a relação de <span class="mono">app_admins</span> com o resto do sistema é lógica (comparação de e-mail do JWT dentro das políticas de RLS), não estrutural, por isso ficou fora das linhas do diagrama.</figcaption>
+    </figure>
+
+    <h3 style="margin-top:2.4rem;font-size:1.05rem;">4.2 · Personalização (ml_*) e base de conhecimento</h3>
+    <figure class="figure">
+      <div class="scroll">
+<pre class="mermaid">
+erDiagram
+    auth_users {
+        uuid id PK
+        text email
+    }
+    ml_usage_history {
+        uuid id PK
+        uuid user_id FK
+        text action_type
+        text entity_type
+        text entity_id
+        jsonb metadata
+    }
+    ml_behavior_events {
+        uuid id PK
+        uuid user_id FK
+        text event_type
+        jsonb metadata
+        jsonb context
+    }
+    ml_user_preferences {
+        uuid user_id PK_FK
+        jsonb top_disciplines
+        jsonb top_grades
+        jsonb top_themes
+        jsonb top_steam_areas
+        jsonb top_bncc
+    }
+    ml_recommendations {
+        uuid id PK
+        uuid user_id FK
+        text recommendation_type
+        text target_entity_type
+        text target_entity_id
+        numeric score
+        text reason
+        timestamptz expires_at
+    }
+    ml_embeddings {
+        uuid id PK
+        uuid owner_id FK
+        text entity_type
+        text entity_id
+        text embedding_model
+        int dimensions
+        jsonb embedding
+        text text_hash
+    }
+    ml_analytics_snapshots {
+        uuid id PK
+        uuid user_id FK
+        text snapshot_type
+        jsonb metrics
+    }
+    ml_interactions {
+        uuid id PK
+        uuid user_id FK
+        text interaction_type
+        text entity_type
+        text entity_id
+    }
+    ml_metrics {
+        uuid id PK
+        uuid user_id FK
+        text metric_name
+        numeric metric_value
+        jsonb dimensions
+    }
+    knowledge_base {
+        uuid id PK
+        text title
+        text summary
+        text doi UK
+        text subject
+        text grade_level
+        text_array bncc_codes
+        numeric reliability_score
+    }
+    knowledge_embeddings {
+        uuid id PK
+        uuid knowledge_id FK_UK
+        jsonb embedding
+        text topic
+    }
+    source_validation {
+        uuid id PK
+        text source_url UK
+        text validation_status
+        numeric reliability_score
+    }
+
+    auth_users ||--o{ ml_usage_history : "user_id"
+    auth_users ||--o{ ml_behavior_events : "user_id"
+    auth_users ||--|| ml_user_preferences : "user_id (1:1)"
+    auth_users ||--o{ ml_recommendations : "user_id"
+    auth_users ||--o{ ml_embeddings : "owner_id"
+    auth_users ||--o{ ml_analytics_snapshots : "user_id"
+    auth_users ||--o{ ml_interactions : "user_id"
+    auth_users ||--o{ ml_metrics : "user_id"
+    knowledge_base ||--o| knowledge_embeddings : "1:1"
+</pre>
+      </div>
+      <figcaption><b>Figura 5.</b> Tabelas de personalização/rastreamento (<span class="mono">ml_*</span>) e a base de conhecimento usada na busca de fontes acadêmicas. <span class="mono">source_validation</span> é isolada (sem FK).</figcaption>
+    </figure>
+
+    <div class="prose">
+      <p>
+        As duas figuras usam notação <em>crow's foot</em> (padrão Mermaid/ER), diretamente aceita pela
+        maioria dos editores e compatível com o vocabulário usual de dissertações. Os tipos
+        <span class="mono">text_array</span> e <span class="mono">PK_FK</span> representam,
+        respectivamente, colunas <span class="mono">text[]</span> do Postgres e colunas que são
+        simultaneamente chave primária e estrangeira (ex.: <span class="mono">app_profiles.id</span>,
+        que é ao mesmo tempo PK da tabela e FK para <span class="mono">auth.users.id</span>).
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= NOTAS ================= -->
+  <section class="diagram" id="notas">
+    <div class="diagram-kicker"><span class="diagram-num">05</span><h2>Notas para o texto do artigo</h2></div>
+    <p class="diagram-dek">Achados do mapeamento que valem uma frase própria na dissertação — não são óbvios a partir dos diagramas sozinhos.</p>
+
+    <table class="notes">
+      <thead><tr><th>Achado</th><th>Por que importa</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>O módulo <span class="mono">machine-learning/</span> não contém nenhum modelo treinado.</td>
+          <td>É contagem de frequência (top-N), similaridade por cosseno sobre um <em>bag-of-words</em>
+          hasheado (FNV-1a, 96 dimensões) e uma fórmula de score linear com pesos fixados manualmente.
+          Nomear isso com precisão evita uma afirmação incorreta na banca sobre "uso de machine learning".</td>
+        </tr>
+        <tr>
+          <td>Arquitetura multi-provedor de IA com fallback automático.</td>
+          <td>Gemini é o provedor primário; se falhar (erro de rede, JSON inválido, indisponibilidade), o
+          sistema tenta Cerebras automaticamente — resiliência arquitetural que pode ser discutida como
+          contribuição de engenharia.</td>
+        </tr>
+        <tr>
+          <td>Validação determinística sempre "por cima" da IA generativa.</td>
+          <td>Códigos BNCC, dados financeiros e referências bibliográficas nunca são aceitos apenas porque a
+          IA os gerou — são conferidos contra bases offline e regras de negócio antes de chegar ao professor.</td>
+        </tr>
+        <tr>
+          <td>Não há roteador de URL.</td>
+          <td>Navegação inteira controlada por uma máquina de estados em <span class="mono">App.jsx</span> —
+          é uma SPA de tela única sem deep-linking, relevante se a dissertação tratar de arquitetura frontend.</td>
+        </tr>
+        <tr>
+          <td>Exportação em PDF é impressão de HTML pelo navegador, não geração binária de PDF.</td>
+          <td><span class="mono">exportReport.js</span> monta HTML/CSS otimizado para impressão A4 e delega
+          a conversão para PDF ao próprio navegador do usuário (<span class="mono">window.print</span>).</td>
+        </tr>
+        <tr>
+          <td>Painel administrativo é um recurso condicional, não uma aplicação separada.</td>
+          <td>Vive dentro do <span class="mono">Dashboard.jsx</span>, liberado por checagem contra a tabela
+          <span class="mono">app_admins</span>. Várias tabelas de métricas (<span class="mono">app_metric_snapshots</span>,
+          <span class="mono">app_usage_events</span>) já têm RLS pronta para leitura por admin mas ainda não
+          são consumidas por nenhuma tela — infraestrutura preparada para um painel futuro.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="end">
+    Documento gerado a partir do estado atual do repositório <span class="mono">steam-planner</span>
+    (branch <span class="mono">main</span>). Os diagramas PlantUML podem ser colados em
+    <span class="mono">plantuml.com/plantuml</span>, na extensão PlantUML do VS Code, ou em qualquer
+    renderizador compatível para gerar a figura final em PNG/SVG para o texto.
+  </footer>
+</main>
