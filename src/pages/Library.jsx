@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { LIBRARY } from "../data/library.js";
 import { useProjects } from "../hooks/useProjects.js";
 import { trackEvent } from "../lib/analytics.js";
+import { fetchRecommendations } from "../lib/ml/mlClient.js";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import Modal from "../components/ui/Modal.jsx";
@@ -211,9 +212,32 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [creationError, setCreationError] = useState("");
+  const [recommended, setRecommended] = useState([]);
 
   // Hook que cria projetos
   const { addProjectFromTemplate } = useProjects(currentUser?.id);
+
+  // Recomendações do modelo de ML (regressão logística treinada na
+  // Edge Function). Silencioso: se não houver modelo/consentimento,
+  // a seção simplesmente não aparece.
+  useEffect(() => {
+    let active = true;
+    if (!currentUser?.id) return undefined;
+    fetchRecommendations(currentUser.id, {}, 6).then((recs) => {
+      if (!active || !Array.isArray(recs)) return;
+      const mapped = recs
+        .map((rec) => ({
+          template: LIBRARY.find((item) => item.id === rec.id),
+          reason: rec.reason,
+          score: rec.score
+        }))
+        .filter((entry) => entry.template);
+      setRecommended(mapped);
+    });
+    return () => {
+      active = false;
+    };
+  }, [currentUser?.id]);
 
   // Cria projeto a partir do template e abre no ActivityViewer
   const handleUseTemplate = async (template) => {
@@ -689,6 +713,80 @@ export default function Library({ currentUser, onBack, onOpenProject, onOpenActi
           Filtre por disciplina, área STEAM ou série para encontrar o projeto ideal.
         </p>
       </div>
+
+      {/* Recomendados por ML (regressão logística treinada) */}
+      {recommended.length > 0 && (
+        <div style={{ marginBottom: "2rem" }}>
+          <h2 style={{ ...submenuTitleStyle, marginBottom: "0.35rem" }}>
+            Recomendados para você
+          </h2>
+          <p style={{ ...submenuTextStyle, marginBottom: "1rem" }}>
+            Ordenados por um modelo de recomendação treinado com o uso da plataforma.
+          </p>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gap: "1rem"
+            }}
+          >
+            {recommended.map(({ template, reason, score }) => (
+              <div
+                key={template.id}
+                style={{
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "12px",
+                  padding: "1rem",
+                  background: "rgba(255,255,255,0.03)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.5rem"
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem" }}>
+                  <strong style={{ color: "#FFFFFF", fontSize: "0.95rem", lineHeight: 1.3 }}>
+                    {template.title}
+                  </strong>
+                  <span
+                    style={{
+                      color: "#3FD64C",
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                      whiteSpace: "nowrap"
+                    }}
+                    title="Probabilidade estimada de adoção"
+                  >
+                    {Math.round(score * 100)}%
+                  </span>
+                </div>
+                <span style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.8rem" }}>
+                  {template.grade} · {template.theme}
+                </span>
+                <span style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.8rem", lineHeight: 1.45 }}>
+                  {reason}
+                </span>
+                <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.35rem" }}>
+                  <button
+                    type="button"
+                    style={{ ...backButtonStyle, color: "#8AB4FF", padding: "0.35rem 0" }}
+                    onClick={() => setSelectedTemplate(template)}
+                  >
+                    Ver detalhes
+                  </button>
+                  <button
+                    type="button"
+                    style={{ ...backButtonStyle, color: "#3FD64C", padding: "0.35rem 0" }}
+                    onClick={() => handleUseTemplate(template)}
+                    disabled={isCreatingProject}
+                  >
+                    Usar este projeto
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Submenu por disciplina */}
       <div style={submenuHeaderStyle}>

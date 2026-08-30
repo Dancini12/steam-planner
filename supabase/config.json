@@ -19,6 +19,9 @@
     },
     "feedback": {
       "verify_jwt": true
+    },
+    "ml-trainer": {
+      "verify_jwt": false
     }
   }
 }
