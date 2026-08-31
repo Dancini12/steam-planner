@@ -169,14 +169,21 @@ async function persistModels(result: Record<string, any>) {
   return insertedIds;
 }
 
+// Limites conservadores: o Edge Runtime tem pouca memória/CPU, e
+// project_data (jsonb) pode ser grande. Pegamos só o mais recente.
+const MAX_PROJECTS = 400;
+const MAX_EVENTS = 3000;
+
 async function loadTrainingData(body: Record<string, any>) {
   const [projects, mlEvents, usageEvents] = await Promise.all([
-    rest("projects?select=id,owner_id,project_data&limit=5000").catch(() => []),
     rest(
-      "ml_behavior_events?select=user_id,event_type,metadata,created_at&order=created_at.desc&limit=8000"
+      `projects?select=id,owner_id,project_data&order=updated_at.desc&limit=${MAX_PROJECTS}`
     ).catch(() => []),
     rest(
-      "app_usage_events?select=user_id,event_type,metadata,created_at&order=created_at.desc&limit=8000"
+      `ml_behavior_events?select=user_id,event_type,metadata,created_at&order=created_at.desc&limit=${MAX_EVENTS}`
+    ).catch(() => []),
+    rest(
+      `app_usage_events?select=user_id,event_type,metadata,created_at&order=created_at.desc&limit=${MAX_EVENTS}`
     ).catch(() => [])
   ]);
   return {

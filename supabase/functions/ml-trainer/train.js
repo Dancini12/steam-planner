@@ -82,14 +82,14 @@ function evaluate(model, standardizer, X, y, groups, testIdx) {
   };
 }
 
-// Diagnóstico sem persistir nada: quanto dado existe e quantos
-// pares/positivos sairiam. Serve pro painel admin explicar por que
-// o treino roda ou não.
-export function diagnoseTrainingData({ library = [], projects = [], events = [], seed = 42 }) {
-  const catalog = buildCatalog(library, projects);
-  const corpus = catalog.map(itemToSearchText).filter(Boolean);
-  const tfidfModel = fitTfidf(corpus, { minDf: 2, maxFeatures: 800 });
+const NEG_RATIO = 3;
+const TFIDF_OPTS = { minDf: 2, maxFeatures: 400 };
 
+// Diagnóstico barato: só contagens, sem construir a matriz de
+// atributos (evita estourar CPU/memória do Edge Runtime).
+export function diagnoseTrainingData({ library = [], projects = [], events = [] }) {
+  const catalog = buildCatalog(library, projects);
+  const catalogIds = new Set(catalog.map((it) => it.id));
   const catalogById = new Map(catalog.map((it) => [it.id, it]));
   const profiles = buildTeacherProfiles(events, projects, catalogById);
 
@@ -99,23 +99,27 @@ export function diagnoseTrainingData({ library = [], projects = [], events = [],
   }
 
   let teachersWithPositives = 0;
-  for (const p of profiles.values()) if (p.adoptedIds.size > 0) teachersWithPositives += 1;
-
-  const { X, y } = assembleSamples({ profiles, catalog, tfidfModel, negRatio: 3, seed });
-  const nPositives = y.filter((v) => v === 1).length;
+  let nPositives = 0;
+  for (const p of profiles.values()) {
+    let pos = 0;
+    for (const id of p.adoptedIds) if (catalogIds.has(id)) pos += 1;
+    if (pos > 0) {
+      teachersWithPositives += 1;
+      nPositives += pos;
+    }
+  }
+  const nSamples = nPositives * (1 + NEG_RATIO); // estimativa
 
   return {
     projects: projects.length,
     events: events.length,
     eventBreakdown,
     catalogItems: catalog.length,
-    corpusDocs: corpus.length,
-    vocabSize: tfidfModel.size,
     teachers: profiles.size,
     teachersWithPositives,
-    nSamples: X.length,
     nPositives,
-    canTrain: X.length >= 8 && nPositives >= 2 && nPositives !== X.length
+    nSamples,
+    canTrain: nSamples >= 8 && nPositives >= 2
   };
 }
 
@@ -123,7 +127,7 @@ export function trainRecommender({ library = [], projects = [], events = [], see
   // 1. TF-IDF sobre o corpus
   const catalog = buildCatalog(library, projects);
   const corpus = catalog.map(itemToSearchText).filter(Boolean);
-  const tfidfModel = fitTfidf(corpus, { minDf: 2, maxFeatures: 800 });
+  const tfidfModel = fitTfidf(corpus, TFIDF_OPTS);
 
   // 2. perfis + pares rotulados
   const catalogById = new Map(catalog.map((it) => [it.id, it]));
@@ -132,7 +136,7 @@ export function trainRecommender({ library = [], projects = [], events = [], see
     profiles,
     catalog,
     tfidfModel,
-    negRatio: 3,
+    negRatio: NEG_RATIO,
     seed
   });
 
