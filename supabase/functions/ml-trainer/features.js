@@ -16,7 +16,7 @@
 //   6 profile_strength   ln(1 + nº de itens já adotados)
 // ============================================================
 
-import { cosine } from "../_shared/ml/linalg.js";
+import { cosine, normalizeL2 } from "../_shared/ml/linalg.js";
 import { transformTfidf } from "../_shared/ml/tfidf.js";
 import { makeRng, shuffled } from "../_shared/ml/random.js";
 
@@ -66,7 +66,9 @@ export function listText(value) {
   return String(value);
 }
 
-// Espelha projectToSearchText de src/lib/machine-learning/similarity/projectSimilarity.js
+// Texto representativo do item para o TF-IDF. Campos curtos e de
+// alto sinal — evita `activityManual`/`stages` (texto longo) que
+// inflava o custo de tokenização no Edge Runtime.
 export function itemToSearchText(item = {}) {
   return [
     item.title,
@@ -79,12 +81,11 @@ export function itemToSearchText(item = {}) {
     listText(item.bncc),
     listText(item.materials),
     listText(item.steam),
-    listText(item.steamMatrix),
-    listText(item.activityManual),
     listText(item.summary)
   ]
     .filter(Boolean)
-    .join(" ");
+    .join(" ")
+    .slice(0, 4000);
 }
 
 export function gradeYears(grade = "") {
@@ -214,24 +215,42 @@ function popularityMap(profiles, catalog) {
   return { counts, max };
 }
 
-// Vetor de atributos de um par (perfil, item). `excludeId` remove
-// o próprio item do texto de perfil para reduzir vazamento.
-export function pairFeatures({ profile, item, tfidfModel, popularity, catalogById, excludeId }) {
-  const adopted = [...profile.adoptedIds].filter((id) => id !== excludeId);
-  const profileText = adopted
-    .map((id) => itemToSearchText(catalogById.get(id) || {}))
-    .join(" ");
+// Pré-computa o vetor TF-IDF de cada item do catálogo UMA vez —
+// evita re-tokenizar textões a cada par (era o que estourava o
+// Edge Runtime).
+export function buildItemVectors(catalog, tfidfModel) {
+  const map = new Map();
+  for (const item of catalog) {
+    map.set(item.id, transformTfidf(tfidfModel, itemToSearchText(item)));
+  }
+  return map;
+}
 
-  const cos = profileText
-    ? cosine(transformTfidf(tfidfModel, profileText), transformTfidf(tfidfModel, itemToSearchText(item)))
-    : 0;
+// Vetor do perfil = média (L2-normalizada) dos vetores dos itens
+// já adotados. Sem re-tokenização.
+export function profileVector(adoptedIds, itemVecById, dim) {
+  const acc = new Array(dim).fill(0);
+  let n = 0;
+  for (const id of adoptedIds) {
+    const v = itemVecById.get(id);
+    if (!v) continue;
+    for (let i = 0; i < dim; i += 1) acc[i] += v[i];
+    n += 1;
+  }
+  if (n === 0) return acc;
+  for (let i = 0; i < dim; i += 1) acc[i] /= n;
+  return normalizeL2(acc);
+}
 
+// Vetor de atributos de um par (perfil, item), usando vetores já
+// prontos.
+export function pairFeatures({ profile, profileVec, item, itemVec, popularity }) {
+  const cos = profileVec && itemVec && profileVec.length ? cosine(profileVec, itemVec) : 0;
   const itemYears = [...gradeYears(item.grade)];
-  const gradeMatch = itemYears.some((y) => profile.grades.has(y)) ? 1 : 0;
+  const gradeMatch = itemYears.some((yr) => profile.grades.has(yr)) ? 1 : 0;
   const disciplineMatch = profile.disciplines.has(disciplineOf(item)) ? 1 : 0;
-
   const pop = (popularity.counts.get(item.id) || 0) / popularity.max;
-  const strength = Math.log1p(adopted.length);
+  const strength = Math.log1p(profile.adoptedIds.size);
 
   return [
     cos,
@@ -244,9 +263,13 @@ export function pairFeatures({ profile, item, tfidfModel, popularity, catalogByI
   ];
 }
 
+const MAX_POSITIVES_PER_TEACHER = 60;
+
 // Monta X, y e grupos (userId por linha) para treino/avaliação.
 export function assembleSamples({ profiles, catalog, tfidfModel, negRatio = 3, seed = 42 }) {
   const catalogById = new Map(catalog.map((it) => [it.id, it]));
+  const itemVecById = buildItemVectors(catalog, tfidfModel);
+  const dim = tfidfModel.size;
   const popularity = popularityMap(profiles, catalog);
   const rng = makeRng(seed);
 
@@ -255,23 +278,41 @@ export function assembleSamples({ profiles, catalog, tfidfModel, negRatio = 3, s
   const groups = [];
 
   for (const profile of profiles.values()) {
-    const positives = [...profile.adoptedIds];
+    let positives = [...profile.adoptedIds].filter((id) => catalogById.has(id));
     if (!positives.length) continue;
+    if (positives.length > MAX_POSITIVES_PER_TEACHER) {
+      positives = shuffled(positives, rng).slice(0, MAX_POSITIVES_PER_TEACHER);
+    }
 
+    const pVec = profileVector(profile.adoptedIds, itemVecById, dim);
     const negativePool = shuffled(
       catalog.filter((it) => !profile.adoptedIds.has(it.id)),
       rng
     ).slice(0, Math.max(negRatio * positives.length, negRatio));
 
     for (const id of positives) {
-      const item = catalogById.get(id);
-      if (!item) continue;
-      X.push(pairFeatures({ profile, item, tfidfModel, popularity, catalogById, excludeId: id }));
+      X.push(
+        pairFeatures({
+          profile,
+          profileVec: pVec,
+          item: catalogById.get(id),
+          itemVec: itemVecById.get(id),
+          popularity
+        })
+      );
       y.push(1);
       groups.push(profile.userId);
     }
     for (const item of negativePool) {
-      X.push(pairFeatures({ profile, item, tfidfModel, popularity, catalogById, excludeId: null }));
+      X.push(
+        pairFeatures({
+          profile,
+          profileVec: pVec,
+          item,
+          itemVec: itemVecById.get(item.id),
+          popularity
+        })
+      );
       y.push(0);
       groups.push(profile.userId);
     }

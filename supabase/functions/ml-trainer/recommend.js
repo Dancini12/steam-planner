@@ -13,10 +13,15 @@ import { predictProbaLogReg } from "../_shared/ml/logreg.js";
 import {
   buildCatalog,
   buildTeacherProfiles,
+  buildItemVectors,
+  profileVector,
   pairFeatures,
+  itemToSearchText,
   gradeYears,
   disciplineOf
 } from "./features.js";
+import { transformTfidf } from "../_shared/ml/tfidf.js";
+import { normalizeL2 } from "../_shared/ml/linalg.js";
 
 function reasonFor(features, item) {
   const [cos, steam, bncc, grade, discipline] = features;
@@ -56,6 +61,8 @@ export function recommendForTeacher({
   const catalog = buildCatalog(library, projects);
   const catalogById = new Map(catalog.map((it) => [it.id, it]));
   const profiles = buildTeacherProfiles(events, projects, catalogById);
+  const itemVecById = buildItemVectors(catalog, tfidfModel);
+  const dim = tfidfModel.size;
 
   const profile = profiles.get(userId) || {
     userId,
@@ -76,17 +83,22 @@ export function recommendForTeacher({
     profile.disciplines.add(String(context.discipline).toLowerCase().trim());
   }
 
+  // Vetor do perfil: média dos itens adotados; no cold start usa o
+  // texto do contexto atual.
+  let pVec = profileVector(profile.adoptedIds, itemVecById, dim);
+  if (!pVec.some((v) => v !== 0)) {
+    const ctxText = [context.theme, context.discipline, (context.bncc || []).join(" ")]
+      .filter(Boolean)
+      .join(" ");
+    if (ctxText) pVec = normalizeL2(transformTfidf(tfidfModel, ctxText));
+  }
+
   const scored = library
     .filter((item) => item && item.id && !profile.adoptedIds.has(item.id))
     .map((item) => {
-      const features = pairFeatures({
-        profile,
-        item,
-        tfidfModel,
-        popularity,
-        catalogById,
-        excludeId: null
-      });
+      const itemVec =
+        itemVecById.get(item.id) || transformTfidf(tfidfModel, itemToSearchText(item));
+      const features = pairFeatures({ profile, profileVec: pVec, item, itemVec, popularity });
       const score = predictProbaLogReg(model, applyStandardizer(features, standardizer));
       return { item, score: Number(score.toFixed(4)), reason: reasonFor(features, item) };
     })
