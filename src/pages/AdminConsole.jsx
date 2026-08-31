@@ -17,7 +17,12 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient.js";
 import { useIsAdmin } from "../hooks/useIsAdmin.js";
 import { getAdminMetrics, saveAdminMetricSnapshot } from "../lib/analytics.js";
-import { trainModels, fetchModelStatus, fetchAuthDebug } from "../lib/ml/mlClient.js";
+import {
+  trainModels,
+  fetchModelStatus,
+  fetchAuthDebug,
+  fetchTrainingDiag
+} from "../lib/ml/mlClient.js";
 import MlModelPanel from "../components/admin/MlModelPanel.jsx";
 
 const FUNCTION_URL =
@@ -351,11 +356,14 @@ export default function AdminConsole({ currentUser, onBack }) {
   const [mlTraining, setMlTraining] = useState(false);
   const [mlError, setMlError] = useState("");
   const [authDebug, setAuthDebug] = useState(null);
+  const [diag, setDiag] = useState(null);
 
   const loadMl = useCallback(async () => {
     const [status, debug] = await Promise.all([fetchModelStatus(), fetchAuthDebug()]);
     setMlStatus(status);
     setAuthDebug(debug);
+    const d = await fetchTrainingDiag();
+    setDiag(d?.diag || d);
   }, []);
 
   useEffect(() => {
@@ -431,6 +439,35 @@ export default function AdminConsole({ currentUser, onBack }) {
             error={mlError}
             onTrain={handleTrain}
           />
+
+          {diag && diag.nSamples != null && (
+            <div style={{ marginTop: "1rem", fontSize: "0.82rem", color: "#94a3b8" }}>
+              <div style={{ color: diag.canTrain ? "#39FF88" : "#fbbf24", fontWeight: 600, marginBottom: "0.35rem" }}>
+                {diag.canTrain
+                  ? "Dados suficientes para treinar."
+                  : "Ainda sem dados suficientes (precisa de ≥ 8 pares e ≥ 2 positivos)."}
+              </div>
+              <div>
+                projetos: {diag.projects} · eventos: {diag.events} · professores com adoção:{" "}
+                {diag.teachersWithPositives}/{diag.teachers} · pares: {diag.nSamples} · positivos:{" "}
+                {diag.nPositives} · vocabulário: {diag.vocabSize}
+              </div>
+              {diag.eventBreakdown && Object.keys(diag.eventBreakdown).length > 0 && (
+                <div style={{ marginTop: "0.3rem" }}>
+                  eventos por tipo:{" "}
+                  {Object.entries(diag.eventBreakdown)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([k, v]) => `${k}=${v}`)
+                    .join(" · ")}
+                </div>
+              )}
+            </div>
+          )}
+          {diag && diag.error && (
+            <div style={{ marginTop: "0.6rem", fontSize: "0.82rem", color: "#fca5a5" }}>
+              diagnóstico indisponível: {diag.error}
+            </div>
+          )}
         </div>
 
         <AdminManager currentEmail={currentUser?.email} />

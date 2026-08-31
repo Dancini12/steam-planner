@@ -30,15 +30,18 @@ export const FEATURE_NAMES = [
   "profile_strength"
 ];
 
+// Eventos que indicam "o professor adotou / valorizou" um item.
+// Os nomes batem com os usados em src/lib/analytics.js (trackEvent)
+// e src/lib/machine-learning/.../behaviorTracker.js.
 export const POSITIVE_EVENTS = new Set([
   "activity_generated",
-  "template_used",
+  "classroom_activity_generated",
+  "library_model_used",
   "report_exported",
   "activity_printed",
   "project_created",
   "activity_rated",
-  "project_learned",
-  "library_project_opened"
+  "project_learned"
 ]);
 
 const BNCC_DISCIPLINE = {

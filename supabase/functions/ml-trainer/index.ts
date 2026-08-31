@@ -16,7 +16,7 @@
 // ============================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { trainRecommender } from "./train.js";
+import { trainRecommender, diagnoseTrainingData } from "./train.js";
 import { recommendForTeacher } from "./recommend.js";
 
 const corsHeaders = {
@@ -169,10 +169,40 @@ async function persistModels(result: Record<string, any>) {
   return insertedIds;
 }
 
-async function handleTrain(body: Record<string, any>, token: string) {
-  const check = token === SERVICE_KEY
+async function loadTrainingData(body: Record<string, any>) {
+  const [projects, mlEvents, usageEvents] = await Promise.all([
+    rest("projects?select=id,owner_id,project_data&limit=5000").catch(() => []),
+    rest(
+      "ml_behavior_events?select=user_id,event_type,metadata,created_at&order=created_at.desc&limit=8000"
+    ).catch(() => []),
+    rest(
+      "app_usage_events?select=user_id,event_type,metadata,created_at&order=created_at.desc&limit=8000"
+    ).catch(() => [])
+  ]);
+  return {
+    projects: projects || [],
+    events: [...(mlEvents || []), ...(usageEvents || [])],
+    library: Array.isArray(body.library) ? body.library : []
+  };
+}
+
+function authGuard(token: string) {
+  return token === SERVICE_KEY
     ? { email: "service_role", isAdmin: true, via: "service_key" }
-    : await adminCheck(token);
+    : null;
+}
+
+async function handleDiag(body: Record<string, any>, token: string) {
+  const check = authGuard(token) || (await adminCheck(token));
+  if (!check.isAdmin) {
+    return jsonResponse({ error: "Acesso restrito.", detail: check }, 403);
+  }
+  const { projects, events, library } = await loadTrainingData(body);
+  return jsonResponse({ ok: true, diag: diagnoseTrainingData({ library, projects, events }) });
+}
+
+async function handleTrain(body: Record<string, any>, token: string) {
+  const check = authGuard(token) || (await adminCheck(token));
   if (!check.isAdmin) {
     return jsonResponse(
       {
@@ -185,20 +215,9 @@ async function handleTrain(body: Record<string, any>, token: string) {
     );
   }
 
-  const [projects, mlEvents, usageEvents] = await Promise.all([
-    rest("projects?select=id,owner_id,project_data&limit=5000"),
-    rest(
-      "ml_behavior_events?select=user_id,event_type,metadata,created_at&order=created_at.desc&limit=8000"
-    ).catch(() => []),
-    rest(
-      "app_usage_events?select=user_id,event_type,metadata,created_at&order=created_at.desc&limit=8000"
-    ).catch(() => [])
-  ]);
+  const { projects, events, library } = await loadTrainingData(body);
 
-  const events = [...(mlEvents || []), ...(usageEvents || [])];
-  const library = Array.isArray(body.library) ? body.library : [];
-
-  const result = trainRecommender({ library, projects: projects || [], events });
+  const result = trainRecommender({ library, projects, events });
 
   if (!result.ok) {
     return jsonResponse({
@@ -303,6 +322,7 @@ serve(async (req) => {
         ...check
       });
     }
+    if (action === "diag") return await handleDiag(body, token);
     if (action === "train") return await handleTrain(body, token);
     if (action === "recommend") return await handleRecommend(body, token);
     if (action === "status") return await handleStatus();

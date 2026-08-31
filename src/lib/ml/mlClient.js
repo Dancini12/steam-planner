@@ -82,6 +82,15 @@ export async function fetchAuthDebug() {
   }
 }
 
+// Diagnóstico: volume de dados e se dá para treinar.
+export async function fetchTrainingDiag() {
+  try {
+    return await invoke({ action: "diag", library: slimLibrary() });
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
+
 // Estado dos modelos ativos + última avaliação (para o painel admin).
 export async function fetchModelStatus() {
   try {

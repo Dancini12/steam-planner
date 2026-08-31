@@ -82,6 +82,43 @@ function evaluate(model, standardizer, X, y, groups, testIdx) {
   };
 }
 
+// Diagnóstico sem persistir nada: quanto dado existe e quantos
+// pares/positivos sairiam. Serve pro painel admin explicar por que
+// o treino roda ou não.
+export function diagnoseTrainingData({ library = [], projects = [], events = [], seed = 42 }) {
+  const catalog = buildCatalog(library, projects);
+  const corpus = catalog.map(itemToSearchText).filter(Boolean);
+  const tfidfModel = fitTfidf(corpus, { minDf: 2, maxFeatures: 800 });
+
+  const catalogById = new Map(catalog.map((it) => [it.id, it]));
+  const profiles = buildTeacherProfiles(events, projects, catalogById);
+
+  const eventBreakdown = {};
+  for (const e of events) {
+    eventBreakdown[e.event_type] = (eventBreakdown[e.event_type] || 0) + 1;
+  }
+
+  let teachersWithPositives = 0;
+  for (const p of profiles.values()) if (p.adoptedIds.size > 0) teachersWithPositives += 1;
+
+  const { X, y } = assembleSamples({ profiles, catalog, tfidfModel, negRatio: 3, seed });
+  const nPositives = y.filter((v) => v === 1).length;
+
+  return {
+    projects: projects.length,
+    events: events.length,
+    eventBreakdown,
+    catalogItems: catalog.length,
+    corpusDocs: corpus.length,
+    vocabSize: tfidfModel.size,
+    teachers: profiles.size,
+    teachersWithPositives,
+    nSamples: X.length,
+    nPositives,
+    canTrain: X.length >= 8 && nPositives >= 2 && nPositives !== X.length
+  };
+}
+
 export function trainRecommender({ library = [], projects = [], events = [], seed = 42 }) {
   // 1. TF-IDF sobre o corpus
   const catalog = buildCatalog(library, projects);
