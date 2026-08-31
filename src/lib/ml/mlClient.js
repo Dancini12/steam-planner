@@ -13,6 +13,10 @@ import { supabase } from "../supabaseClient.js";
 import { LIBRARY } from "../../data/library.js";
 import { canUsePreferences } from "../cookieConsent.js";
 
+const FUNCTION_URL =
+  (import.meta.env.VITE_SUPABASE_URL || "").replace(/\/$/, "") + "/functions/v1/ml-trainer";
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
 function slimLibrary() {
   // Envia só o necessário para os atributos do modelo (evita
   // trafegar bibliografia, fases completas etc.).
@@ -32,40 +36,47 @@ function slimLibrary() {
   }));
 }
 
+// Chamada direta (fetch) à Edge Function — controle total do
+// header Authorization (o token da sessão, não a chave anônima) e
+// da mensagem de erro real vinda do corpo da resposta.
 async function invoke(body) {
-  if (!supabase) throw new Error("Supabase indisponível");
+  if (!FUNCTION_URL || !ANON_KEY) throw new Error("Supabase não configurado no cliente");
 
-  // Anexa explicitamente o token da sessão — em alguns cenários o
-  // functions.invoke acaba mandando só a chave anônima, e aí a
-  // função não identifica o usuário (train exige admin).
-  let headers;
+  let accessToken = "";
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.access_token) {
-      headers = { Authorization: `Bearer ${session.access_token}` };
-    }
+    const { data } = await supabase.auth.getSession();
+    accessToken = data?.session?.access_token || "";
   } catch {
-    /* segue sem header extra */
+    /* sem sessão */
   }
 
-  const { data, error } = await supabase.functions.invoke("ml-trainer", {
-    body,
-    ...(headers ? { headers } : {})
+  const res = await fetch(FUNCTION_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: ANON_KEY,
+      Authorization: `Bearer ${accessToken || ANON_KEY}`
+    },
+    body: JSON.stringify(body)
   });
-  if (!error) return data;
 
-  // A Edge Function devolve o motivo real no corpo mesmo em erro HTTP;
-  // extrai para não mostrar só "non-2xx status code".
-  let detail = "";
+  const text = await res.text();
+  let payload = null;
   try {
-    const parsed = await error.context?.json?.();
-    detail = parsed?.error || parsed?.reason || "";
+    payload = text ? JSON.parse(text) : null;
   } catch {
-    /* ignore */
+    payload = { raw: text };
   }
-  const err = new Error(detail || error.message || "Falha na função ml-trainer");
-  err.raw = error;
-  throw err;
+
+  if (!res.ok) {
+    const msg = payload?.error || payload?.reason || `HTTP ${res.status}`;
+    const err = new Error(msg);
+    err.status = res.status;
+    err.payload = payload;
+    throw err;
+  }
+
+  return payload;
 }
 
 // Admin: dispara o treino com os dados de todos os usuários.
