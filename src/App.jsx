@@ -24,6 +24,7 @@ import BNCC from "./pages/BNCC.jsx";
 import Library from "./pages/Library.jsx";
 import RealWorldNews from "./pages/RealWorldNews.jsx";
 import MyProjects from "./pages/MyProjects.jsx";
+import AdminConsole from "./pages/AdminConsole.jsx";
 import ProjectEditor from "./pages/ProjectEditor.jsx";
 import PhaseEditor from "./pages/PhaseEditor.jsx";
 import BibliographyEditor from "./pages/BibliographyEditor.jsx";
@@ -50,15 +51,24 @@ const SCREENS = {
   PROJECT_EDITOR: "project_editor",
   PHASE_EDITOR: "phase_editor",
   BIBLIOGRAPHY_EDITOR: "bibliography_editor",
-  SETTINGS: "settings"
+  SETTINGS: "settings",
+  ADMIN: "admin"
 };
+
+// Reconhece o link direto do console administrativo (<app>/#admin).
+function isAdminHash() {
+  if (typeof window === "undefined") return false;
+  return /^#\/?admin\/?$/i.test(window.location.hash || "");
+}
 
 // ------------------------------------------------------------
 // COMPONENTE APP
 // ------------------------------------------------------------
 export default function App() {
   // Estado de navegação: qual tela está visível
-  const [currentScreen, setCurrentScreen] = useState(SCREENS.DASHBOARD);
+  const [currentScreen, setCurrentScreen] = useState(
+    isAdminHash() ? SCREENS.ADMIN : SCREENS.DASHBOARD
+  );
 
   // Quando navega para ProjectEditor ou PhaseEditor, precisamos
   // saber qual projeto e qual fase estão sendo editados
@@ -88,6 +98,19 @@ export default function App() {
     // Suaviza o scroll
     document.documentElement.style.scrollBehavior = "smooth";
   }, []);
+
+  // Link direto do console administrativo: reage a mudanças no hash.
+  useEffect(() => {
+    const onHashChange = () => {
+      if (isAdminHash()) {
+        setCurrentScreen(SCREENS.ADMIN);
+      } else if (currentScreen === SCREENS.ADMIN) {
+        setCurrentScreen(SCREENS.DASHBOARD);
+      }
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, [currentScreen]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -184,6 +207,21 @@ export default function App() {
     setCurrentScreen(SCREENS.MY_PROJECTS);
   };
 
+  // Abre / fecha o console administrativo, mantendo o hash em sincronia
+  const goToAdmin = () => {
+    if (typeof window !== "undefined" && window.location.hash.toLowerCase() !== "#admin") {
+      window.location.hash = "admin";
+    }
+    setCurrentScreen(SCREENS.ADMIN);
+  };
+
+  const leaveAdmin = () => {
+    if (typeof window !== "undefined" && isAdminHash()) {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+    goToDashboard();
+  };
+
   // Abre a central de noticias atuais para inspiracao pedagogica
   const goToRealWorldNews = () => {
     setCurrentScreen(SCREENS.REAL_WORLD_NEWS);
@@ -274,9 +312,14 @@ export default function App() {
           onOpenLibrary={goToLibrary}
           onOpenBNCC={goToBNCC}
           onOpenActivityViewer={goToActivityViewer}
+          onOpenAdmin={goToAdmin}
           autoOpenModal={autoOpenModal}
           onAutoOpenModalHandled={() => setAutoOpenModal(false)}
         />
+      )}
+
+      {currentScreen === SCREENS.ADMIN && (
+        <AdminConsole currentUser={currentUser} onBack={leaveAdmin} />
       )}
 
       {currentScreen === SCREENS.BNCC && (

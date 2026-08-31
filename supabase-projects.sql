@@ -462,3 +462,46 @@ grant select on public.ml_models to authenticated;
 grant select on public.ml_model_evaluations to authenticated;
 grant all on public.ml_models to service_role;
 grant all on public.ml_model_evaluations to service_role;
+
+-- ============================================================
+-- Console administrativo (<app>/#admin)
+-- Ver tambem: supabase/migrations/011_admin_console.sql e
+--             supabase/migrations/012_fix_admin_recursion.sql
+-- Primeiro admin + gestao de admins (sem recursao de RLS).
+-- ============================================================
+
+insert into public.app_admins (email)
+values ('marceldancini@gmail.com')
+on conflict (email) do nothing;
+
+create or replace function public.is_app_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.app_admins a
+    where lower(a.email) = lower(auth.jwt() ->> 'email')
+  );
+$$;
+
+grant execute on function public.is_app_admin() to authenticated;
+
+drop policy if exists "Administradores gerenciam administradores" on public.app_admins;
+
+drop policy if exists "Administradores inserem administradores" on public.app_admins;
+create policy "Administradores inserem administradores"
+on public.app_admins for insert with check (public.is_app_admin());
+
+drop policy if exists "Administradores atualizam administradores" on public.app_admins;
+create policy "Administradores atualizam administradores"
+on public.app_admins for update
+using (public.is_app_admin()) with check (public.is_app_admin());
+
+drop policy if exists "Administradores removem administradores" on public.app_admins;
+create policy "Administradores removem administradores"
+on public.app_admins for delete using (public.is_app_admin());
+
+grant select, insert, update, delete on public.app_admins to authenticated;

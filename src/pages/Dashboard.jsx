@@ -6,7 +6,6 @@ import { trackEvent } from "../lib/analytics.js";
 import Modal from "../components/ui/Modal.jsx";
 import PedagogicalPlannerModal from "../components/project/PedagogicalPlannerModal.jsx";
 import FeedbackModal from "../components/project/FeedbackModal.jsx";
-import { trainModels, fetchModelStatus } from "../lib/ml/mlClient.js";
 
 const COMPETENCY_TO_LETTER = {
   science: "S",
@@ -60,6 +59,7 @@ export default function Dashboard({
   onOpenLibrary,
   onOpenBNCC,
   onOpenActivityViewer,
+  onOpenAdmin,
   autoOpenModal,
   onAutoOpenModalHandled,
 }) {
@@ -72,10 +72,6 @@ export default function Dashboard({
   const [feedbackError, setFeedbackError] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [creationError, setCreationError] = useState("");
-  const [showMlModal, setShowMlModal] = useState(false);
-  const [mlStatus, setMlStatus] = useState(null);
-  const [mlTraining, setMlTraining] = useState(false);
-  const [mlError, setMlError] = useState("");
   const computerRef = useRef(null);
   const [themeMode, setThemeMode] = useState(
     () => localStorage.getItem("steam-dashboard-theme") || "dark"
@@ -178,38 +174,6 @@ export default function Dashboard({
       loadFeedback();
     }
   }, [isAdmin, loadFeedback, showFeedbackListModal]);
-
-  const loadMlStatus = useCallback(async () => {
-    const status = await fetchModelStatus();
-    setMlStatus(status);
-  }, []);
-
-  useEffect(() => {
-    if (isAdmin && showMlModal) {
-      loadMlStatus();
-    }
-  }, [isAdmin, showMlModal, loadMlStatus]);
-
-  const handleTrainModels = useCallback(async () => {
-    setMlTraining(true);
-    setMlError("");
-    try {
-      const result = await trainModels();
-      if (result?.ok === false) {
-        setMlError(
-          result.reason
-            ? `Treino não concluído: ${result.reason} (amostras: ${result.nSamples ?? 0}).`
-            : "Treino não concluído."
-        );
-      }
-      await loadMlStatus();
-    } catch (error) {
-      console.error("Erro ao treinar modelos:", error);
-      setMlError(error?.message || "Falha ao chamar a função de treino.");
-    } finally {
-      setMlTraining(false);
-    }
-  }, [loadMlStatus]);
 
   useEffect(() => {
     if (!isLoaded) return undefined;
@@ -426,20 +390,11 @@ export default function Dashboard({
           />
           {isAdmin && (
             <DashboardCard
-              title="FEEDBACKS RECEBIDOS"
-              icon="feedback"
-              text="Veja os feedbacks enviados pelos usuários"
-              color="#F97316"
-              onClick={() => setShowFeedbackListModal(true)}
-            />
-          )}
-          {isAdmin && (
-            <DashboardCard
-              title="MODELOS DE IA"
+              title="PAINEL ADMIN"
               icon="document"
-              text="Treine o recomendador e veja as métricas de avaliação"
+              text="Modelos de IA, administradores, feedbacks e indicadores"
               color="#22D3EE"
-              onClick={() => setShowMlModal(true)}
+              onClick={onOpenAdmin}
             />
           )}
           <DashboardCard
@@ -520,132 +475,6 @@ export default function Dashboard({
         onSubmitted={isAdmin ? loadFeedback : undefined}
       />
 
-      <Modal
-        isOpen={showMlModal}
-        onClose={() => setShowMlModal(false)}
-        title="Modelos de IA — recomendador"
-        maxWidth="720px"
-      >
-        <MlModelPanel
-          status={mlStatus}
-          training={mlTraining}
-          error={mlError}
-          onTrain={handleTrainModels}
-        />
-      </Modal>
-
-    </div>
-  );
-}
-
-function MetricRow({ label, value }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        padding: "0.4rem 0",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        fontSize: "0.9rem"
-      }}
-    >
-      <span style={{ color: "#94a3b8" }}>{label}</span>
-      <strong style={{ color: "#f8fafc" }}>{value}</strong>
-    </div>
-  );
-}
-
-function MlModelPanel({ status, training, error, onTrain }) {
-  const evaluation = status?.evaluation?.metrics || null;
-  const test = evaluation?.test || null;
-  const pct = (v) => (typeof v === "number" ? `${(v * 100).toFixed(1)}%` : "—");
-
-  return (
-    <div>
-      <p style={{ color: "#cbd5e1", lineHeight: 1.6, marginTop: 0 }}>
-        Treina, com os dados de uso de todos os professores, um TF-IDF ajustado ao
-        corpus e uma <strong>regressão logística</strong> (gradiente descendente,
-        do zero) que aprende o peso de cada sinal da recomendação. O treino separa
-        80% para ajuste e 20% para avaliação.
-      </p>
-
-      <button
-        type="button"
-        className="feedback-refresh"
-        onClick={onTrain}
-        disabled={training}
-        style={{ marginBottom: "1rem" }}
-      >
-        {training ? "Treinando..." : "Treinar agora"}
-      </button>
-
-      {error && <div className="retro-error" style={{ margin: "0 0 1rem" }}>{error}</div>}
-
-      {!status && <p style={{ color: "#94a3b8" }}>Carregando estado do modelo...</p>}
-
-      {status && !status.hasModel && !training && (
-        <p style={{ color: "#94a3b8" }}>
-          Nenhum modelo ativo ainda. Clique em “Treinar agora”. Se houver poucos
-          dados de uso, o treino informa que ainda não é possível.
-        </p>
-      )}
-
-      {status?.hasModel && (
-        <div>
-          <MetricRow
-            label="Treinado em"
-            value={
-              status.logreg?.trainedAt
-                ? new Date(status.logreg.trainedAt).toLocaleString("pt-BR")
-                : "—"
-            }
-          />
-          <MetricRow label="Amostras (pares professor × projeto)" value={status.logreg?.nSamples ?? "—"} />
-          <MetricRow label="Vocabulário TF-IDF" value={status.tfidf?.vocabSize ?? "—"} />
-          {evaluation && (
-            <>
-              <MetricRow label="Professores no treino" value={evaluation.nTeachers ?? "—"} />
-              <MetricRow label="Épocas de gradiente" value={evaluation.epochs ?? "—"} />
-              <MetricRow
-                label="Perda (início → fim)"
-                value={
-                  evaluation.lossCurve?.length
-                    ? `${evaluation.lossCurve[0].toFixed(3)} → ${evaluation.lossCurve.at(-1).toFixed(3)}`
-                    : "—"
-                }
-              />
-            </>
-          )}
-          {test && (
-            <>
-              <MetricRow label="Acurácia (teste)" value={pct(test.accuracy)} />
-              <MetricRow label="Precisão / Recall (teste)" value={`${pct(test.precision)} / ${pct(test.recall)}`} />
-              <MetricRow label="F1 (teste)" value={pct(test.f1)} />
-              <MetricRow label="ROC-AUC (teste)" value={test.rocAuc ?? "—"} />
-              <MetricRow label="Log loss (teste)" value={test.logLoss ?? "—"} />
-              <MetricRow label="precision@5 / recall@5" value={`${test.precisionAtK ?? "—"} / ${test.recallAtK ?? "—"}`} />
-              <MetricRow label="MAP@5" value={test.mapAtK ?? "—"} />
-            </>
-          )}
-          {evaluation?.weightsByFeature && (
-            <div style={{ marginTop: "1rem" }}>
-              <div style={{ color: "#94a3b8", fontSize: "0.85rem", marginBottom: "0.4rem" }}>
-                Pesos aprendidos por atributo
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.3rem 1rem" }}>
-                {Object.entries(evaluation.weightsByFeature).map(([name, value]) => (
-                  <div key={name} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
-                    <span style={{ color: "#94a3b8" }}>{name}</span>
-                    <strong style={{ color: value >= 0 ? "#39FF88" : "#FB7185" }}>
-                      {value.toFixed(3)}
-                    </strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
