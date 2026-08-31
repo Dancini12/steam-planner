@@ -90,17 +90,37 @@ async function rest(path: string, init: RequestInit = {}) {
   return text ? JSON.parse(text) : null;
 }
 
-async function isAdmin(token: string) {
-  const email = jwtEmail(token);
-  if (!email) return false;
-  if (ADMIN_EMAILS.includes(email)) return true;
+// Descobre o e-mail do usuário a partir do token. Primeiro tenta ler
+// o payload do JWT; se não houver e-mail (ou o header vier diferente),
+// valida o token no Auth do Supabase e usa o e-mail de lá.
+async function resolveEmail(token: string): Promise<string> {
+  const fromJwt = jwtEmail(token);
+  if (fromJwt) return fromJwt;
+  if (!token || token === SERVICE_KEY) return "";
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return "";
+    const user = await res.json();
+    return typeof user?.email === "string" ? user.email.toLowerCase() : "";
+  } catch {
+    return "";
+  }
+}
+
+async function adminCheck(token: string) {
+  const email = await resolveEmail(token);
+  if (!email) return { email: "", isAdmin: false, via: "no_email" };
+  if (ADMIN_EMAILS.includes(email)) return { email, isAdmin: true, via: "env_default" };
   try {
     const rows = await rest(
       `app_admins?select=email&email=ilike.${encodeURIComponent(email)}&limit=1`
     );
-    return Array.isArray(rows) && rows.length > 0;
-  } catch {
-    return false;
+    const ok = Array.isArray(rows) && rows.length > 0;
+    return { email, isAdmin: ok, via: ok ? "app_admins" : "not_listed" };
+  } catch (e) {
+    return { email, isAdmin: false, via: `app_admins_error:${(e as Error).message}` };
   }
 }
 
@@ -150,8 +170,20 @@ async function persistModels(result: Record<string, any>) {
 }
 
 async function handleTrain(body: Record<string, any>, token: string) {
-  const authorized = token === SERVICE_KEY || (await isAdmin(token));
-  if (!authorized) return jsonResponse({ error: "Acesso restrito a administradores." }, 403);
+  const check = token === SERVICE_KEY
+    ? { email: "service_role", isAdmin: true, via: "service_key" }
+    : await adminCheck(token);
+  if (!check.isAdmin) {
+    return jsonResponse(
+      {
+        error: check.email
+          ? `Acesso restrito: ${check.email} não é administrador (${check.via}).`
+          : "Acesso restrito: não foi possível identificar um usuário no pedido. Faça login novamente.",
+        detail: check
+      },
+      403
+    );
+  }
 
   const [projects, mlEvents, usageEvents] = await Promise.all([
     rest("projects?select=id,owner_id,project_data&limit=5000"),
@@ -259,6 +291,18 @@ serve(async (req) => {
     const token = bearerToken(req);
     const action = body.action || "status";
 
+    if (action === "whoami") {
+      const check =
+        token === SERVICE_KEY
+          ? { email: "service_role", isAdmin: true, via: "service_key" }
+          : await adminCheck(token);
+      return jsonResponse({
+        ok: true,
+        tokenPresent: Boolean(token),
+        tokenLooksLikeAnonKey: token === Deno.env.get("SUPABASE_ANON_KEY"),
+        ...check
+      });
+    }
     if (action === "train") return await handleTrain(body, token);
     if (action === "recommend") return await handleRecommend(body, token);
     if (action === "status") return await handleStatus();

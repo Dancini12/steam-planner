@@ -34,14 +34,52 @@ function slimLibrary() {
 
 async function invoke(body) {
   if (!supabase) throw new Error("Supabase indisponível");
-  const { data, error } = await supabase.functions.invoke("ml-trainer", { body });
-  if (error) throw error;
-  return data;
+
+  // Anexa explicitamente o token da sessão — em alguns cenários o
+  // functions.invoke acaba mandando só a chave anônima, e aí a
+  // função não identifica o usuário (train exige admin).
+  let headers;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      headers = { Authorization: `Bearer ${session.access_token}` };
+    }
+  } catch {
+    /* segue sem header extra */
+  }
+
+  const { data, error } = await supabase.functions.invoke("ml-trainer", {
+    body,
+    ...(headers ? { headers } : {})
+  });
+  if (!error) return data;
+
+  // A Edge Function devolve o motivo real no corpo mesmo em erro HTTP;
+  // extrai para não mostrar só "non-2xx status code".
+  let detail = "";
+  try {
+    const parsed = await error.context?.json?.();
+    detail = parsed?.error || parsed?.reason || "";
+  } catch {
+    /* ignore */
+  }
+  const err = new Error(detail || error.message || "Falha na função ml-trainer");
+  err.raw = error;
+  throw err;
 }
 
 // Admin: dispara o treino com os dados de todos os usuários.
 export async function trainModels() {
   return invoke({ action: "train", library: slimLibrary() });
+}
+
+// Diagnóstico: o que a função enxerga da sessão do chamador.
+export async function fetchAuthDebug() {
+  try {
+    return await invoke({ action: "whoami" });
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
 }
 
 // Estado dos modelos ativos + última avaliação (para o painel admin).

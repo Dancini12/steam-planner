@@ -17,7 +17,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient.js";
 import { useIsAdmin } from "../hooks/useIsAdmin.js";
 import { getAdminMetrics, saveAdminMetricSnapshot } from "../lib/analytics.js";
-import { trainModels, fetchModelStatus } from "../lib/ml/mlClient.js";
+import { trainModels, fetchModelStatus, fetchAuthDebug } from "../lib/ml/mlClient.js";
 import MlModelPanel from "../components/admin/MlModelPanel.jsx";
 
 const FUNCTION_URL =
@@ -350,9 +350,12 @@ export default function AdminConsole({ currentUser, onBack }) {
   const [mlStatus, setMlStatus] = useState(null);
   const [mlTraining, setMlTraining] = useState(false);
   const [mlError, setMlError] = useState("");
+  const [authDebug, setAuthDebug] = useState(null);
 
   const loadMl = useCallback(async () => {
-    setMlStatus(await fetchModelStatus());
+    const [status, debug] = await Promise.all([fetchModelStatus(), fetchAuthDebug()]);
+    setMlStatus(status);
+    setAuthDebug(debug);
   }, []);
 
   useEffect(() => {
@@ -415,6 +418,13 @@ export default function AdminConsole({ currentUser, onBack }) {
 
         <div style={card}>
           <h2 style={h2}>Modelos de IA — recomendador</h2>
+          {authDebug && (
+            <p style={{ fontSize: "0.78rem", color: authDebug.isAdmin ? "#39FF88" : "#fca5a5", marginTop: 0 }}>
+              Sessão vista pela função:{" "}
+              {authDebug.email ? `${authDebug.email} · ${authDebug.via}` : "não identificada"}
+              {authDebug.tokenLooksLikeAnonKey ? " · (token anônimo — refaça o login)" : ""}
+            </p>
+          )}
           <MlModelPanel
             status={mlStatus}
             training={mlTraining}
