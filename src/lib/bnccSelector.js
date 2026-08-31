@@ -125,6 +125,57 @@ export function selectBnccHabilidades({
     }));
 }
 
+// Reavalia os códigos BNCC contra o que o aluno REALMENTE faz na
+// atividade (não contra o tema/disciplina). Um código só passa se
+// o modelo justificou a etapa (bnccJustification[codigo]) OU se a
+// descrição da habilidade tem sobreposição lexical real com as
+// ações da atividade. Mantém pelo menos as 2 primeiras.
+export function validateBnccAgainstActivity(codes = [], activity = {}) {
+  const list = normalizeBnccCodes(codes);
+  if (list.length <= 2) return list;
+
+  const justif = activity.bnccJustification || {};
+  const actionText = normalize(
+    [
+      activity.objective,
+      activity.makerChallenge,
+      activity.guidingQuestion,
+      ...(Array.isArray(activity.stages)
+        ? activity.stages.map((s) => (typeof s === "string" ? s : s?.description || ""))
+        : []),
+      ...(activity.dataPlan
+        ? [
+            ...(activity.dataPlan.collected || []),
+            ...(activity.dataPlan.calculated || []),
+            ...(activity.dataPlan.compared || [])
+          ]
+        : [])
+    ].join(" ")
+  );
+  const actionTokens = new Set(tokenize(actionText));
+
+  const scored = list.map((code) => {
+    const hab = bnccHabilidades.find((h) => h.codigo === code);
+    const hasJustification = normalize(String(justif[code] || "")).length > 3;
+    let overlap = 0;
+    if (hab) {
+      const descTokens = tokenize(
+        [hab.descricao, hab.objeto_conhecimento, ...(hab.palavras_chave || [])].join(" ")
+      );
+      overlap = descTokens.filter((t) => actionTokens.has(t)).length;
+    }
+    return { code, keep: hasJustification || overlap >= 2, score: (hasJustification ? 5 : 0) + overlap };
+  });
+
+  const kept = scored.filter((s) => s.keep).map((s) => s.code);
+  if (kept.length >= 2) return kept;
+  // fallback: mantém as 2 de maior score
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, Math.max(2, kept.length))
+    .map((s) => s.code);
+}
+
 export function formatBnccSuggestions(habilidades = []) {
   if (!habilidades.length) return "(nenhuma habilidade encontrada no banco offline)";
   return habilidades

@@ -1058,11 +1058,14 @@ function buildSequenceFigures(experience, figureStart = 1) {
 }
 
 function buildGenericIllustrativeFigure(experience, figureNumber = 1) {
-  const sourceText = getIllustrativeSourceText(experience);
-  if (!isVisualPedagogicalActivity(sourceText)) return null;
-  const type = detectGenericFigureType(sourceText);
+  // Só desenha uma figura quando o modelo pediu explicitamente uma
+  // (campo "figure" com type). Sem isso, nada de figura decorativa
+  // genérica — melhor nenhuma figura do que uma "Área/Forma" solta.
+  const requested = experience.figure;
+  if (!requested || typeof requested !== "object" || !requested.type) return null;
+  const type = detectGenericFigureType(`${requested.type} ${requested.caption || ""}`) || null;
   if (!type) return null;
-  const caption = `Figura ${figureNumber} — ${getGenericFigureCaption(type)}`;
+  const caption = `Figura ${figureNumber} — ${String(requested.caption || "").trim() || getGenericFigureCaption(type)}`;
   const svg = renderGenericPedagogicalSvg(type, caption);
   return svg && caption ? { type, caption, svg } : null;
 }
@@ -1100,37 +1103,52 @@ function getScenarioNumbersFromGabarito(gabarito) {
   );
 }
 
-function renderTestTable(readyMaterials) {
-  const items = normalizeTextItems(readyMaterials || []);
+function renderTestTable(experience) {
+  // Compat: aceita tanto o objeto experience quanto readyMaterials direto.
+  const exp = Array.isArray(experience) ? { readyMaterials: experience } : (experience || {});
+  const structured = exp.testTable;
+
+  // 1) Tabela estruturada vinda do modelo (colunas derivadas de dataPlan).
+  if (structured && typeof structured === "object" && Array.isArray(structured.columns) && structured.columns.length >= 2) {
+    const columns = structured.columns.map((c) => String(c).trim()).filter(Boolean);
+    const headers = columns.map((col) => `<th>${escapeHtml(col)}</th>`).join("");
+    const dataRows = Array.isArray(structured.rows) && structured.rows.length
+      ? structured.rows
+      : getScenarioItems(normalizeTextItems(exp.readyMaterials || [])).map((s) => [`Cenário ${s.number}`]);
+    const rows = dataRows.map((row) => {
+      const cells = columns.map((_, i) => {
+        const value = Array.isArray(row) ? row[i] : undefined;
+        return value ? `<td>${escapeHtml(String(value))}</td>` : `<td class="blank-cell"></td>`;
+      }).join("");
+      return `<tr>${cells}</tr>`;
+    }).join("");
+    return `<div class="test-table-wrapper">
+      <p class="test-table-title"><strong>Tabela de Teste</strong></p>
+      <table class="test-table">
+        <thead><tr>${headers}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  // 2) Legado: "TABELA DE TESTE - a | b | c" dentro de readyMaterials.
+  const items = normalizeTextItems(exp.readyMaterials || []);
   const scenarios = getScenarioItems(items);
   if (!scenarios.length) return "";
-
-  // Extract column headers from the TABELA DE TESTE item, if present
   const tableItem = items.find((item) => /tabela de teste/i.test(item));
-  let columns = ["Cenário/Teste", "Resultado Inicial", "Falha Observada", "Melhoria Aplicada", "Resultado Após Melhoria"];
-  if (tableItem) {
-    const afterDash = tableItem.replace(/tabela de teste\s*[-—:]\s*/i, "").replace(/\.$/, "");
-    const parsed = afterDash.split("|").map((c) => c.trim()).filter(Boolean);
-    if (parsed.length >= 3) {
-      const firstCol = /^[Cc]en[aá]rio/i.test(parsed[0]) ? parsed[0] : "Cenário";
-      columns = [firstCol, ...parsed.slice(1)];
-    }
-  }
-
-  const financial = looksFinancialTest(items, columns);
-  if (financial) {
-    columns = FINANCIAL_TEST_COLUMNS;
-  }
-
+  if (!tableItem) return "";
+  const afterDash = tableItem.replace(/tabela de teste\s*[-—:]\s*/i, "").replace(/\.$/, "");
+  const parsed = afterDash.split("|").map((c) => c.trim()).filter(Boolean);
+  if (parsed.length < 3) return "";
+  const columns = [/^[Cc]en[aá]rio/i.test(parsed[0]) ? parsed[0] : "Cenário", ...parsed.slice(1)];
   const headers = columns.map((col) => `<th>${escapeHtml(col)}</th>`).join("");
   const rows = scenarios.map((scenario) => {
     const cells = columns.slice(1).map(() => `<td class="blank-cell"></td>`).join("");
     return `<tr><td>Cenário ${scenario.number}</td>${cells}</tr>`;
   }).join("");
-
   return `<div class="test-table-wrapper">
     <p class="test-table-title"><strong>Tabela de Teste</strong></p>
-    <table class="test-table${financial ? " financial-test-table" : ""}">
+    <table class="test-table">
       <thead><tr>${headers}</tr></thead>
       <tbody>${rows}</tbody>
     </table>
@@ -2782,11 +2800,16 @@ function buildGlobalTeacherGabarito(experience, profile = getActivityProfile(exp
   if (!scenarios.length) return [baseLines];
 
   return [
-    ...scenarios.map((scenario) => [
-      `Cenário ${scenario.number}:`,
-      "Resposta esperada: analisar o cenário, aplicar o protótipo ou procedimento planejado, registrar evidências e justificar a decisão tomada.",
-      "Critérios de conferência: coerência com o problema, uso correto dos dados ou fontes, teste realizado e melhoria explicada."
-    ].join("\n")),
+    ...scenarios.map((scenario) => {
+      const enunciado = String(scenario.text || "").trim();
+      return [
+        `Cenário ${scenario.number}:`,
+        enunciado
+          ? `Retome os dados do cenário (${enunciado.slice(0, 160)}) e resolva com o procedimento planejado, mostrando o resultado.`
+          : "Retome os dados do cenário e resolva com o procedimento planejado, mostrando o resultado obtido.",
+        "Critérios de conferência: coerência com o problema, uso correto dos dados, teste realizado e melhoria justificada."
+      ].join("\n");
+    }),
     baseLines
   ];
 }
@@ -2991,16 +3014,45 @@ function cleanCriterionName(value) {
     .trim();
 }
 
+// O gerador novo entrega o gabarito tipado ([{title,type,text}]).
+// O restante deste renderizador trabalha com strings, então achatamos
+// aqui preservando o título e o tipo em uma linha legível.
+function flattenTypedGabarito(gabarito) {
+  if (!Array.isArray(gabarito)) return [];
+  if (!gabarito.some((g) => g && typeof g === "object" && (g.text || g.content))) return gabarito;
+  return gabarito
+    .map((g) => {
+      if (typeof g === "string") return g;
+      const title = String(g.title || "").trim();
+      const text = String(g.text || g.content || "").trim();
+      if (!text) return "";
+      return title ? `${title}: ${text}` : text;
+    })
+    .filter(Boolean);
+}
+
+// O gabarito do modelo é bom o suficiente? (substancial e sem clichê)
+function modelGabaritoIsUsable(gabarito) {
+  const items = flattenTypedGabarito(gabarito);
+  if (!items.length) return false;
+  const CLICHE = /analisar o cen[aá]rio|aplicar o prot[oó]tipo ou procedimento|registrar evid[eê]ncias e justificar a decis[aã]o/i;
+  return items.every((item) => {
+    const t = String(item);
+    return t.split(/\s+/).length >= 8 && !CLICHE.test(t);
+  });
+}
+
 function autoFixExperience(experience) {
   const fix = fixDanglingText;
+  const keepModelGabarito = modelGabaritoIsUsable(experience.teacherGabarito);
   const fixedReadyMaterials = fixScenarioQuestions((experience.readyMaterials || []).map(fixReadyMaterialText)).map(fixDecisionLanguage);
-  const fixedGabarito = fixGabaritoLanguage((experience.teacherGabarito || []).map(reviewGabaritoText));
+  const fixedGabarito = fixGabaritoLanguage(flattenTypedGabarito(experience.teacherGabarito || []).map(reviewGabaritoText));
   const financialGabarito = buildFinancialGabaritoFromReadyMaterials(
     fixedReadyMaterials,
     buildFinancialImprovementContext(experience)
   );
   const profile = getActivityProfile({ ...experience, readyMaterials: fixedReadyMaterials, teacherGabarito: fixedGabarito });
-  const globalGabarito = shouldRebuildGlobalGabarito(fixedGabarito, profile, financialGabarito.length > 0)
+  const globalGabarito = !keepModelGabarito && shouldRebuildGlobalGabarito(fixedGabarito, profile, financialGabarito.length > 0)
     ? buildGlobalTeacherGabarito({ ...experience, readyMaterials: fixedReadyMaterials }, profile)
     : [];
   const fallbackGabarito = fixedGabarito.length ? fixedGabarito : buildFallbackGabaritoFromReadyMaterials(fixedReadyMaterials);
@@ -3948,7 +4000,7 @@ function buildActivityPrintHTMLFromExperience(experience) {
   <div class="section">
     <div class="section-heading"><span class="section-number">5</span><div class="section-title">Desenvolvimento e montagem da atividade</div></div>
     <div class="stages">${renderExperienceStages(experience.stages)}</div>
-    ${renderTestTable(experience.readyMaterials)}
+    ${renderTestTable(experience)}
   </div>
 
   <div class="section protected-section">

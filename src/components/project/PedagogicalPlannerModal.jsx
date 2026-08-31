@@ -186,6 +186,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
     grade: '',
     theme: '',
     availableMaterials: '',
+    strictMaterials: true,
     steamCompetencies: [],
     numberOfClasses: '',
     modality: 'grupo',
@@ -512,13 +513,42 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
             <TextField
               label="Materiais e quantidades"
               placeholder="Ex: 10 canetas esferográficas, 30 folhas A4, 5 kits de circuito básico, 2 metros de barbante..."
-              hint="Um material por linha é ideal. Inclua quantidades aproximadas para ajudar na geração." 
+              hint="Um material por linha é ideal. Inclua quantidades aproximadas para ajudar na geração."
               value={formData.availableMaterials}
               onChange={handleAvailableMaterialsChange}
               multiline
               rows={4}
               fullWidth
             />
+            {formData.availableMaterials.trim().length > 0 && (
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.5rem',
+                  marginTop: '0.75rem',
+                  fontSize: '0.9rem',
+                  color: 'rgba(255,255,255,0.75)',
+                  cursor: 'pointer'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={!formData.strictMaterials}
+                  onChange={(e) =>
+                    setFormData(prev => ({ ...prev, strictMaterials: !e.target.checked }))
+                  }
+                  style={{ marginTop: '0.15rem' }}
+                />
+                <span>
+                  Permitir que a IA acrescente materiais extras de baixo custo.
+                  <br />
+                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem' }}>
+                    Por padrão, a atividade usa <strong>somente</strong> os materiais que você listou — em todas as etapas, no desafio, no produto e no gabarito.
+                  </span>
+                </span>
+              </label>
+            )}
           </div>
         )
 

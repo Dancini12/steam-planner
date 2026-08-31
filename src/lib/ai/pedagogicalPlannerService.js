@@ -5,7 +5,8 @@ import {
   getBnccCodes,
   normalizeBnccCode,
   normalizeBnccCodes,
-  selectBnccHabilidades
+  selectBnccHabilidades,
+  validateBnccAgainstActivity
 } from '../bnccSelector.js'
 import { findSourcesForActivity } from '../sources/index.js'
 import {
@@ -14,10 +15,25 @@ import {
 } from '../knowledge/knowledgeBaseService.js'
 import { getQualityPatterns } from '../machine-learning/behavior-tracking/behaviorTracker.js'
 import {
-  getLearningExperienceStageTitles,
   normalizeLearningExperience,
   validateLearningExperience
 } from '../learningExperience.js'
+import {
+  MAKER_MODALITY_IDS,
+  MAKER_VERBS,
+  NEUTRAL_STAGE_TITLES,
+  checkConsistency,
+  buildRepairPrompt,
+  deterministicCleanup
+} from './generationContract.js'
+
+// Divide o texto de materiais do professor em itens individuais.
+function parseAvailableMaterialsList(text = '') {
+  return String(text)
+    .split(/[\n;,]+/)
+    .map((s) => s.replace(/^[-*•\d.)\s]+/, '').trim())
+    .filter((s) => s.length >= 2)
+}
 
 const COMPETENCY_TO_LETTER = {
   science: 'S',
@@ -27,7 +43,25 @@ const COMPETENCY_TO_LETTER = {
   mathematics: 'M',
 }
 
-function buildPrompt({ discipline, grade, theme, steamCompetencies, availableMaterials, numberOfClasses, modality, customInstructions, bnccSuggestions, verifiedSources = [], knowledgeContext = '', qualityPatterns = null }) {
+function buildPrompt({ discipline, grade, theme, steamCompetencies, availableMaterials, strictMaterials = true, numberOfClasses, modality, customInstructions, bnccSuggestions, verifiedSources = [], knowledgeContext = '', qualityPatterns = null }) {
+  const materialsList = parseAvailableMaterialsList(availableMaterials)
+  const hasStrictMaterials = strictMaterials && materialsList.length > 0
+  const priorityBlock = `HIERARQUIA DE PRIORIDADES (ordem de decisão — a criatividade nunca se sobrepõe às restrições):
+1. Restrições explícitas do professor (materiais, instruções, formato).
+2. Série/ano e perfil dos alunos.
+3. Objetivo de aprendizagem.
+4. Habilidades BNCC selecionadas.
+5. Conteúdo e metodologia.
+6. Problema/desafio, desenvolvimento, produto e avaliação.
+7. Elementos criativos adicionais.`
+  const strictMaterialsBlock = hasStrictMaterials
+    ? `\nRESTRIÇÃO RÍGIDA DE MATERIAIS (prioridade máxima):
+Materiais disponíveis (ÚNICOS permitidos): ${materialsList.join('; ')}.
+Conceba TODA a atividade — objetivo, problema, desenvolvimento, cada etapa, desafio maker, produto final, avaliação, orientação e gabarito — usando EXCLUSIVAMENTE esses materiais.
+É PROIBIDO citar, em QUALQUER seção, qualquer outro objeto, ferramenta, instrumento, equipamento ou insumo (ex.: régua, cola, tesoura, computador, celular, cartolina, palito, moeda, fio, barbante, impressora, material reciclável). Se não está na lista, não existe para esta atividade.
+Se algo seria útil mas não está disponível, coloque em "optionalMaterials" e garanta que a atividade principal funciona 100% sem ele.
+Cultura Maker aqui NÃO significa construir objeto 3D: o "fazer" acontece com os materiais dados (${MAKER_VERBS}). Com apenas papel e lápis, o aluno desenha, calcula, representa, simula cenários, compara e revisa — isso é maker.`
+    : `\nMATERIAIS: use recursos acessíveis e de baixo custo. PROIBIDO usar cartolina, caixas ou papelão como material-padrão e PROIBIDO repetir "painel com fichas e canetinhas". Cultura Maker NÃO exige objeto 3D — pode ser ${MAKER_VERBS}.`
   const steamLetters = steamCompetencies
     .map((c) => COMPETENCY_TO_LETTER[String(c).toLowerCase()])
     .filter(Boolean)
@@ -45,20 +79,23 @@ function buildPrompt({ discipline, grade, theme, steamCompetencies, availableMat
     ? '- Modalidade: INDIVIDUAL - o aluno constrói, testa, registra e melhora sua solução'
     : '- Modalidade: EM GRUPO - organize equipes com papéis simples: construtor, testador, registrador e apresentador'
 
-  const stageTitles = getLearningExperienceStageTitles()
+  const stageTitles = NEUTRAL_STAGE_TITLES
     .map((title) => `- ${title}`)
     .join('\n')
   return `Você é especialista em educação STEAM, Cultura Maker e BNCC para o sistema educacional brasileiro.
 
 MUDANÇA CENTRAL:
 Não gere plano tradicional, apostila, fundamentação acadêmica ou texto pedagógico longo.
-Gere uma EXPERIÊNCIA DE APRENDIZAGEM STEAM + CULTURA MAKER: problema real, investigação, missão, construção, teste, falha, melhoria e apresentação.
+Gere uma EXPERIÊNCIA DE APRENDIZAGEM STEAM + CULTURA MAKER: problema real, investigação, missão, um "fazer" (construir, calcular, representar, prototipar, simular...), teste, falha, melhoria e apresentação.
+
+${priorityBlock}
+${strictMaterialsBlock}
 
 Dados da experiência:
 - Disciplina principal: ${discipline}
 - Série/Ano: ${grade}
 - Tema central: ${theme}
-- Materiais disponíveis do professor: ${availableMaterials?.trim() || 'Não informado'}
+- Materiais disponíveis do professor: ${availableMaterials?.trim() || 'Não informado'}${hasStrictMaterials ? ' (RESTRIÇÃO RÍGIDA — ver bloco acima)' : ''}
 - Áreas STEAM envolvidas: ${uniqueLetters.join(', ')}
 ${classesInfo}
 ${complexityGuide}
@@ -85,10 +122,8 @@ Toda experiência precisa nascer de:
 
 VARIAÇÃO E FLEXIBILIDADE:
 - PROIBIDO usar base de papelão, caixas de papelão ou cartolina como material-padrão. Use-os apenas quando forem, de fato, a melhor solução para o produto final específico.
-- PROIBIDO repetir painel com fichas e canetinhas como solução padrão. Cada atividade deve ter materiais e mecânica de teste completamente diferentes.
-- A criatividade é obrigatória: às vezes a atividade ideal usa apenas lápis e papel; outras vezes usa fios, sensores, sementes, água, régua, dados, elástico, palitos, materiais recicláveis variados ou instrumentos simples do cotidiano.
-- Escolha o tipo de atividade conforme o tema: experimento, maquete, jogo, mapa, circuito ou sensor simulado, modelo 3D, protótipo estrutural, instalação, planilha física/digital ou investigação de campo.
-- Os materiais devem ser escolhidos pela adequação ao problema, não por conveniência ou hábito. Nunca use estrutura física só por ser "segura" — use-a quando for a melhor solução pedagógica.
+- Escolha o tipo de atividade conforme o tema E os materiais disponíveis: experimento, maquete, jogo, mapa, circuito, modelo 3D, protótipo estrutural, gráfico/representação visual, planilha de cálculo, encenação ou investigação de campo. Informe qual em "makerModality" (um de: ${MAKER_MODALITY_IDS.join(', ')}).
+- Os materiais devem ser escolhidos pela adequação ao problema${hasStrictMaterials ? ' DENTRO da lista do professor' : ' e ao que a escola tem de baixo custo'}, nunca por hábito. Uma atividade só com papel e lápis é totalmente válida.
 
 LIMITE OBRIGATÓRIO:
 - A atividade final deve caber em no máximo 2 páginas A4.
@@ -110,39 +145,38 @@ ESTRUTURA VISÍVEL OBRIGATÓRIA - somente estas 10 seções principais, mais o g
 10. Referências
 11. Gabarito do professor em página separada
 
-Desenvolvimento e montagem da atividade - títulos obrigatórios:
+Desenvolvimento e montagem da atividade - 6 etapas nesta lógica (adapte os títulos à "makerModality" escolhida, mantendo o sentido de cada uma):
 ${stageTitles}
 
 Regras de conteúdo:
-- "objective": 1 frase, até 20 palavras.
+- "objective": 1 frase mensurável = verbo de aprendizagem observável + objeto do conhecimento + método/recurso + finalidade. Deve espelhar o problema, as etapas, o produto e a avaliação. Evite genéricos como "compreender" sozinho.
 - "problem": problema real, concreto e contextualizado, até 45 palavras.
 - "mission": frase curta começando com "Sua equipe deverá..." ou equivalente individual.
-- "materials": máximo 6 itens acessíveis, com quantidade precisa por grupo sempre que possível. PROIBIDO base de papelão, caixas ou cartolina como padrão. Varie completamente os materiais a cada geração: escolha de acordo com o problema, o produto final, a disciplina, a série e o tempo disponível. Exemplos de tipos possíveis (não lista fixa): lápis+papel, dados, elásticos, fios, sementes, água, régua, calculadora, fichas de papel simples, palitos, tampas, barbante, materiais recicláveis, instrumentos de medição simples.
-- "materialFunctions": explique a função prática de cada material listado, em 1 frase curta por material.
-- "readyMaterials": entregue cenários mais complexos, com um problema concreto, uma restrição ou falha inicial e uma solução a ser desenvolvida ou ajustada. Nunca cite material complementar sem gerar o conteúdo pronto. Para atividades com cálculo financeiro, orçamento familiar, renda, despesas, poupança ou investimento, use exatamente: "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
-- "stages": exatamente 6 etapas de desenvolvimento e montagem, na ordem obrigatória acima. Cada etapa deve explicar como preparar base, dividir materiais, construir, interagir, testar, ajustar ou apresentar.
-- "makerChallenge": deve dizer claramente o que construir, como testar, qual problema resolver e o que melhorar.
-- "finalProduct": protótipo ou produto concreto final.
-- "assessmentRubric": mini rubrica com "criterion" e "observation", máximo 4 linhas. Não use ponto final no nome do critério.
-- "bibliography": use fontes verificadas abaixo quando houver relação direta com o tema. Nunca use Wikipedia. Nunca use referência fora do assunto apenas para preencher espaço. Se não houver fonte específica adequada, inclua apenas a BNCC como referência oficial.
-- "bncc": use APENAS códigos da lista offline acima; não invente códigos.
-- Não use emojis, slogans, texto promocional ou linguagem de apostila.
-- Não escreva frases genéricas como "faça um protótipo", "use os materiais disponíveis", "teste a solução" ou "melhore o projeto" sem explicar exatamente como.
-- Crie pelo menos 2 testes concretos dentro da montagem ou do desafio maker. Ex.: Teste 1 com cenário esperado; Teste 2 com imprevisto, restrição ou falha. Cada cenário deve apresentar uma situação que exige uma solução prática, não apenas uma observação.
-- Não use reticências. Nenhuma frase pode terminar cortada com "...".
-- Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
-- Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
-- Inclua "teacherGabarito": resultados esperados de TODOS os cenários de "readyMaterials" em formato didático. Se houver Cenário 1, Cenário 2 e Cenário 3, o gabarito deve conter os três. Use um item por cenário, com linhas curtas separadas por ponto e vírgula.
-- Em cenários financeiros, nunca escreva apenas "Economia: R$ X". Use "Sobra mensal prevista: R$ X" ou "Saldo disponível para poupança/investimento: R$ X".
-- Nunca use tabelas markdown (| col | col | ou --- | --- | ---) em nenhum campo JSON. Em "readyMaterials", use apenas uma linha de texto simples: "TABELA DE TESTE - Col1 | Col2 | Col3." sem barras verticais extras ou linhas separadoras.
-- Em cenários: se o saldo final for positivo, não use "déficit". Use "reorganização", "impacto no saldo" ou "preservação da poupança".
-- No "teacherGabarito": se o saldo final for positivo, não usar "déficit", "prejuízo" ou "saldo negativo". Usar: "O saldo ainda é positivo, mas foi reduzido. Sugerir reorganização para preservar poupança."
-- GABARITO MATEMÁTICO OBRIGATÓRIO: em "teacherGabarito", para cada cenário com valores numéricos, copie EXATAMENTE os valores do readyMaterials correspondente (sem inventar valores), some as despesas mostrando a conta (ex: R$ 1.200 + R$ 250 = R$ 1.450), calcule saldo = receita − total_despesas. Formato: "Cenário 1: Receita total: R$ X; Despesas totais: R$ A + R$ B = R$ Y; Saldo final: R$ X − R$ Y = R$ Z." Se um cenário depende do anterior, mostre as despesas do cenário anterior e o novo total. O resultado deve ser matematicamente correto.
-- COERÊNCIA ENTRE CENÁRIO E PERGUNTA: se um gasto reduzir o saldo, mas o saldo continuar positivo, nunca pergunte como agir "sem impactar negativamente o saldo" ou "sem impacto no saldo". Use: "Como esse gasto afeta o saldo e que ajuste poderia ser feito para preservar parte da poupança?".
-- Use "déficit", "saldo negativo", "entrar no vermelho", "prejuízo" ou "orçamento negativo" apenas quando o cálculo realmente resultar em saldo final negativo.
-- Valores citados como economia, corte, redução, ajuste, melhoria, reorganização ou valor que poderia ser economizado NÃO são despesas reais. Não some esses valores às despesas iniciais; use-os apenas em "Economia sugerida", "Melhoria sugerida" ou "Resultado após melhoria".
-- Em cenários financeiros, separe explicitamente "Receitas", "Despesas fixas", "Despesas variáveis", "Imprevistos" e "Melhorias". Salário, renda, receita do pai ou receita da mãe nunca podem aparecer como despesa.
-- Inclua "teacherOrientation": 1 frase prática e pedagógica orientando o professor sobre como conduzir a atividade.
+- "materials": ${hasStrictMaterials ? `use SOMENTE os materiais informados pelo professor (${materialsList.join('; ')}), com a quantidade. Não acrescente NADA. Materiais úteis mas ausentes vão em "optionalMaterials".` : 'máximo 6 itens acessíveis e de baixo custo, com quantidade por grupo. PROIBIDO cartolina/caixa/papelão como padrão.'}
+- "materialFunctions": função prática de cada material listado, 1 frase curta por material.
+- "dataPlan": objeto { "collected": [dados que o aluno vai coletar/registrar], "calculated": [dados que ele vai calcular], "compared": [o que ele vai comparar] }. Base para a tabela.
+- "testTable": objeto { "columns": [colunas derivadas de "dataPlan" — específicas DESTA atividade], "rows": [linhas de exemplo ou vazias para preencher] }. NUNCA reutilize colunas de outra atividade (ex.: "Receita Total / Despesas Fixas" só se o tema for orçamento). As colunas devem sair dos dados coletados/calculados/comparados.
+- "readyMaterials": entregue os cenários citados, com problema concreto, restrição/falha inicial e solução a desenvolver. Nunca cite material complementar sem entregar o conteúdo pronto. Não coloque a tabela aqui — ela vai em "testTable".
+- "stages": exatamente 6 etapas, com os títulos obrigatórios acima. Cada etapa explica uma ação concreta coerente com a "makerModality".
+- "makerChallenge": o que fazer (construir/calcular/representar/simular), como testar e o que melhorar.
+- "finalProduct": produto concreto final, realizável com os materiais disponíveis.
+- "assessmentRubric": mini rubrica com "criterion" e "observation", máximo 4 linhas. Sem ponto final no critério.
+- "bibliography": fontes verificadas abaixo quando houver relação direta com o tema. Nunca Wikipedia; nunca referência fora do assunto. Sem fonte específica → só a BNCC.
+- "bncc": use APENAS códigos da lista offline acima; não invente. Inclua "bnccJustification": objeto { "CÓDIGO": "etapa N / ação concreta que desenvolve esta habilidade" } para CADA código. Descarte a habilidade se não houver etapa que a desenvolva. Prefira 2 a 3 habilidades altamente coerentes a 5 parcialmente relacionadas.
+- "glossary": 3 a 5 termos canônicos da atividade. Escolha UM termo por conceito e use-o do início ao fim (não alterne sinônimos, ex.: não misturar "valor do ativo" e "valor do investimento").
+- Não use emojis, slogans nem linguagem de apostila.
+- Não escreva frases genéricas ("faça um protótipo", "use os materiais disponíveis", "teste a solução", "melhore o projeto", "analisar o cenário", "aplicar o protótipo") sem explicar exatamente como.
+- Crie pelo menos 2 testes concretos: Teste 1 com cenário esperado; Teste 2 com imprevisto/restrição/falha.
+- Não use reticências. Nada pode terminar cortado com "...". Nunca escreva "Pós-its"/"Post-its" (use "notas adesivas").
+- "steamConnection": objeto com as 5 áreas; para cada uma { "text": frase com AÇÃO concreta da atividade, "weight": "predominante" | "complementar" | "nao_se_aplica" }. Só descreva a área se houver ação real que a sustente; se não houver, weight = "nao_se_aplica" e text vazio. NÃO invente uso de recurso só para justificar uma letra.
+- "figure": um objeto { "type": "...", "caption": "..." } SOMENTE se uma figura específica ajudar a entender ESTA atividade; caso contrário "figure": null. Prefira nenhuma figura a uma figura genérica.
+- DECISÃO SOB INCERTEZA: se um cenário revela um evento futuro (ex.: "no mês seguinte cai 20%"), a melhoria NÃO pode supor que o aluno sabia disso antes. Formule como estratégia sob incerteza (diversificação, reserva, horizonte, gestão de risco, análise de cenários). Ex.: "Considerando que não era possível prever a queda, que estratégia reduziria o risco?".
+- ENTRADA vs RESULTADO: distinga sempre aporte/contribuição (valor adicionado) de resultado (ganho/perda do processo), de saldo/total acumulado e de rentabilidade. Um aporte novo não é rentabilidade.
+- "teacherGabarito": array de objetos { "title": "Cenário N" ou a questão, "type": "calculo" | "aberta" | "maker" | "reflexiva", "text": resposta }. Para "calculo": mostre a conta passo a passo com os valores do cenário e o RESULTADO NUMÉRICO final, depois 1 frase de interpretação. Para "aberta": respostas possíveis + critérios. Para "maker": critérios de funcionamento + evidências esperadas. Para "reflexiva": elementos essenciais que a resposta deve conter. Um item por cenário/questão. NUNCA "analisar o cenário / aplicar o protótipo / registrar evidências".
+- CÁLCULOS: quando a atividade tiver contas com valores, o "teacherGabarito" do tipo "calculo" deve mostrar a conta passo a passo, com os valores exatos do cenário, e o resultado numérico correto. Se um cenário depende do anterior, mostre o encadeamento.
+- Se a atividade for de dinheiro/orçamento: separe Receitas, Despesas fixas, Despesas variáveis, Imprevistos e Melhorias; salário/renda nunca é despesa; um valor "economizado/sugerido" não entra na soma das despesas; só use "déficit/prejuízo/saldo negativo" quando o cálculo realmente der negativo; não pergunte como agir "sem impacto no saldo" quando o gasto reduz o saldo.
+- Não use tabelas markdown dentro de strings JSON. A tabela vai estruturada em "testTable".
+- Inclua "teacherOrientation": 1 frase prática orientando o professor sobre como conduzir a atividade.
 
 ${verifiedSources.length > 0
   ? `Fontes verificadas em bases acadêmicas reais (Crossref, OpenAlex, SciELO, Semantic Scholar):\n${verifiedSources.map((s, i) => `${i + 1}. ${s.abnt}`).join('\n')}`
@@ -158,75 +192,59 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "objective": "Objetivo geral curto com verbo de ação.",
   "problem": "Problema real ou situação desafiadora que inicia a experiência.",
   "mission": "Sua equipe deverá desenvolver uma solução prática para o problema.",
+  "makerModality": "um de: ${MAKER_MODALITY_IDS.join(' | ')}",
   "bncc": ${JSON.stringify(getBnccCodes(bnccSuggestions))},
-  "materials": [
-    "Material estrutural adequado ao desafio - quantidade por grupo",
-    "Elementos móveis ou marcadores - quantidade por grupo",
-    "Instrumento de medida, registro ou simulação - quantidade por grupo"
-  ],
+  "bnccJustification": { "CÓDIGO": "etapa N / ação concreta que desenvolve esta habilidade" },
+  "glossary": ["termo canônico 1", "termo canônico 2", "termo canônico 3"],
+  "materials": ${hasStrictMaterials
+    ? JSON.stringify(materialsList.map((m) => `${m} - quantidade`))
+    : `[
+    "Material adequado ao desafio - quantidade por grupo",
+    "Elemento de registro/medida - quantidade por grupo"
+  ]`},
+  "optionalMaterials": ["material extra que ajudaria, mas a atividade funciona sem ele"],
   "materialFunctions": [
-    "Material estrutural adequado ao desafio: quantidade por grupo — sustenta a solução.",
-    "Elementos móveis ou marcadores: quantidade por grupo — permitem simular decisões e testar cenários.",
-    "Instrumento de medida, registro ou simulação: quantidade por grupo — coleta evidências do teste."
+    "Material 1: quantidade — função concreta nesta atividade.",
+    "Material 2: quantidade — função concreta nesta atividade."
   ],
+  "dataPlan": {
+    "collected": ["dado que o aluno registra"],
+    "calculated": ["dado que o aluno calcula"],
+    "compared": ["o que o aluno compara"]
+  },
+  "testTable": {
+    "columns": ["coluna derivada de dataPlan", "outra coluna específica desta atividade"],
+    "rows": [["exemplo", "exemplo"]]
+  },
   "readyMaterials": [
-    "CENÁRIO 1 - Problema inicial: situação concreta, restrição ou falha e solução a ser desenvolvida.",
-    "CENÁRIO 2 - Imprevisto: nova condição, limite ou falha que exige ajuste da solução.",
-    "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
+    "CENÁRIO 1 - Situação esperada: dados concretos e o que calcular/decidir.",
+    "CENÁRIO 2 - Imprevisto: nova condição/restrição que exige ajuste da estratégia."
   ],
   "stages": [
-    {
-      "number": 1,
-      "title": "ETAPA 1 - Preparar a base e dividir materiais",
-      "description": "Divida a base em problema, solução, teste e melhoria. Separe peças móveis e registro."
-    },
-    {
-      "number": 2,
-      "title": "ETAPA 2 - Construir as partes principais",
-      "description": "Monte as peças centrais e explique a função de cada material no protótipo."
-    },
-    {
-      "number": 3,
-      "title": "ETAPA 3 - Criar o mecanismo de interação",
-      "description": "Crie cartões, fichas, abas, setas, encaixes ou simulação manipulável."
-    },
-    {
-      "number": 4,
-      "title": "ETAPA 4 - Testar com situação real",
-      "description": "Aplique dois cenários prontos. Meça resultado, compare e registre falhas."
-    },
-    {
-      "number": 5,
-      "title": "ETAPA 5 - Ajustar e testar novamente",
-      "description": "Mude uma falha concreta, repita o teste e registre o antes e depois."
-    },
-    {
-      "number": 6,
-      "title": "ETAPA 6 - Apresentar produto e evidências",
-      "description": "Apresente protótipo, cenário testado, melhoria feita e evidência observada."
-    }
+${NEUTRAL_STAGE_TITLES.map((t, i) => `    { "number": ${i + 1}, "title": "${t}", "description": "Ação concreta da etapa ${i + 1}, coerente com a makerModality e os materiais disponíveis." }`).join(',\n')}
   ],
-  "makerChallenge": "Construir, testar, comparar e melhorar uma solução para o problema.",
-  "finalProduct": "Protótipo final com registro do teste e da melhoria feita.",
+  "makerChallenge": "O que fazer (construir/calcular/representar/simular), como testar e o que melhorar.",
+  "finalProduct": "Produto concreto final, realizável só com os materiais disponíveis.",
   "assessmentRubric": [
-    { "criterion": "Protótipo", "observation": "Representa o problema e pode ser testado?" },
-    { "criterion": "Teste", "observation": "O grupo aplicou o cenário e registrou resultado?" },
-    { "criterion": "Melhoria", "observation": "O grupo ajustou o protótipo após identificar falha?" },
-    { "criterion": "Comunicação", "observation": "O grupo explicou solução, teste e melhoria?" }
+    { "criterion": "Solução", "observation": "Responde ao problema e pode ser testada?" },
+    { "criterion": "Teste", "observation": "Aplicou os cenários e registrou os resultados?" },
+    { "criterion": "Melhoria", "observation": "Ajustou a solução após analisar os resultados?" },
+    { "criterion": "Comunicação", "observation": "Explicou processo, resultados e melhoria?" }
   ],
   "bibliography": ${JSON.stringify(verifiedSources.length ? verifiedSources.slice(0, 2).map((source) => source.abnt) : ['BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.'])},
   "steamConnection": {
-    "science": "conceito ou fenômeno investigado na atividade.",
-    "technology": "recurso, ferramenta ou sistema utilizado.",
-    "engineering": "o que será construído, testado e melhorado.",
-    "art": "elemento visual, criativo ou comunicativo do protótipo.",
-    "mathematics": "cálculos, medidas ou comparação de dados."
+    "science": { "text": "ação científica concreta desta atividade, ou vazio", "weight": "predominante | complementar | nao_se_aplica" },
+    "technology": { "text": "", "weight": "nao_se_aplica" },
+    "engineering": { "text": "", "weight": "complementar" },
+    "art": { "text": "", "weight": "complementar" },
+    "mathematics": { "text": "", "weight": "predominante" }
   },
+  "figure": null,
   "teacherGabarito": [
-    "Cenário 1: Receita total: R$ X; Despesas totais: R$ A + R$ B = R$ Y; Saldo final: R$ X − R$ Y = R$ Z.",
-    "Cenário 2: Resultado do imprevisto com impacto observado; Sugestão de melhoria objetiva."
+    { "title": "Cenário 1", "type": "calculo", "text": "Conta passo a passo com os valores do cenário e o resultado numérico final. Depois, 1 frase de interpretação." },
+    { "title": "Cenário 2", "type": "reflexiva", "text": "Elementos essenciais que a resposta do aluno deve conter, considerando incerteza (não previsão do futuro)." }
   ],
-  "teacherOrientation": "Durante a atividade, estimule os alunos a justificarem suas escolhas e registrarem as melhorias no protótipo."
+  "teacherOrientation": "Frase prática orientando o professor a conduzir a atividade (foco em justificar decisões com os dados)."
 }`
 }
 
@@ -394,19 +412,24 @@ function applyOfflineBncc(data, bnccSuggestions) {
     ? data.bncc.map(extractCode).filter((code) => offlineCodes.includes(code))
     : []
 
+  const intersected = selectedItems.length > 0 ? selectedItems : offlineCodes.slice(0, 3)
+  // Descarta habilidades sem relação real com o que o aluno faz
+  const validated = validateBnccAgainstActivity(intersected, data)
+
   return {
     ...data,
-    bncc: selectedItems.length > 0 ? selectedItems : offlineCodes.slice(0, 3)
+    bncc: validated.length ? validated : intersected
   }
 }
 
 function buildClassroomPrompt(project) {
-  const stageTitles = getLearningExperienceStageTitles()
+  const stageTitles = NEUTRAL_STAGE_TITLES
     .map((title) => `- ${title}`)
     .join('\n')
   const objectives = (project.objectives || []).map((o, i) => `${i + 1}. ${o}`).join('\n')
   const bncc = (project.bncc || []).join(', ')
-  const materials = (project.materials || []).map((m) => `- ${m}`).join('\n')
+  const materialsList = (project.materials || []).map((m) => String(m)).filter(Boolean)
+  const materials = materialsList.map((m) => `- ${m}`).join('\n')
   const phaseLines = Object.entries(project.phases || {})
     .map(([id, p]) => p.plan ? `  Fase ${id}: ${p.plan}` : null)
     .filter(Boolean)
@@ -417,6 +440,8 @@ function buildClassroomPrompt(project) {
 Transforme o projeto abaixo em uma EXPERIÊNCIA DE APRENDIZAGEM STEAM + CULTURA MAKER compacta.
 Não gere plano tradicional, apostila, fundamentação longa, matriz STEAM, material do aluno ou anexos.
 
+HIERARQUIA: as informações do projeto (materiais, problema, produto) têm prioridade sobre a criatividade do modelo.
+
 DADOS DO PROJETO:
 - Título: ${project.title || ''}
 - Tema: ${project.theme || ''}
@@ -426,8 +451,8 @@ DADOS DO PROJETO:
 - Pergunta norteadora: ${project.guidingQuestion || ''}
 - Produto final esperado: ${project.finalProduct || ''}
 - Habilidades BNCC: ${bncc}
-- Materiais disponíveis:
-${materials}
+- Materiais disponíveis (${materialsList.length ? 'ÚNICOS permitidos — não acrescente nenhum outro objeto, ferramenta ou recurso em nenhuma seção, etapa, desafio, produto, avaliação ou gabarito' : 'não informados — use recursos de baixo custo, sem cartolina/caixa/papelão como padrão'}):
+${materials || '  (livre, baixo custo)'}
 - Objetivos de aprendizagem:
 ${objectives}
 - Planejamento das fases (preenchido pelo professor):
@@ -452,27 +477,25 @@ Regras:
 - Toda etapa deve ter ação prática, não explicação longa.
 - A experiência deve incluir problema real, missão, investigação, construção/prototipagem, teste, comparação e melhoria.
 - PROIBIDO usar base de papelão, caixas de papelão ou cartolina como material-padrão. Use-os apenas se forem realmente a melhor escolha para o produto final específico.
-- PROIBIDO repetir painel com fichas e canetinhas como solução padrão. Cada atividade deve ter materiais e mecânica de teste completamente diferentes.
-- A criatividade é obrigatória: às vezes a atividade ideal usa apenas lápis e papel; outras vezes usa fios, sementes, água, dados, elástico, palitos ou materiais simples do cotidiano.
-- Escolha experimento, maquete, jogo, mapa, circuito ou sensor simulado, modelo 3D, protótipo estrutural, instalação, planilha física/digital ou investigação de campo conforme o tema.
-- Desenvolvimento e montagem deve ter exatamente estes títulos:
+- Cultura Maker NÃO exige objeto 3D — pode ser ${MAKER_VERBS}. Informe "makerModality" (um de: ${MAKER_MODALITY_IDS.join(', ')}).
+- 6 etapas nesta lógica (adapte os títulos à makerModality):
 ${stageTitles}
-- Cada etapa: máximo 3 frases curtas.
-- Materiais: máximo 6 itens acessíveis.
-- "materialFunctions" deve explicar a função de cada material no protótipo e usar quantidades precisas sempre que possível.
-- "readyMaterials" deve entregar cenários, fichas, cartões, tabela de teste, perguntas ou dados citados.
-- "stages" deve explicar como preparar base, dividir materiais, construir, manipular, testar, ajustar e apresentar. Não use frases genéricas.
-- Inclua 2 testes concretos: um cenário esperado e um cenário com imprevisto, restrição ou falha.
-- Avaliação: mini rubrica com "criterion" e "observation", máximo 4 linhas. Não use ponto final no nome do critério.
-- Referências: preferencialmente 2 itens, mínimo 1. Use as referências do projeto se houver relação direta com o tema; não invente fonte nem DOI. É melhor usar uma referência correta do que duas com uma fora do assunto.
-- Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
-- Inclua "teacherGabarito" em formato didático, com resposta para TODOS os cenários. Para cálculos, copie os valores dos cenários e mostre soma das despesas e saldo final.
-- Em cenários financeiros, se um gasto reduzir o saldo, mas o saldo continuar positivo, nunca pergunte como agir "sem impactar negativamente o saldo". Use pergunta sobre impacto no saldo, reorganização de despesas e preservação de parte da poupança.
-- Use "déficit", "saldo negativo", "entrar no vermelho", "prejuízo" ou "orçamento negativo" apenas quando o cálculo realmente resultar em saldo final negativo.
-- Valores citados como economia, corte, redução, ajuste, melhoria, reorganização ou valor que poderia ser economizado NÃO são despesas reais. Não some esses valores às despesas iniciais; use-os apenas em "Economia sugerida", "Melhoria sugerida" ou "Resultado após melhoria".
-- Em cenários financeiros, separe explicitamente "Receitas", "Despesas fixas", "Despesas variáveis", "Imprevistos" e "Melhorias". Salário, renda, receita do pai ou receita da mãe nunca podem aparecer como despesa.
-- Não use emojis.
-- Não use reticências. Nenhum texto pode terminar cortado com "...".
+- Cada etapa: máximo 3 frases curtas, ação concreta.
+- Materiais: ${materialsList.length ? 'use SOMENTE os materiais do projeto listados acima; não acrescente nada. Extras vão em "optionalMaterials".' : 'máximo 6 itens acessíveis de baixo custo.'}
+- "materialFunctions": função concreta de cada material nesta atividade.
+- "dataPlan": { "collected": [...], "calculated": [...], "compared": [...] }. "testTable": { "columns": [derivadas de dataPlan], "rows": [...] }. Nunca reutilize colunas de outra atividade.
+- "readyMaterials": cenários citados (esperado + imprevisto). A tabela vai em "testTable", não aqui.
+- "bncc": inclua "bnccJustification": { "CÓDIGO": "etapa/ação que desenvolve" } para cada código; descarte os sem etapa.
+- "glossary": 3 a 5 termos canônicos; use um termo por conceito, sem alternar sinônimos.
+- Avaliação: mini rubrica "criterion"/"observation", máx. 4 linhas, sem ponto final no critério.
+- Referências: 1 a 2, reais, relacionadas ao tema; não invente fonte nem DOI.
+- "steamConnection": objeto com as 5 áreas, cada uma { "text": ação concreta ou vazio, "weight": "predominante" | "complementar" | "nao_se_aplica" }. Não invente uso de recurso só para justificar uma letra.
+- "figure": { "type", "caption" } só se específica e útil; senão null.
+- DECISÃO SOB INCERTEZA: se um cenário revela evento futuro, a melhoria não pode supor que o aluno sabia. Trabalhe risco/reserva/diversificação/horizonte.
+- ENTRADA vs RESULTADO: distinga aporte/contribuição de resultado, de saldo acumulado e de rentabilidade.
+- "teacherGabarito": array de { "title", "type": "calculo" | "aberta" | "maker" | "reflexiva", "text" }. "calculo" mostra a conta passo a passo e o resultado numérico. Nunca "analisar o cenário / aplicar o protótipo".
+- Se a atividade for de dinheiro: separe Receitas/Despesas fixas/variáveis/Imprevistos/Melhorias; salário nunca é despesa; "déficit/prejuízo" só se o cálculo der negativo.
+- Sem emojis. Sem reticências. Nada cortado com "...".
 
 Responda APENAS com JSON válido, sem texto antes ou depois:
 
@@ -483,71 +506,43 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   "objective": "Objetivo geral curto.",
   "problem": "Problema real que inicia a atividade.",
   "mission": "Sua equipe deverá construir e melhorar uma solução.",
-  "materials": [
-    "Material estrutural adequado ao desafio - quantidade por grupo",
-    "Elementos móveis ou marcadores - quantidade por grupo",
-    "Instrumento de medida, registro ou simulação - quantidade por grupo"
-  ],
+  "makerModality": "um de: ${MAKER_MODALITY_IDS.join(' | ')}",
+  "materials": ${materialsList.length ? JSON.stringify(materialsList) : `["Material adequado - quantidade por grupo", "Elemento de registro/medida - quantidade por grupo"]`},
+  "optionalMaterials": [],
   "materialFunctions": [
-    "Material estrutural adequado ao desafio: quantidade por grupo — sustenta a solução.",
-    "Elementos móveis ou marcadores: quantidade por grupo — permitem simular decisões e testar cenários.",
-    "Instrumento de medida, registro ou simulação: quantidade por grupo — coleta evidências do teste."
+    "Material 1: quantidade — função concreta nesta atividade.",
+    "Material 2: quantidade — função concreta nesta atividade."
   ],
+  "dataPlan": { "collected": ["..."], "calculated": ["..."], "compared": ["..."] },
+  "testTable": { "columns": ["coluna de dataPlan", "outra coluna específica"], "rows": [["exemplo", "exemplo"]] },
   "readyMaterials": [
-    "CENÁRIO 1 - Problema inicial: situação concreta, restrição ou falha e solução a ser desenvolvida.",
-    "CENÁRIO 2 - Imprevisto: nova condição, limite ou falha que exige ajuste da solução.",
-    "TABELA DE TESTE - Cenário | Receita Total | Despesas Fixas | Despesas Variáveis | Saldo Inicial | Melhoria Aplicada | Saldo Final Após Melhoria."
+    "CENÁRIO 1 - Situação esperada: dados concretos e o que calcular/decidir.",
+    "CENÁRIO 2 - Imprevisto: nova condição/restrição que exige ajuste da estratégia."
   ],
   "stages": [
-    {
-      "number": 1,
-      "title": "ETAPA 1 - Preparar a base e dividir materiais",
-      "description": "Divida a base em problema, solução, teste e melhoria. Separe peças móveis e registro."
-    },
-    {
-      "number": 2,
-      "title": "ETAPA 2 - Construir as partes principais",
-      "description": "Monte as peças centrais e explique a função de cada material no protótipo."
-    },
-    {
-      "number": 3,
-      "title": "ETAPA 3 - Criar o mecanismo de interação",
-      "description": "Crie cartões, fichas, abas, setas, encaixes ou simulação manipulável."
-    },
-    {
-      "number": 4,
-      "title": "ETAPA 4 - Testar com situação real",
-      "description": "Aplique dois cenários prontos. Meça resultado, compare e registre falhas."
-    },
-    {
-      "number": 5,
-      "title": "ETAPA 5 - Ajustar e testar novamente",
-      "description": "Mude uma falha concreta, repita o teste e registre o antes e depois."
-    },
-    {
-      "number": 6,
-      "title": "ETAPA 6 - Apresentar produto e evidências",
-      "description": "Apresente protótipo, cenário testado, melhoria feita e evidência observada."
-    }
+${NEUTRAL_STAGE_TITLES.map((t, i) => `    { "number": ${i + 1}, "title": "${t}", "description": "Ação concreta da etapa ${i + 1}, coerente com a makerModality e os materiais." }`).join(',\n')}
   ],
-  "makerChallenge": "Construir, testar, comparar e melhorar uma solução para o problema.",
-  "finalProduct": "Protótipo final com registro do teste e da melhoria feita.",
+  "makerChallenge": "O que fazer, como testar e o que melhorar.",
+  "finalProduct": "Produto concreto final, realizável só com os materiais disponíveis.",
   "assessmentRubric": [
-    { "criterion": "Protótipo", "observation": "Representa o problema e pode ser testado?" },
-    { "criterion": "Teste", "observation": "O grupo aplicou o cenário e registrou resultado?" },
-    { "criterion": "Melhoria", "observation": "O grupo ajustou o protótipo após identificar falha?" },
-    { "criterion": "Comunicação", "observation": "O grupo explicou solução, teste e melhoria?" }
+    { "criterion": "Solução", "observation": "Responde ao problema e pode ser testada?" },
+    { "criterion": "Teste", "observation": "Aplicou os cenários e registrou os resultados?" },
+    { "criterion": "Melhoria", "observation": "Ajustou a solução após analisar os resultados?" },
+    { "criterion": "Comunicação", "observation": "Explicou processo, resultados e melhoria?" }
   ],
   "steamConnection": {
-    "science": "conceito ou fenômeno investigado na atividade.",
-    "technology": "recurso, ferramenta ou sistema utilizado.",
-    "engineering": "o que será construído, testado e melhorado.",
-    "art": "elemento visual, criativo ou comunicativo do protótipo.",
-    "mathematics": "cálculos, medidas ou comparação de dados."
+    "science": { "text": "", "weight": "complementar" },
+    "technology": { "text": "", "weight": "nao_se_aplica" },
+    "engineering": { "text": "", "weight": "complementar" },
+    "art": { "text": "", "weight": "complementar" },
+    "mathematics": { "text": "", "weight": "predominante" }
   },
+  "figure": null,
+  "glossary": ["termo 1", "termo 2", "termo 3"],
+  "bnccJustification": { "CÓDIGO": "etapa/ação que desenvolve" },
   "teacherGabarito": [
-    "Cenário 1: Resultado esperado com conclusão objetiva.",
-    "Cenário 2: Resultado do imprevisto com impacto observado; Sugestão de melhoria objetiva."
+    { "title": "Cenário 1", "type": "calculo", "text": "Conta passo a passo e resultado numérico + 1 frase de interpretação." },
+    { "title": "Cenário 2", "type": "reflexiva", "text": "Elementos essenciais que a resposta deve conter (sob incerteza)." }
   ],
   "bibliography": ${JSON.stringify(project.bibliography?.length ? project.bibliography.slice(0, 2) : ['BRASIL. Ministério da Educação. Base Nacional Comum Curricular. Brasília: MEC, 2018.'])},
   "bncc": ${JSON.stringify(project.bncc || [])}
@@ -591,6 +586,10 @@ export class PedagogicalPlannerService {
 
   static async generatePedagogicalActivity(params) {
     const { discipline, grade, theme, steamCompetencies, numberOfClasses, modality, customInstructions, personalization, userId, userEmail } = params
+    const availableMaterials = params.availableMaterials || ''
+    const materialsList = parseAvailableMaterialsList(availableMaterials)
+    const strictMaterials = params.strictMaterials !== false && materialsList.length > 0
+    const constraints = { availableMaterials, strictMaterials, availableMaterialsList: materialsList }
 
     await this.checkDailyLimit(userId, userEmail)
 
@@ -624,7 +623,7 @@ export class PedagogicalPlannerService {
 
     // ── 3. Gera prompt com contexto local + padrões aprendidos ──
     const prompt = buildPrompt({
-      discipline, grade, theme, steamCompetencies, availableMaterials: params.availableMaterials, numberOfClasses, modality,
+      discipline, grade, theme, steamCompetencies, availableMaterials, strictMaterials, numberOfClasses, modality,
       customInstructions, bnccSuggestions, verifiedSources,
       knowledgeContext: kb.contextSummary,
       qualityPatterns,
@@ -640,9 +639,40 @@ export class PedagogicalPlannerService {
       throw new Error('A IA não retornou conteúdo válido.')
     }
 
-    const jsonStr = extractJson(rawText)
-    const parsed = applyOfflineBncc(safeParseJson(jsonStr), bnccSuggestions)
-    const normalized = normalizeLearningExperience(parsed, { theme, grade, discipline })
+    const normalizeCtx = { theme, grade, discipline, constraints }
+    const parseNormalize = (text) => {
+      const parsed = applyOfflineBncc(safeParseJson(extractJson(text)), bnccSuggestions)
+      return normalizeLearningExperience(parsed, normalizeCtx)
+    }
+
+    let normalized = parseNormalize(rawText)
+
+    // ── 3b. Auditoria de coerência + 1 rodada de reparo se necessário ──
+    let audit = checkConsistency(normalized, constraints)
+    if (!audit.pass || audit.violations.length) {
+      try {
+        const repairResponse = await AIProviderManager.request({
+          requestType: 'pedagogicalactivity',
+          prompt: buildRepairPrompt(normalized, audit.violations, constraints)
+        })
+        if (repairResponse?.content && typeof repairResponse.content === 'string') {
+          const repaired = parseNormalize(repairResponse.content)
+          const repairedAudit = checkConsistency(repaired, constraints)
+          // Só adota o reparo se não piorou o número de violações duras
+          const hardBefore = audit.violations.filter((v) => v.severity === 'hard').length
+          const hardAfter = repairedAudit.violations.filter((v) => v.severity === 'hard').length
+          if (hardAfter <= hardBefore) {
+            normalized = repaired
+            audit = repairedAudit
+          }
+        }
+      } catch (repairError) {
+        console.warn('Reparo do plano falhou, seguindo com limpeza determinística:', repairError)
+      }
+      if (!audit.pass) {
+        normalized = deterministicCleanup(normalized, audit.violations)
+      }
+    }
 
     validateActivity(normalized)
 
@@ -677,6 +707,35 @@ export class PedagogicalPlannerService {
   static async generateClassroomActivity(project, userEmail) {
     await this.checkDailyLimit(project.ownerId || project.owner_id || project.userId, userEmail)
 
+    const projectMaterials = (project.materials || []).map((m) => String(m)).filter(Boolean)
+    const constraints = {
+      availableMaterials: projectMaterials.join('; '),
+      strictMaterials: projectMaterials.length > 0,
+      availableMaterialsList: projectMaterials
+    }
+    const normalizeCtx = {
+      theme: project.theme || project.title,
+      grade: project.grade,
+      discipline: project.discipline,
+      constraints
+    }
+    const parseNormalize = (text) => {
+      const parsed = safeParseJson(extractJson(text))
+      return normalizeLearningExperience(
+        {
+          ...parsed,
+          title: parsed.title || parsed.activityTitle,
+          stages: parsed.stages || parsed.steps,
+          problem: parsed.problem || project.problem,
+          finalProduct: parsed.finalProduct || project.finalProduct,
+          bibliography: parsed.bibliography || project.bibliography,
+          bncc: parsed.bncc || project.bncc,
+          materials: parsed.materials || project.materials
+        },
+        normalizeCtx
+      )
+    }
+
     const prompt = buildClassroomPrompt(project)
 
     const response = await AIProviderManager.request({
@@ -689,25 +748,29 @@ export class PedagogicalPlannerService {
       throw new Error('A IA não retornou conteúdo válido.')
     }
 
-    const jsonStr = extractJson(rawText)
-    const parsed = safeParseJson(jsonStr)
-    const normalized = normalizeLearningExperience(
-      {
-        ...parsed,
-        title: parsed.title || parsed.activityTitle,
-        stages: parsed.stages || parsed.steps,
-        problem: parsed.problem || project.problem,
-        finalProduct: parsed.finalProduct || project.finalProduct,
-        bibliography: parsed.bibliography || project.bibliography,
-        bncc: parsed.bncc || project.bncc,
-        materials: parsed.materials || project.materials
-      },
-      {
-        theme: project.theme || project.title,
-        grade: project.grade,
-        discipline: project.discipline
+    let normalized = parseNormalize(rawText)
+
+    let audit = checkConsistency(normalized, constraints)
+    if (!audit.pass) {
+      try {
+        const repairResponse = await AIProviderManager.request({
+          requestType: 'classroomactivity',
+          prompt: buildRepairPrompt(normalized, audit.violations, constraints)
+        })
+        if (repairResponse?.content && typeof repairResponse.content === 'string') {
+          const repaired = parseNormalize(repairResponse.content)
+          const repairedAudit = checkConsistency(repaired, constraints)
+          if (repairedAudit.violations.filter((v) => v.severity === 'hard').length <=
+              audit.violations.filter((v) => v.severity === 'hard').length) {
+            normalized = repaired
+            audit = repairedAudit
+          }
+        }
+      } catch (repairError) {
+        console.warn('Reparo da atividade falhou:', repairError)
       }
-    )
+      if (!audit.pass) normalized = deterministicCleanup(normalized, audit.violations)
+    }
 
     validateActivity(normalized)
 

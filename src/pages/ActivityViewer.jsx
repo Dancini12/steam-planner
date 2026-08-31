@@ -241,6 +241,27 @@ export default function ActivityViewer({ activityData, formData, projectId, curr
         </div>
       </div>
 
+      {Array.isArray(initialActivity?._warnings) && initialActivity._warnings.length > 0 && (
+        <div
+          style={{
+            border: "1px solid rgba(251, 191, 36, 0.4)",
+            background: "rgba(251, 191, 36, 0.08)",
+            borderRadius: "10px",
+            padding: "0.85rem 1rem",
+            marginBottom: "1rem",
+            fontSize: "0.88rem",
+            color: "#FDE68A"
+          }}
+        >
+          <strong>Revisar antes de aplicar:</strong>
+          <ul style={{ margin: "0.4rem 0 0", paddingLeft: "1.2rem" }}>
+            {initialActivity._warnings.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div style={sectionStyle}>
         <div style={sectionTitleStyle}>1. Experiência de aprendizagem STEAM + Cultura Maker</div>
         <div style={twoColStyle}>

@@ -1,3 +1,12 @@
+import {
+  NEUTRAL_STAGE_TITLES,
+  stageTitlesForModality,
+  inferModality,
+  buildAllowedSet,
+  findForbiddenResources,
+  normalize as normalizeToken
+} from "./ai/generationContract.js";
+
 const STAGE_TITLES = [
   "ETAPA 1 - Preparar a base e dividir materiais",
   "ETAPA 2 - Construir as partes principais",
@@ -510,7 +519,7 @@ function isGenericAssemblyText(text) {
   ].some((phrase) => cleaned === phrase || cleaned.includes(`${phrase}.`));
 }
 
-function normalizeStages(activity, materials, theme, compact = false) {
+function normalizeStages(activity, materials, theme, compact = false, stageTitles = null) {
   const candidates = Array.isArray(activity.developmentAssemblySteps)
     ? activity.developmentAssemblySteps
     : Array.isArray(activity.assemblySteps)
@@ -524,8 +533,9 @@ function normalizeStages(activity, materials, theme, compact = false) {
             : [];
   const defaultDescriptions = buildDefaultAssemblyDescriptions(theme, materials);
   const maxChars = compact ? LIMITS.stageTight : LIMITS.stage;
+  const titles = Array.isArray(stageTitles) && stageTitles.length === 6 ? stageTitles : STAGE_TITLES;
 
-  return STAGE_TITLES.map((requiredTitle, index) => {
+  return titles.map((requiredTitle, index) => {
     const stage = candidates[index] || {};
     const rawDescription =
       typeof stage === "string"
@@ -534,10 +544,12 @@ function normalizeStages(activity, materials, theme, compact = false) {
     const description = isGenericAssemblyText(rawDescription)
       ? defaultDescriptions[index]
       : rawDescription;
+    // Se o modelo trouxe um título próprio (adaptado à modalidade), respeita-o
+    const modelTitle = typeof stage === "object" ? cleanText(stage.title) : "";
 
     return {
       number: index + 1,
-      title: requiredTitle,
+      title: modelTitle && /etapa\s*\d/i.test(modelTitle) ? modelTitle : requiredTitle,
       description: limitText(description || DEFAULT_STAGE_DESCRIPTIONS[index], maxChars)
     };
   });
@@ -624,24 +636,80 @@ function normalizeTeacherOrientation(activity) {
   return limitText(cleanText(source), 280);
 }
 
+const GABARITO_TYPES = new Set(["calculo", "aberta", "maker", "reflexiva"]);
+
 function normalizeTeacherGabarito(activity) {
   const source = activity.teacherGabarito || activity.gabarito || activity.answerKey;
   if (!source) return [];
-  // No limitText or slice — gabarito must never be truncated
+  // Preserva o formato tipado { title, type, text }; nunca trunca.
+  if (Array.isArray(source) && source.some((item) => item && typeof item === "object" && (item.text || item.content))) {
+    return source
+      .map((item) => {
+        if (typeof item === "string") return { title: "", type: "aberta", text: cleanText(item) };
+        const type = normalizeToken(item.type || "");
+        return {
+          title: cleanText(item.title || item.scenario || item.question || ""),
+          type: GABARITO_TYPES.has(type) ? type : "aberta",
+          text: cleanText(item.text || item.content || item.answer || item.description || "")
+        };
+      })
+      .filter((item) => item.text);
+  }
   return toTextArray(source)
     .map((item) => cleanText(item))
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((text) => ({ title: "", type: "aberta", text }));
 }
+
+const STEAM_WEIGHTS = new Set(["predominante", "complementar", "nao_se_aplica"]);
 
 function normalizeSteamConnection(activity) {
   const sc = activity.steamConnection || {};
   const keys = ["science", "technology", "engineering", "art", "mathematics"];
   const result = {};
   for (const key of keys) {
-    const value = cleanText(sc[key] || "");
-    result[key] = value ? limitText(value, 140) : "";
+    const raw = sc[key];
+    let text = "";
+    let weight = "";
+    if (raw && typeof raw === "object") {
+      text = cleanText(raw.text || raw.description || "");
+      weight = normalizeToken(raw.weight || "");
+    } else {
+      text = cleanText(raw || "");
+    }
+    if (!STEAM_WEIGHTS.has(weight)) weight = text ? "complementar" : "nao_se_aplica";
+    // Não fabrica texto onde o modelo não colocou ação real
+    result[key] = { text: text ? limitText(text, 160) : "", weight };
   }
   return result;
+}
+
+function normalizeTestTable(activity) {
+  const tt = activity.testTable || activity.dataTable;
+  if (tt && typeof tt === "object" && Array.isArray(tt.columns) && tt.columns.length) {
+    return {
+      columns: tt.columns.map((c) => cleanText(c)).filter(Boolean).slice(0, 8),
+      rows: Array.isArray(tt.rows)
+        ? tt.rows
+            .map((row) => (Array.isArray(row) ? row.map((c) => cleanText(c)) : []))
+            .filter((row) => row.length)
+            .slice(0, 12)
+        : []
+    };
+  }
+  // Legado: procura "TABELA DE TESTE - a | b | c" dentro de readyMaterials
+  const legacy = (toTextArray(activity.readyMaterials) || []).find((item) =>
+    /^tabela de teste/i.test(item)
+  );
+  if (legacy) {
+    const cols = legacy
+      .replace(/^tabela de teste\s*[-:]\s*/i, "")
+      .split("|")
+      .map((c) => cleanText(c).replace(/\.$/, ""))
+      .filter(Boolean);
+    if (cols.length >= 2) return { columns: cols.slice(0, 8), rows: [] };
+  }
+  return null;
 }
 
 function buildActivityManual(stages) {
@@ -680,7 +748,23 @@ function buildSummary(activity) {
   );
 }
 
+function applyMaterialConstraints(materials, constraints) {
+  const list = constraints?.availableMaterialsList || [];
+  if (!constraints?.strictMaterials || !list.length) return { materials, filtered: false };
+  const allowedSet = buildAllowedSet(list);
+  const kept = materials.filter((m) => {
+    const toks = normalizeToken(m).split(/[^a-zçãõáéíóúâêô]+/).filter((t) => t.length >= 3);
+    return toks.some((t) => allowedSet.has(t)) || findForbiddenResources(m, allowedSet).length === 0;
+  });
+  // Se sobrou pouco, usa a própria lista do professor como materiais
+  const finalMaterials = kept.length >= Math.min(2, list.length)
+    ? kept
+    : list.map((m) => m);
+  return { materials: finalMaterials, filtered: finalMaterials.length !== materials.length };
+}
+
 export function normalizeLearningExperience(activity = {}, context = {}) {
+  const constraints = context.constraints || null;
   const theme = getFirstText(activity.theme, context.theme);
   const title = limitText(
     getFirstText(activity.title, activity.activityTitle) || `Desafio Maker: ${theme || "Solução prática"}`,
@@ -703,11 +787,28 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
     LIMITS.mission
   );
 
-  const rawMaterials = compactArray(activity.materials, 6, LIMITS.material, buildDefaultMaterials(theme));
-  const materialBundle = diversifyDefaultMaterialBundle(rawMaterials, theme);
-  const materials = materialBundle.materials;
+  const strict = Boolean(constraints?.strictMaterials && (constraints.availableMaterialsList || []).length);
+  const materialFallback = strict
+    ? (constraints.availableMaterialsList || []).map((m) => `${m} - quantidade por grupo`)
+    : buildDefaultMaterials(theme);
+  const rawMaterials = compactArray(activity.materials, 6, LIMITS.material, materialFallback);
+  const materialBundle = strict
+    ? { materials: rawMaterials, diversified: false }
+    : diversifyDefaultMaterialBundle(rawMaterials, theme);
+  const constrained = applyMaterialConstraints(materialBundle.materials, constraints);
+  const materials = constrained.materials;
 
-  let stages = normalizeStages(activity, materials, theme);
+  const modality =
+    normalizeToken(activity.makerModality || "") ||
+    inferModality({
+      availableMaterials: constraints?.availableMaterials || "",
+      activityText: `${theme} ${activity.objective || ""} ${activity.makerChallenge || ""} ${(activity.stages || [])
+        .map((s) => (typeof s === "string" ? s : s.description))
+        .join(" ")}`
+    });
+  const stageTitles = stageTitlesForModality(modality);
+
+  let stages = normalizeStages(activity, materials, theme, false, stageTitles);
   let assemblySteps = stages;
   const sourceMaterialFunctions = materialBundle.diversified ? [] : toTextArray(activity.materialFunctions);
   const rawMaterialFunctions = compactArray(
@@ -742,6 +843,40 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
   const steamConnection = normalizeSteamConnection(activity);
   const teacherGabarito = normalizeTeacherGabarito(activity);
   const teacherOrientation = normalizeTeacherOrientation(activity);
+  const testTable = normalizeTestTable(activity);
+  const dataPlan = activity.dataPlan && typeof activity.dataPlan === "object"
+    ? {
+        collected: toTextArray(activity.dataPlan.collected).slice(0, 8),
+        calculated: toTextArray(activity.dataPlan.calculated).slice(0, 8),
+        compared: toTextArray(activity.dataPlan.compared).slice(0, 8)
+      }
+    : null;
+  const glossary = toTextArray(activity.glossary).slice(0, 6);
+  const bnccJustification =
+    activity.bnccJustification && typeof activity.bnccJustification === "object"
+      ? activity.bnccJustification
+      : {};
+  const optionalMaterials = toTextArray(activity.optionalMaterials).slice(0, 6);
+  const figure =
+    activity.figure && typeof activity.figure === "object" && cleanText(activity.figure.type)
+      ? { type: cleanText(activity.figure.type), caption: cleanText(activity.figure.caption || "") }
+      : null;
+
+  // Recursos citados fora da lista rígida do professor → aviso
+  const violations = [];
+  if (strict) {
+    const allowedSet = buildAllowedSet(constraints.availableMaterialsList);
+    const scan = [
+      ...materials,
+      ...(stages || []).map((s) => s.description),
+      makerChallenge,
+      finalProduct,
+      ...readyMaterials,
+      ...(teacherGabarito || []).map((g) => g.text)
+    ].join(" \n ");
+    const forbidden = findForbiddenResources(scan, allowedSet);
+    if (forbidden.length) violations.push({ type: "materiais", forbidden });
+  }
 
   let normalized = {
     ...activity,
@@ -752,9 +887,16 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
     problem,
     mission,
     guidingQuestion: makerChallenge,
+    makerModality: modality,
     materials,
+    optionalMaterials,
     materialFunctions,
     readyMaterials,
+    dataPlan,
+    testTable,
+    glossary,
+    bnccJustification,
+    figure,
     stages,
     developmentStages: stages,
     developmentAssemblySteps: stages,
@@ -771,6 +913,7 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
     steamConnection,
     teacherGabarito,
     teacherOrientation,
+    _violations: violations,
     summary: buildSummary({ problem, mission, finalProduct }),
     activityManual: buildActivityManual(stages),
     priorKnowledge: [],
@@ -783,7 +926,7 @@ export function normalizeLearningExperience(activity = {}, context = {}) {
 
   const originalChars = estimateContentChars(normalized);
   if (originalChars > LIMITS.maxChars) {
-    stages = normalizeStages(activity, materials, theme, true);
+    stages = normalizeStages(activity, materials, theme, true, stageTitles);
     assemblySteps = stages;
     readyMaterials = normalizeReadyMaterials(activity, theme, true);
     assessmentRubric = normalizeAssessmentRubric(activity, true);
@@ -844,14 +987,15 @@ export function validateLearningExperience(activity) {
   if (!activity.mission) missing.push("missão");
   if (!(activity.materials || []).length) missing.push("materiais");
   if (!(activity.materialFunctions || []).length) missing.push("função dos materiais");
-  if (!(activity.readyMaterials || []).length) missing.push("materiais prontos");
+  if (!(activity.readyMaterials || []).length && !activity.testTable) missing.push("cenários ou tabela de teste");
   if ((activity.stages || []).length !== 6) missing.push("6 etapas de desenvolvimento e montagem");
   if ((activity.assemblySteps || []).length !== 6) missing.push("passo a passo de montagem");
-  if (!/constru|mont|cria|prototip/.test(text)) missing.push("construção/prototipagem");
+  // "fazer maker" — construir OU calcular OU representar OU simular OU investigar
+  if (!/constru|mont|cria|prototip|calcul|represent|desenh|model|simul|investig|elabor|planej/.test(text))
+    missing.push("ação de criação (construir/calcular/representar/simular/investigar)");
   if (!/test/.test(text)) missing.push("teste prático");
-  if (!/melhor|ajust|redesign|modific/.test(text)) missing.push("melhoria/redesign");
-  if (!/base/.test(text)) missing.push("preparo da base");
-  if (!/simula|cen[aá]rio|situa[cç][aã]o real/.test(text)) missing.push("simulação real");
+  if (!/melhor|ajust|redesign|modific|revis/.test(text)) missing.push("melhoria/revisão");
+  if (!/cen[aá]rio|situa[cç][aã]o|simula|compar/.test(text)) missing.push("cenário/comparação");
   if (/\.{3,}|…/.test(text)) missing.push("texto truncado com reticências");
   if (!activity.makerChallenge) missing.push("desafio maker");
   if (!activity.finalProduct) missing.push("produto final");

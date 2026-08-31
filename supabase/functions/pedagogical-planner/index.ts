@@ -1,3 +1,12 @@
+// ============================================================
+// DEPRECATED — esta Edge Function NÃO é chamada pelo app.
+// A geração de planos de aula roda no cliente
+// (src/lib/ai/pedagogicalPlannerService.js), que aplica as
+// regras sistêmicas de src/lib/ai/generationContract.js
+// (restrição rígida de materiais, auditoria de coerência,
+// gabarito tipado, etc.). Mantida só como referência histórica.
+// Se for reativada, replique as regras do cliente antes.
+// ============================================================
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
