@@ -34,13 +34,20 @@ function loadExportInternals() {
   vm.runInNewContext(`${source}
 this.__test = {
   extractFinancialScenarioData,
-  buildFinancialGabaritoFromReadyMaterials
+  buildFinancialGabaritoFromReadyMaterials,
+  validateFinalProductSemantics,
+  repairFinalProductBeforeExport
 };`, context);
 
   return context.__test;
 }
 
-const { extractFinancialScenarioData, buildFinancialGabaritoFromReadyMaterials } = loadExportInternals();
+const {
+  extractFinancialScenarioData,
+  buildFinancialGabaritoFromReadyMaterials,
+  validateFinalProductSemantics,
+  repairFinalProductBeforeExport
+} = loadExportInternals();
 
 let failures = 0;
 function check(name, cond, detail) {
@@ -154,6 +161,31 @@ const simpleData = extractFinancialScenarioData({
 });
 check("Cenário simples: receita = R$3.000", simpleData[0].receitaTotal === 3000, `recebido ${simpleData[0].receitaTotal}`);
 check("Cenário simples: saldo = R$3.000 - R$1.700 = R$1.300", simpleData[0].saldo === 1300, `recebido ${simpleData[0].saldo}`);
+
+// ---- "Produto final" vago não pode travar a exportação em loop ----
+// Caso de origem: exportação bloqueada com "Produto final não indica
+// claramente o que será entregue" numa atividade cujo finalProduct era
+// coerente mas só usava sinônimos fora da lista de substantivos aceitos
+// (nenhum reparo do pipeline tocava em finalProduct — travava sempre).
+{
+  const vague = { finalProduct: "Um conjunto de anotações e desenhos organizados pelos alunos, prontos para serem entregues ao professor." };
+  const before = validateFinalProductSemantics(vague);
+  check("Produto final vago é reprovado antes do reparo", !before.ok, JSON.stringify(before.blocking));
+  const repaired = repairFinalProductBeforeExport(vague);
+  const after = validateFinalProductSemantics(repaired);
+  check("Reparo determinístico corrige o produto final (nunca IA, nunca bloqueia)", after.ok, repaired.finalProduct);
+
+  const tooShort = { finalProduct: "Curto." };
+  const repairedShort = repairFinalProductBeforeExport(tooShort);
+  check("Produto final vazio/curto vira um texto válido", validateFinalProductSemantics(repairedShort).ok, repairedShort.finalProduct);
+
+  const alreadyGood = { finalProduct: "Um documento com a análise completa e o comparativo entre as duas turmas, incluindo gráficos e conclusões finais dos grupos participantes." };
+  check(
+    "Produto final já claro (sinônimo antes fora da lista, ex.: 'documento') passa sem reparo",
+    validateFinalProductSemantics(alreadyGood).ok,
+    JSON.stringify(validateFinalProductSemantics(alreadyGood).blocking)
+  );
+}
 
 if (failures) {
   console.log(`\n${failures} falha(s).`);
