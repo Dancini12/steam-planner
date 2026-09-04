@@ -1490,6 +1490,12 @@ const EXPENSE_RE = /\b(despesas?|gastos?|custos?|contas?|pagamentos?)\b/i;
 const FAMILY_REVENUE_RE = /\b(pai|m[aã]e|respons[aá]vel(?:\s+\d+)?|cuidador(?:a)?)\b/i;
 const BRL_MATCH_RE = /-?\s*R\$\s*(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{2})?/g;
 
+// Frase de ligação sem conteúdo descritivo próprio, do tipo "gerando uma
+// despesa inesperada de", "causando um gasto extra de", "resultando em um
+// custo de" — quando o segmento colado ao valor é só isso, o rótulo real
+// está no segmento anterior.
+const BRIDGE_CLAUSE_ONLY_RE = /^(?:gerando|causando|resultando(?:\s+em)?|provocando|gerou|causou|resultou(?:\s+em)?|provocou|acarretando|acarretou)\s*(?:uma?\s+)?(?:despesa|gasto|custo)?\s*(?:extra|inesperad[ao]s?)?\s*(?:de|com)?$/i;
+
 function buildEmptyStructuredBudget() {
   return {
     receitas: [],
@@ -1538,6 +1544,10 @@ function normalizeFinancialCategory(category) {
 function cleanGenericFinancialLabel(label) {
   return reviewText(label || "")
     .replace(BRL_MATCH_RE, " ")
+    // "o filho da família precisou de um tratamento dentário urgente" — o
+    // sujeito da frase não é o que descreve o imprevisto; fica só o que
+    // vem depois de "precisou de".
+    .replace(/^.*?\bprecisou\s+de\s+(?:um|uma)?\s*/i, "")
     .replace(/\bal[eé]m\s+das?\s+despesas?\s+do\s+cen[aá]rio\s*\d+\s*,?\s*/gi, " ")
     .replace(/\b(?:surge|surgiu|apareceu|h[aá])\s+(?:uma?|um)\s+/gi, " ")
     .replace(/\b(?:gastos?|despesas?)\s+inesperad[oa]s?\s+(?:com|de)\s+/gi, " ")
@@ -1961,7 +1971,7 @@ function extractPercentageSavingsGoal(scenarioText) {
 // fixa e "transporte" como variável — invertendo a categoria real quando o
 // cenário declara o contrário.
 const FINANCIAL_HEADER_LEAD_RE = "(?:^|[\\n.;]|\\b(?:e|ou|o|a|os|as|um|uma|este|esta|esse|essa|estes|estas|esses|essas|seu|sua|seus|suas|nosso|nossa|nossos|nossas|meu|minha|meus|minhas)\\s+)";
-const FINANCIAL_HEADER_FILLER_RE = "\\s*(?:(?:estimad[ao]s?|previst[ao]s?)\\s+)?(?:s[aã]o|foram|ser[aã]o|est[aã]o|[eé])?\\s*";
+const FINANCIAL_HEADER_FILLER_RE = "\\s*(?:(?:estimad[ao]s?|previst[ao]s?)\\s+)?(?:s[aã]o|foram|ser[aã]o|est[aã]o|inclu(?:em|i)|compreende[m]?|totaliza[m]?|soma[m]?|correspondem|abrangem|contemplam|[eé])?\\s*";
 
 function getCurrentFinancialSection(before) {
   const scope = stripDecorativeMarkers(before || "")
@@ -2064,15 +2074,27 @@ function parseFinancialEntries(text) {
       const labelSourceStart = previousEnd !== null && previousEnd >= windowStart ? previousEnd : windowStart;
       const labelSource = stripDecorativeMarkers(sourceText.slice(labelSourceStart, match.index)).toLowerCase();
       const rawAfter = sourceText.slice(match.index + match[0].length, match.index + match[0].length + 90).toLowerCase();
-      const label = labelSource
+      const labelSegments = labelSource
         .split(/[.;:\n,]/)
         .map((part) => part
           .replace(/[-–—]/g, " ")
           .replace(/^(?:e|ou)\s+/i, "")
           .replace(/\s+/g, " ")
           .trim())
-        .filter(Boolean)
-        .pop() || "";
+        .filter(Boolean);
+      // "...um tratamento dentário urgente, gerando uma despesa inesperada
+      // de R$ 600,00" — o segmento colado no valor é só uma frase de
+      // ligação (sem conteúdo próprio); o que descreve o imprevisto está no
+      // segmento ANTERIOR. Sem isso, o rótulo vira "gerando uma inesperada".
+      // As frases de ligação puladas continuam guardadas (bridgeClauses):
+      // elas costumam carregar o sinal de classificação (ex.: "inesperada"),
+      // então entram na CLASSIFICAÇÃO mesmo fora do rótulo exibido.
+      const bridgeClauses = [];
+      let label = labelSegments.pop() || "";
+      while (labelSegments.length && BRIDGE_CLAUSE_ONLY_RE.test(label)) {
+        bridgeClauses.push(label);
+        label = labelSegments.pop();
+      }
       const normalizedLabel = label
         .replace(/[-–—]/g, " ")
         .replace(/\s+/g, " ")
@@ -2082,7 +2104,8 @@ function parseFinancialEntries(text) {
         .replace(/[-–—]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
-      const type = classifyFinancialEntry({ label: normalizedLabel, currentSection, afterClause });
+      const classificationContext = [afterClause, ...bridgeClauses].filter(Boolean).join(" ");
+      const type = classifyFinancialEntry({ label: normalizedLabel, currentSection, afterClause: classificationContext });
       const description = normalizeFinancialDescription(normalizedLabel, "Valor informado");
       const deltaLocal = `${normalizedLabel} ${afterClause}`.replace(/\s+/g, " ").trim();
       const deltaSign = type === FINANCIAL_ENTRY_TYPE.RECEITA_AJUSTE

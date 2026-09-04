@@ -113,6 +113,39 @@ check(
   improvementCard2
 );
 
+// ---- Caso 3: cabeçalho "incluem" + imprevisto narrado em frase (não lista) ----
+// Atividade "Orçamento Familiar: Equilibrando Receitas e Despesas" gerada
+// em 2026-09-04: "As despesas variáveis incluem:" não batia com o regex de
+// cabeçalho (só cobria são/estão/foram/...), então TODOS os itens do
+// Cenário 1 caíam em despesas fixas. E o rótulo do imprevisto no Cenário 2
+// virava "gerando uma inesperada" (frase de ligação sem conteúdo).
+const READY_MATERIALS_3 = [
+  "CENÁRIO 1 - Família Silva (Situação Inicial): A família Silva tem uma receita mensal de R$ 4.000,00. Suas despesas fixas são: Aluguel R$ 1.200,00, Energia R$ 250,00, Água R$ 100,00, Internet R$ 120,00. As despesas variáveis incluem: Alimentação R$ 1.500,00, Transporte R$ 300,00, Lazer R$ 200,00. Calcule o saldo orçamentário e identifique quais despesas consomem a maior parte da receita.",
+  "CENÁRIO 2 - Família Silva (Imprevisto e Ajuste): No mês seguinte, o filho da família Silva precisou de um tratamento dentário urgente, gerando uma despesa inesperada de R$ 600,00. Além disso, a receita da família diminuiu em R$ 500,00 devido a uma redução de horas trabalhadas. Como a família pode reorganizar suas despesas variáveis para cobrir o imprevisto e a queda da receita sem entrar em dívidas?"
+];
+
+const financialData3 = extractFinancialScenarioData({ readyMaterials: READY_MATERIALS_3 });
+check(
+  "Caso 3 — Cenário 1: despesas fixas = R$1.670 (não inclui alimentação/transporte/lazer)",
+  financialData3[0].despesasFixasTotal === 1670,
+  `recebido ${financialData3[0].despesasFixasTotal}`
+);
+check(
+  "Caso 3 — Cenário 1: despesas variáveis = R$2.000 (cabeçalho 'incluem' reconhecido)",
+  financialData3[0].despesasVariaveisTotal === 2000,
+  `recebido ${financialData3[0].despesasVariaveisTotal}`
+);
+check("Caso 3 — Cenário 1: saldo = R$4.000 - R$3.670 = R$330", financialData3[0].saldo === 330, `recebido ${financialData3[0].saldo}`);
+check("Caso 3 — Cenário 2: receita = R$4.000 - R$500 = R$3.500", financialData3[1].receitaTotal === 3500, `recebido ${financialData3[1].receitaTotal}`);
+check("Caso 3 — Cenário 2: saldo = R$3.500 - R$4.270 = -R$770", financialData3[1].saldo === -770, `recebido ${financialData3[1].saldo}`);
+
+const gabarito3 = buildFinancialGabaritoFromReadyMaterials(READY_MATERIALS_3);
+check(
+  "Caso 3 — rótulo do imprevisto é legível ('tratamento dentário urgente', não 'gerando uma inesperada')",
+  /tratamento dent[aá]rio urgente/i.test(gabarito3[1]) && !/gerando uma inesperada/i.test(gabarito3[1]),
+  gabarito3[1]
+);
+
 // ---- Regressão: cenário simples sem ajustes continua funcionando ----
 const simpleData = extractFinancialScenarioData({
   readyMaterials: [
