@@ -332,8 +332,35 @@ function CronPanel() {
     <div style={card}>
       <h2 style={h2}>Retreino automático (opcional)</h2>
       <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginTop: 0 }}>
-        Para retreinar o modelo toda madrugada, habilite <code>pg_cron</code> e{" "}
-        <code>pg_net</code> em Database → Extensions e rode uma vez no SQL Editor:
+        O botão “Treinar agora” acima sempre funciona na hora. Para o modelo se
+        manter atualizado sozinho, escolha <strong>uma</strong> das opções abaixo — as
+        duas fazem a mesma coisa (chamam esta função às 03:00 UTC todo dia); ativar as
+        duas só treina em dobro sem necessidade.
+      </p>
+
+      <h3 style={{ fontSize: "0.9rem", color: "#e8ecf4", margin: "1rem 0 0.4rem" }}>
+        Opção 1 — Vercel Cron (recomendada, já no repositório)
+      </h3>
+      <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginTop: 0 }}>
+        <code>vercel.json</code> e <code>api/cron-train-model.js</code> já agendam o
+        retreino diário — só falta cadastrar em <em>Vercel → Project Settings →
+        Environment Variables</em>:
+      </p>
+      <div style={codeBox}>
+        {`SUPABASE_SERVICE_ROLE_KEY = <sua service role key do Supabase>
+CRON_SECRET = <uma string aleatória — ex.: saída de "openssl rand -hex 32">`}
+      </div>
+      <p style={{ color: "#64748b", fontSize: "0.78rem", marginBottom: 0 }}>
+        Depois de salvar, faça um novo deploy. A Vercel envia o <code>CRON_SECRET</code>{" "}
+        sozinha em cada chamada agendada; o endpoint recusa qualquer chamada sem ele.
+      </p>
+
+      <h3 style={{ fontSize: "0.9rem", color: "#e8ecf4", margin: "1.1rem 0 0.4rem" }}>
+        Opção 2 — pg_cron no Supabase (alternativa)
+      </h3>
+      <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginTop: 0 }}>
+        Habilite <code>pg_cron</code> e <code>pg_net</code> em Database → Extensions e
+        rode uma vez no SQL Editor:
       </p>
       <div style={codeBox}>
         {`alter database postgres
@@ -344,7 +371,7 @@ alter database postgres
 -- depois reaplique supabase/migrations/010_ml_retrain_cron.sql`}
       </div>
       <p style={{ color: "#64748b", fontSize: "0.78rem", marginBottom: 0 }}>
-        Sem isso, o retreino é só pelo botão “Treinar agora” acima.
+        Sem nenhuma das duas opções ativada, o retreino é só pelo botão “Treinar agora”.
       </p>
     </div>
   );
