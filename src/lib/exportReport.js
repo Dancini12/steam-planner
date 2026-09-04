@@ -3228,18 +3228,48 @@ function validateStagesSemantics(experience) {
   return { ok: blocking.length === 0, blocking };
 }
 
+// Substantivos que descrevem um entregável concreto. Compartilhado entre a
+// auditoria (validateFinalProductSemantics) e o reparo determinístico
+// (repairFinalProductBeforeExport) — a lista era curta demais e barrava
+// produtos finais válidos só por usar um sinônimo fora dela (ex.: "diário
+// de bordo", "cartilha", "infográfico", "planilha").
+const FINAL_PRODUCT_ARTIFACT_RE = /prot[oó]tipo|painel|mapa|texto|cartaz|maquete|circuito|relat[oó]rio|apresenta[cç][aã]o|modelo|registro|tabela|jogo|roteiro|experimento|document[oa]|di[aá]rio(?:\s+de\s+bordo)?|cartilha|[aá]lbum|quadro|gr[aá]fico|planilha|v[ií]deo|banner|infogr[aá]fico|folheto|boletim|hist[oó]ria\s+em\s+quadrinhos|desenho|maquete|simula[cç][aã]o|caderno|folha|dossi[eê]|feira|exposi[cç][aã]o/i;
+const FINAL_PRODUCT_EVIDENCE_RE = /evid[eê]ncia|registro|resultado|apresenta|relat[oó]rio|tabela|teste|explica|conclus[aã]o|an[aá]lise|c[aá]lculo/i;
+
 function validateFinalProductSemantics(experience) {
   const text = stripDecorativeMarkers(experience.finalProduct || "");
   const blocking = [];
   if (text.length < 20) blocking.push("Produto final incompleto.");
   if (hasTruncatedSentence(text)) blocking.push("Produto final termina com frase truncada.");
-  if (!/prot[oó]tipo|painel|mapa|texto|cartaz|maquete|circuito|relat[oó]rio|apresenta[cç][aã]o|modelo|registro|tabela|jogo|roteiro|experimento/i.test(text)) {
+  if (!FINAL_PRODUCT_ARTIFACT_RE.test(text)) {
     blocking.push("Produto final não indica claramente o que será entregue.");
   }
-  if (!/evid[eê]ncia|registro|resultado|apresenta|relat[oó]rio|tabela|teste|explica/i.test(text)) {
+  if (!FINAL_PRODUCT_EVIDENCE_RE.test(text)) {
     blocking.push("Produto final não indica evidência ou forma de apresentação.");
   }
   return { ok: blocking.length === 0, blocking };
+}
+
+// Última linha de defesa: se mesmo com a lista ampliada acima o texto ainda
+// não citar um entregável/evidência reconhecível, completa a frase em vez
+// de deixar a exportação travar nas mesmas 3 tentativas (nenhum outro
+// reparo do pipeline toca em "finalProduct").
+function repairFinalProductBeforeExport(experience) {
+  const original = stripDecorativeMarkers(experience.finalProduct || "").trim();
+  const hasArtifact = FINAL_PRODUCT_ARTIFACT_RE.test(original);
+  const hasEvidence = FINAL_PRODUCT_EVIDENCE_RE.test(original);
+  if (original.length >= 20 && !hasTruncatedSentence(original) && hasArtifact && hasEvidence) {
+    return experience;
+  }
+
+  const base = original && original.length >= 10 ? original : "Registro da solução desenvolvida pela turma";
+  const withStop = /[.!?]$/.test(base) ? base : `${base}.`;
+  const sentences = [];
+  if (!hasArtifact) sentences.push(" O produto final é entregue como um registro escrito (relatório).");
+  if (!hasEvidence) sentences.push(" O registro reúne os resultados, cálculos e evidências obtidos na atividade.");
+  const suffix = sentences.join("");
+
+  return { ...experience, finalProduct: fixDanglingText(`${withStop}${suffix}`) };
 }
 
 function validateReferenceSemantics(experience) {
@@ -3876,6 +3906,10 @@ function getExportRepairCorrections(blocking, warnings) {
     corrections.push("gabarito pedagógico reconstruído por tipo de atividade");
   }
 
+  if (/produto final n[aã]o indica|produto final incompleto|produto final termina com frase truncada/i.test(text)) {
+    corrections.push("produto final completado com entrega e evidência explícitas");
+  }
+
   if (/situa[cç][aã]o-problema|problema real|Ess[eê]ncia STEAM \+ Maker/i.test(text)) {
     corrections.push("situação-problema maker revisada");
   }
@@ -3903,6 +3937,11 @@ function repairExperienceBeforeExport(experience, blocking, warnings) {
   if (corrections.some((item) => /gabarito pedagógico/i.test(item))) {
     repaired = rebuildGlobalTeacherGabarito(repaired);
     console.info("[export-repair] global answer key rebuilt");
+  }
+
+  if (corrections.some((item) => /produto final completado/i.test(item))) {
+    repaired = repairFinalProductBeforeExport(repaired);
+    console.info("[export-repair] final product rewritten");
   }
 
   if (corrections.some((item) => /situação-problema maker/i.test(item))) {
