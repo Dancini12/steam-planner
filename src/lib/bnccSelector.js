@@ -1,16 +1,34 @@
 import { bnccHabilidades } from "../data/bncc.js";
 
+// Nem toda opção de "disciplina" do formulário é um componente oficial da
+// BNCC (o banco offline só cobre Ensino Fundamental — Anos Finais, com os
+// 9 componentes abaixo). Sem uma entrada aqui, a disciplina fica sem
+// filtro: selectBnccHabilidades busca no banco INTEIRO (todas as áreas),
+// e o desempate por ordem alfabética do código passa a decidir — o mesmo
+// código de Matemática (ex.: EF09MA16, geometria analítica) acaba
+// "vencendo" repetidamente em atividades sem nenhuma relação com ele.
+// Mapeamos para o componente mais próximo quando existe um claro (Ciências
+// cobre Física/Química/Biologia no Fundamental; Educação Financeira é tema
+// transversal, mas as atividades geradas aqui são predominantemente
+// matemáticas). Robótica/Filosofia/Sociologia ficam de fora de propósito —
+// não têm componente correspondente no Fundamental, e forçar um mapeamento
+// arriscado seria pior do que manter a busca ampla.
 const DISCIPLINE_COMPONENT = {
   artes: "Arte",
   arte: "Arte",
   ciencias: "Ciências",
   ciencia: "Ciências",
+  fisica: "Ciências",
+  quimica: "Ciências",
+  biologia: "Ciências",
   geografia: "Geografia",
   historia: "História",
   ingles: "Língua Inglesa",
   "lingua inglesa": "Língua Inglesa",
   "lingua portuguesa": "Língua Portuguesa",
-  matematica: "Matemática"
+  matematica: "Matemática",
+  "educacao financeira": "Matemática",
+  "educacao fisica": "Educação Física"
 };
 
 const STEAM_TERMS = {
