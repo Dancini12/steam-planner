@@ -1256,6 +1256,10 @@ function fixTruncatedSentences(text) {
   if (!text) return text;
   let t = String(text)
     .replace(/\bcom os resultados dos cen[aá]rios e as\.?$/i, "com os resultados dos cenários e as melhorias aplicadas.")
+    // "...os impactos dos imprevistos,." — vírgula sobrevive de um item de
+    // lista cortado antes do ponto final (a IA truncou a enumeração). Sem
+    // isso, a pontuação quebrada vai parar impressa no PDF.
+    .replace(/,\s*\.$/, ".")
     .trim();
   let previous = "";
   while (t !== previous && TRUNCATED_ENDING.test(t)) {
@@ -2588,11 +2592,21 @@ function buildImprovementSuggestion(financialData, improvementContext = "") {
   const positive = targetScenario;
 
   const saldo = positive.saldo;
+  // Meta de poupança/reserva em % pode estar no próprio texto do cenário
+  // (savingsGoalPct) OU só nas etapas — ex.: "Crie uma Reserva de Emergência
+  // de, no mínimo, 5% da Receita Familiar Mensal" na etapa "Revisar e
+  // melhorar", sem repetir isso no CENÁRIO. improvementContext (título +
+  // descrição de todas as etapas) cobre esse segundo caso.
+  const contextSavingsGoalPct = positive.savingsGoalPct ?? extractPercentageSavingsGoal(improvementContext);
+  const savingsGoalValue = positive.savingsGoalValue
+    ?? (contextSavingsGoalPct != null && positive.receitaTotal != null
+      ? Math.round(positive.receitaTotal * contextSavingsGoalPct / 100 * 100) / 100
+      : null);
   // Quando o enunciado pede uma meta de poupança em % (ex.: "pelo menos 5%
   // da nova receita"), a melhoria não pode ser um valor arbitrário — precisa
   // liberar exatamente o que falta para bater a meta.
-  const goalShortfall = positive.savingsGoalValue != null
-    ? Math.round(Math.max(0, positive.savingsGoalValue - saldo) * 100) / 100
+  const goalShortfall = savingsGoalValue != null
+    ? Math.round(Math.max(0, savingsGoalValue - saldo) * 100) / 100
     : 0;
   const primaryAmount = goalShortfall > 0 ? goalShortfall : Math.min(saldo, 150);
   const primaryResult = saldo + primaryAmount;
@@ -2601,14 +2615,24 @@ function buildImprovementSuggestion(financialData, improvementContext = "") {
     "Melhoria sugerida:",
     `Reduzir ${fmt(primaryAmount)} em despesas variáveis, como lazer, transporte, alimentação fora de casa ou compras não essenciais.`,
     "Resultado após melhoria:",
-    `${fmt(saldo)} + ${fmt(primaryAmount)} = ${fmt(primaryResult)}.`,
+    `${fmt(saldo)} + ${fmt(primaryAmount)} = ${fmt(primaryResult)}.`
+  ];
+  // Mostra o cálculo da meta/reserva percentual sempre que ela existir —
+  // mesmo quando o saldo já cobre a meta sem precisar da redução, o
+  // enunciado pede esse valor explicitamente e o gabarito precisa registrá-lo.
+  if (savingsGoalValue != null) {
+    lines.push(`Reserva/poupança exigida (${contextSavingsGoalPct}% da receita de ${fmt(positive.receitaTotal)}): ${fmt(savingsGoalValue)}.`);
+  }
+  lines.push(
     "Interpretação:",
     goalShortfall > 0
-      ? `Essa redução libera os ${formatCurrencyBRL(positive.savingsGoalValue)} (${positive.savingsGoalPct}% da receita) que a família precisa destinar à poupança de emergência neste cenário.`
-      : positive.metasPoupancaTotal > 0 || positive.imprevistosTotal > 0
-        ? "A família cobre o imprevisto, mantém o compromisso financeiro planejado e ainda preserva saldo positivo."
-        : "A melhoria aumenta o saldo final e ajuda a preservar parte da poupança."
-  ];
+      ? `Essa redução libera os ${formatCurrencyBRL(savingsGoalValue)} (${contextSavingsGoalPct}% da receita) que a família precisa destinar à reserva/poupança de emergência neste cenário.`
+      : savingsGoalValue != null
+        ? `O saldo de ${fmt(saldo)}, já antes desta redução extra, cobre os ${fmt(savingsGoalValue)} exigidos de reserva/poupança — a redução apenas amplia a folga.`
+        : positive.metasPoupancaTotal > 0 || positive.imprevistosTotal > 0
+          ? "A família cobre o imprevisto, mantém o compromisso financeiro planejado e ainda preserva saldo positivo."
+          : "A melhoria aumenta o saldo final e ajuda a preservar parte da poupança."
+  );
 
   // Secondary: if there was an imprevisto, offer option to fully restore previous saldo
   if (positive.imprevistosTotal > 0 && positive.imprevistosTotal !== primaryAmount) {
