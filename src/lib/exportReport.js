@@ -564,9 +564,26 @@ function abbreviateMaterialQuantity(qty) {
     .trim();
 }
 
+// Mapeia sinônimos de distribuição para o conjunto canônico aceito na
+// exportação ("por grupo | por aluno | por turma | para a turma |
+// conforme disponibilidade"). O modelo escreve "por equipe", "por
+// estudante", "para a classe" etc. — semanticamente equivalentes.
+function canonicalizeDistribution(text) {
+  return String(text || "")
+    .replace(/\bpor\s+(equipes?|times?|trios?|duplas?|pares?|bancadas?|mesas?|grupinhos?|grupos?)\b/gi, "por grupo")
+    .replace(/\bpor\s+(estudantes?|participantes?|crian[çc]as?|integrantes?|pessoas?|jovens?|cada\s+alunos?|alunos?)\b/gi, "por aluno")
+    .replace(/\bpara\s+cada\s+(grupo|equipe|dupla|trio)\b/gi, "por grupo")
+    .replace(/\bpara\s+cada\s+(aluno|estudante|crian[çc]a)\b/gi, "por aluno")
+    .replace(/\bpara\s+(toda\s+)?a\s+(turma|classe|sala|turno)\b/gi, "para a turma")
+    .replace(/\bpara\s+o\s+grupo\b/gi, "por grupo")
+    .replace(/\bconforme\s+(a\s+)?disponibilidade\b/gi, "conforme disponibilidade");
+}
+
+const CANONICAL_DISTRIBUTION_RE = /\b(por\s+grupo|por\s+aluno|por\s+turma|para\s+a\s+turma|conforme\s+disponibilidade)\b/i;
+
 function normalizeMaterialQuantityUnit(qty, unit) {
-  let normalizedQty = stripDecorativeMarkers(qty || "").trim() || "1 unidade";
-  let normalizedUnit = stripDecorativeMarkers(unit || "").trim() || "por grupo";
+  let normalizedQty = canonicalizeDistribution(stripDecorativeMarkers(qty || "").trim()) || "1 unidade";
+  let normalizedUnit = canonicalizeDistribution(stripDecorativeMarkers(unit || "").trim()) || "por grupo";
   const distributionMatch = normalizedQty.match(/\b(por\s+grupo|por\s+aluno|por\s+turma|para\s+a\s+turma|conforme\s+disponibilidade)\b/i);
 
   if (distributionMatch) {
@@ -584,6 +601,14 @@ function normalizeMaterialQuantityUnit(qty, unit) {
       normalizedQty = [normalizedQty, typePrefix].filter(Boolean).join(" ");
     }
     normalizedUnit = unitDistribution[1];
+  } else if (!CANONICAL_DISTRIBUTION_RE.test(normalizedUnit)) {
+    // Sem distribuição reconhecível: o que sobrou é um tipo ("folha",
+    // "kit", "conjunto"…) e vai para a quantidade. A distribuição volta
+    // ao padrão para não travar a exportação por formatação.
+    if (normalizedUnit && !/^(unidades?|un\.?)$/i.test(normalizedUnit)) {
+      normalizedQty = [normalizedQty, normalizedUnit].filter(Boolean).join(" ");
+    }
+    normalizedUnit = "por grupo";
   }
 
   if (/^\d+(?:\s+a\s+\d+)?$/.test(normalizedQty)) {
@@ -2950,7 +2975,7 @@ function validateStagesSemantics(experience) {
   if (stages.length < 6) blocking.push("A atividade deve manter seis etapas de desenvolvimento.");
   if (uniqueDescriptions.size < Math.min(4, stages.length)) blocking.push("Etapas repetidas ou genéricas demais.");
   if (!/prepar|organiza|separ/i.test(text)) blocking.push("Etapas sem preparação clara dos materiais.");
-  if (!/constru|monta|cria|produz/i.test(text)) blocking.push("Etapas sem construção ou criação prática.");
+  if (!/constru|monta|cria|produz|calcul|elabor|desenh|represent|model|planej|estrutur|organiz|simul|roteir|compos|prototip|program|investig|mapea/i.test(text)) blocking.push("Etapas sem construção ou criação prática.");
   if (!/test|aplica|experimenta|simula/i.test(text)) blocking.push("Etapas sem teste com situação real.");
   if (!/melhor|ajust|revis|depur|corrig/i.test(text)) blocking.push("Etapas sem ajuste após teste.");
   if (!/apresent|socializ|evid[eê]ncia|resultado/i.test(text)) blocking.push("Etapas sem apresentação de produto e evidências.");
@@ -3182,12 +3207,35 @@ function evaluateBRLExpression(expression) {
   }, 0);
 }
 
+// Só reprova uma linha quando ela é uma conta aditiva simples e
+// autocontida ("parcela + parcela = resultado") que claramente não
+// fecha. Tudo que o avaliador aditivo não consegue conferir com
+// segurança — multiplicação, porcentagem, juros/taxa, divisão,
+// cálculo encadeado (vários "="), quantidade solta fora de "R$" —
+// passa. A auditoria de conteúdo do gerador cobre esses casos.
 function validateGabaritoMath(item) {
   const lines = String(item || "").split(/\n+/);
   return lines.every((line) => {
     if (!/=/.test(line) || !/R\$/.test(line)) return true;
-    const [left, ...rightParts] = line.split("=");
-    const right = rightParts.join("=");
+    // Cálculo encadeado: não dá para conferir por soma simples.
+    if ((line.match(/=/g) || []).length !== 1) return true;
+    // Operações fora do alcance do avaliador aditivo.
+    if (/\d\s*[x×*÷]|[x×*÷]\s*R\$|R\$[\d.,\s]*\/|%|\bpor\s?cento\b|\bjuros?\b|\btaxa\s+de\b|\bm[eé]dia\b/i.test(line)) return true;
+
+    const [left, right] = line.split("=");
+    const leftCount = (left.match(/R\$/g) || []).length;
+    const rightCount = (right.match(/R\$/g) || []).length;
+    // Só conferimos o formato "conta = resultado": >= 2 parcelas à
+    // esquerda e exatamente 1 valor à direita.
+    if (leftCount < 2 || rightCount !== 1) return true;
+    // Número solto à esquerda, fora de "R$" (quantidade, percentual,
+    // ano): o avaliador o ignoraria silenciosamente → não confiável.
+    const leftResidue = left
+      .slice(left.indexOf("R$"))
+      .replace(/-?R\$\s*[\d.]+(?:,\d{2})?/g, "")
+      .replace(/[+\-()\s]/g, "");
+    if (/\d/.test(leftResidue)) return true;
+
     const leftTotal = evaluateBRLExpression(left);
     const rightTotal = evaluateBRLExpression(right);
     if (leftTotal === null || rightTotal === null) return true;
