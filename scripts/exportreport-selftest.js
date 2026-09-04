@@ -89,6 +89,30 @@ check(
   improvementCard
 );
 
+// ---- Caso 2: meta percentual mencionada só na ETAPA (não no CENÁRIO) ----
+// Atividade "Orçamento em Papel" gerada em 2026-09-04: o Cenário 1 está
+// correto, mas a "Reserva de Emergência de, no mínimo, 5% da Receita
+// Familiar Mensal" só aparece na etapa "Revisar e melhorar" — o gabarito
+// precisa calcular e registrar esse valor mesmo assim.
+const READY_MATERIALS_2 = [
+  "CENÁRIO 1 - Situação esperada: Uma família tem receita mensal de R$ 4.000,00. Suas despesas fixas são: aluguel R$ 1.200,00; mensalidade da escola R$ 500,00; internet R$ 100,00; conta de água R$ 80,00; conta de luz R$ 120,00. As despesas variáveis estimadas são: alimentação R$ 800,00; transporte R$ 250,00; lazer R$ 150,00. Crie um orçamento que mostre o saldo mensal e o percentual de cada despesa em relação à receita.",
+  "CENÁRIO 2 - Imprevisto: No mês seguinte, a família enfrenta um aumento de R$ 200,00 na conta de luz devido ao calor intenso e uma despesa inesperada de R$ 300,00 com um conserto urgente em casa. Além disso, a receita familiar permaneceu a mesma. Como esses novos gastos afetam o orçamento do Cenário 1? Calcule o novo saldo mensal e identifique onde a família poderia ajustar gastos variáveis para não ter um impacto no saldo, considerando que o valor do lazer é flexível."
+];
+const IMPROVEMENT_CONTEXT_2 = "ETAPA 5 — Revisar e melhorar\nProponha ajustes no orçamento do Cenário 2 para evitar um Saldo Mensal negativo. Use a borracha e o lápis para modificar os valores das despesas variáveis flexíveis (como lazer) e recalcule até atingir um Saldo Mensal positivo ou neutro. Crie uma pequena 'Reserva de Emergência' de, no mínimo, 5% da Receita Familiar Mensal.";
+
+const financialData2 = extractFinancialScenarioData({ readyMaterials: READY_MATERIALS_2 });
+check("Caso 2 — Cenário 1: saldo = R$4.000 - R$3.200 = R$800", financialData2[0].saldo === 800, `recebido ${financialData2[0].saldo}`);
+check("Caso 2 — Cenário 2: compromisso = R$3.200 + R$200 + R$300 = R$3.700", financialData2[1].compromissoTotal === 3700, `recebido ${financialData2[1].compromissoTotal}`);
+check("Caso 2 — Cenário 2: saldo antes da melhoria = R$300", financialData2[1].saldo === 300, `recebido ${financialData2[1].saldo}`);
+
+const gabarito2 = buildFinancialGabaritoFromReadyMaterials(READY_MATERIALS_2, IMPROVEMENT_CONTEXT_2);
+const improvementCard2 = gabarito2[gabarito2.length - 1] || "";
+check(
+  "Reserva de 5% da receita (mencionada só na etapa) aparece calculada no gabarito: R$200,00",
+  /reserva.*r\$\s*200,00/i.test(improvementCard2),
+  improvementCard2
+);
+
 // ---- Regressão: cenário simples sem ajustes continua funcionando ----
 const simpleData = extractFinancialScenarioData({
   readyMaterials: [
