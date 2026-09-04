@@ -662,18 +662,6 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
                   style={classesNumberInputStyle}
                 />
               </div>
-              <div style={classesSuggestionsStyle}>
-                <SelectField
-                  label="Sugestões rápidas"
-                  placeholder="Clique para escolher uma duração"
-                  value={['1', '2', '3', '5', '8', '10'].includes(formData.numberOfClasses) ? formData.numberOfClasses : ''}
-                  options={[1, 2, 3, 5, 8, 10].map((num) => ({
-                    value: String(num),
-                    label: `${num} aula${num > 1 ? 's' : ''}`
-                  }))}
-                  onChange={handleNumberOfClassesChange}
-                />
-              </div>
             </div>
           </div>
         )
@@ -1467,13 +1455,6 @@ const classesNumberInputStyle = {
   color: '#1F2937',
   transition: 'border-color 0.2s ease',
   outline: 'none'
-}
-
-const classesSuggestionsStyle = {
-  padding: '16px',
-  backgroundColor: '#F0F9FF',
-  border: '1px solid #BFDBFE',
-  borderRadius: '8px'
 }
 
 const classesQuickSelectStyle = {
