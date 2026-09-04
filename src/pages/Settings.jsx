@@ -4,8 +4,7 @@ import { supabase } from "../lib/supabaseClient.js";
 
 export default function Settings({ onBack }) {
   const providerStatus = {
-    gemini: import.meta.env.VITE_ENABLE_GEMINI === 'true',
-    cerebras: import.meta.env.VITE_ENABLE_CEREBRAS === 'true'
+    gemini: import.meta.env.VITE_ENABLE_GEMINI === 'true'
   };
 
   const pageStyle = {
@@ -64,10 +63,6 @@ export default function Settings({ onBack }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
               <span>Gerador de projetos STEAM</span>
               <span style={badgeStyle(providerStatus.gemini)}>{providerStatus.gemini ? 'Ativo' : 'Inativo'}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
-              <span>Resumos, revisão e variações rápidas</span>
-              <span style={badgeStyle(providerStatus.cerebras)}>{providerStatus.cerebras ? 'Ativo' : 'Inativo'}</span>
             </div>
           </div>
         </Card>

@@ -884,8 +884,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
   ]
 
   const PROVIDER_META = {
-    gemini: { label: 'Google Gemini', role: 'Geração principal', color: '#4F46E5', badge: 'G' },
-    cerebras: { label: 'Cerebras llama-3.3-70b', role: 'Fallback rápido', color: '#10B981', badge: 'C' }
+    gemini: { label: 'Google Gemini', role: 'Geração principal', color: '#4F46E5', badge: 'G' }
   }
 
   const renderLoading = () => (

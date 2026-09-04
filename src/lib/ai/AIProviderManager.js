@@ -1,42 +1,5 @@
 import { AIProviders, DEFAULT_PROVIDER_ORDER } from './providers/index.js'
 
-const LONG_FORM_TYPES = new Set([
-  'project',
-  'steamproject',
-  'lessonplan',
-  'assessment',
-  'bncc',
-  'bibliography',
-  'pedagogicalactivity',
-  'justification',
-  'methodology',
-  'activity',
-  'atividade'
-])
-
-const QUICK_RESPONSE_TYPES = new Set([
-  'generic',
-  'review',
-  'improve',
-  'summary',
-  'title',
-  'ideas',
-  'variation',
-  'revision',
-  'language',
-  'clarity'
-])
-
-const CEREBRAS_TEXT_TYPES = new Set([
-  'bibliographyverification',
-  'classroomactivity'
-])
-
-function normalizeType(requestType) {
-  if (!requestType) return 'generic'
-  return String(requestType).toLowerCase().replace(/\s+/g, '')
-}
-
 function getProviderOrder() {
   return DEFAULT_PROVIDER_ORDER
     .map((name) => AIProviders[name])
@@ -44,28 +7,13 @@ function getProviderOrder() {
 }
 
 function choosePrimaryProvider(requestType, fileData) {
-  const type = normalizeType(requestType)
+  const order = getProviderOrder()
 
   if (fileData) {
-    const order = getProviderOrder()
     return order.find((provider) => provider.name === 'gemini') || order[0]
   }
 
-  if (QUICK_RESPONSE_TYPES.has(type) || CEREBRAS_TEXT_TYPES.has(type)) {
-    const order = getProviderOrder()
-    return order.find((provider) => provider.name === 'cerebras')
-      || order.find((provider) => provider.name === 'gemini')
-      || order[0]
-  }
-
-  if (LONG_FORM_TYPES.has(type)) {
-    const order = getProviderOrder()
-    return order.find((provider) => provider.name === 'gemini')
-      || order.find((provider) => provider.name === 'cerebras')
-      || order[0]
-  }
-
-  return getProviderOrder()[0]
+  return order[0]
 }
 
 function buildFallbackProviders(primaryProvider) {
