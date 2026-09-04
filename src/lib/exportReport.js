@@ -1424,6 +1424,7 @@ function formatCurrencyBRL(value) {
 const FINANCIAL_ENTRY_TYPE = {
   RECEITA: "receita",
   RECEITA_TOTAL: "receitaTotal",
+  RECEITA_AJUSTE: "receitaAjuste",
   DESPESA_FIXA: "despesaFixa",
   DESPESA_VARIAVEL: "despesaVariavel",
   IMPREVISTO: "imprevisto",
@@ -1434,6 +1435,13 @@ const FINANCIAL_ENTRY_TYPE = {
   SALDO: "saldo",
   OUTRO: "outro"
 };
+
+// "a receita ... será reduzida em R$ 500" / "aumentou R$ 300" — um AJUSTE
+// relativo sobre a receita do cenário anterior, não um novo valor absoluto.
+// Sem isso, o parser lia "reduzida em R$ 500" como se a receita do mês
+// passasse a valer R$ 500 (em vez de receita_anterior - 500).
+const REVENUE_DECREASE_RE = /\b(reduzid[ao]s?|diminui[uí]?d?[ao]?s?|ca[ií]|caiu|menor|cortad[ao]s?)\b/i;
+const REVENUE_INCREASE_RE = /\b(aumentad[ao]s?|acrescid[ao]s?|maior|subiu|cresceu)\b/i;
 
 const REVENUE_RE = /\b(receitas?|rendas?|sal[aá]rios?|ganhos?|entradas?|remunera[cç][aã]o)\b/i;
 const IMPROVEMENT_RE = /\b(economizar|economizad[oa]s?|economia|poupar|poupan[cç]a|reduzir|redu[cç][aã]o|cortar|corte|ajustar|ajuste|melhoria|melhorar|reorganizar|reorganiza[cç][aã]o|preservar|reserva|saldo ap[oó]s melhoria|ap[oó]s melhoria|poderiam economizar|poderia economizar|valor que poderia ser economizado)\b/i;
@@ -1456,6 +1464,7 @@ const BRL_MATCH_RE = /-?\s*R\$\s*(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d{2})?/g;
 function buildEmptyStructuredBudget() {
   return {
     receitas: [],
+    receitaAjustes: [],
     despesasFixas: [],
     despesasVariaveis: [],
     imprevistos: [],
@@ -1503,6 +1512,10 @@ function cleanGenericFinancialLabel(label) {
     .replace(/\bal[eé]m\s+das?\s+despesas?\s+do\s+cen[aá]rio\s*\d+\s*,?\s*/gi, " ")
     .replace(/\b(?:surge|surgiu|apareceu|h[aá])\s+(?:uma?|um)\s+/gi, " ")
     .replace(/\b(?:gastos?|despesas?)\s+inesperad[oa]s?\s+(?:com|de)\s+/gi, " ")
+    // "despesa" já pode ter sido removida antes (normalizeFinancialDescription
+    // apaga a palavra genérica "despesa" de qualquer frase), sobrando só
+    // "uma extra não prevista de ...".
+    .replace(/\b(?:uma?\s+)?(?:despesas?\s+)?extras?\s+n[aã]o\s+prevista?s?\s+(?:de\s+com|de|com)\s+/gi, " ")
     .replace(/\bdespesas?\s+extras?\s+com\s+/gi, " ")
     .replace(/\bprecis(?:a|ou|am)\s+comprar\s+/gi, " ")
     .replace(/\b(?:de|no)\s+valor\s+de\b/gi, " ")
@@ -1524,7 +1537,15 @@ function formatSavingsGoalLabel(label) {
 }
 
 function formatUnexpectedExpenseLabel(label) {
-  const source = reviewText(label || "");
+  // Frases como "o valor da energia aumenta 20% e há uma despesa extra..."
+  // grudam o evento de reajuste percentual (já mostrado à parte, na linha
+  // de "Ajuste") no rótulo do imprevisto propriamente dito. Remove esse
+  // trecho inicial antes de seguir a limpeza normal.
+  const withoutPercentageEvent = reviewText(label || "").replace(
+    /^.*?\bo\s+valor\s+d[aeo]s?\s+[^.,;]+?\s+(?:aumenta|aumentou|sobe|subiu|cresce|cresceu|diminui|diminuiu|cai|caiu|reduz|reduziu|desce|desceu)\s+(?:em\s+)?\d+(?:[,.]\d+)?\s*%\s*(?:e\s+(?:h[aá]|houve)?\s*)?/i,
+    ""
+  );
+  const source = reviewText(withoutPercentageEvent || label || "");
   const generic = cleanGenericFinancialLabel(source);
 
   if (/despesa\s+m[eé]dica\s+inesperada|m[eé]dic[ao]s?|consulta|sa[uú]de/i.test(source)) {
@@ -1823,11 +1844,105 @@ function extractPercentageImprovement(scenarioText, currentStructured, previousD
   };
 }
 
+// "O valor da energia aumenta 20%" / "o aluguel subiu 10%" — um EVENTO do
+// cenário (não uma instrução de melhoria como "reduzir 20% do lazer", que
+// parsePercentageImprovementRequest já cobre). Reaproveita a mesma busca de
+// item-alvo (getPercentageBaseDetailForTarget) para achar o valor-base no
+// cenário anterior e calcular o novo valor do item.
+function parsePercentageChangeEvent(scenarioText) {
+  const source = stripDecorativeMarkers(scenarioText || "").replace(/\s+/g, " ");
+  const increase = source.match(/\bo\s+valor\s+d[aeo]s?\s+([^.,;?]+?)\s+(aumenta|aumentou|sobe|subiu|cresce|cresceu|dobra|dobrou)\s+(?:em\s+)?(\d+(?:[,.]\d+)?)\s*%/i);
+  if (increase) {
+    return { sign: 1, action: increase[2], percentage: parsePercentAmount(increase[3]), target: cleanImprovementTarget(increase[1]) };
+  }
+  const decrease = source.match(/\bo\s+valor\s+d[aeo]s?\s+([^.,;?]+?)\s+(diminui|diminuiu|cai|caiu|reduz|reduziu|desce|desceu)\s+(?:em\s+)?(\d+(?:[,.]\d+)?)\s*%/i);
+  if (decrease) {
+    return { sign: -1, action: decrease[2], percentage: parsePercentAmount(decrease[3]), target: cleanImprovementTarget(decrease[1]) };
+  }
+  return null;
+}
+
+// Acha, no orçamento do cenário ANTERIOR, o item cujo rótulo bate com o
+// alvo do evento (ex.: "energia"). Usa só `rawLabel` (o texto colado
+// imediatamente antes do próprio valor daquele item) — NUNCA `descricao`:
+// numa lista "Aluguel (R$ 1.500), Energia (R$ 250), Água (R$ 100)...", a
+// descrição de "Aluguel" arrasta o restante da frase (não há ponto entre os
+// itens), então ela também contém a palavra "energia" e venceria a busca
+// por engano, atribuindo o reajuste ao item errado.
+function findPreviousBudgetItemByRawLabel(target, previousData) {
+  const normalizedTarget = normalizeSearchText(target || "");
+  if (!normalizedTarget) return null;
+  const pools = [
+    [previousData?.structured?.despesasFixas, "despesa_fixa"],
+    [previousData?.structured?.despesasVariaveis, "despesa_variavel"]
+  ];
+  for (const [items, targetCategory] of pools) {
+    const found = (items || []).find((item) => {
+      const rawText = normalizeSearchText(item?.rawLabel || "").replace(/[^a-z0-9 ]+$/g, "").trim();
+      return rawText && (rawText.includes(normalizedTarget) || normalizedTarget.includes(rawText));
+    });
+    if (found) return { baseValue: found.valor, targetCategory, item: found };
+  }
+  return null;
+}
+
+// Resolve o evento acima contra o item real do cenário anterior e devolve o
+// delta a somar ao total arrastado — usado quando o cenário só declara o
+// QUE mudou, sem repetir o orçamento inteiro (ex.: Cenário 2 só cita o
+// reajuste da energia e um imprevisto, herdando o resto do Cenário 1).
+function extractPercentageAdjustment(scenarioText, previousData) {
+  const event = parsePercentageChangeEvent(scenarioText);
+  if (!event || !Number.isFinite(event.percentage)) return null;
+
+  const baseDetail = findPreviousBudgetItemByRawLabel(event.target, previousData);
+  const magnitude = calculateImprovementValue(baseDetail?.baseValue, event.percentage);
+  if (!baseDetail || !Number.isFinite(magnitude)) return null;
+
+  const delta = magnitude * event.sign;
+  return {
+    target: event.target,
+    targetCategory: baseDetail.targetCategory,
+    baseValue: baseDetail.baseValue,
+    percentage: event.percentage,
+    sign: event.sign,
+    delta,
+    newValue: baseDetail.baseValue + delta
+  };
+}
+
+// "destinar 10% da receita para uma poupança" / "pelo menos 5% da nova
+// receita" — meta de poupança expressa em PORCENTAGEM, sem valor em R$. O
+// laço principal de parseFinancialEntries só enxerga "R$ ..."; sem isso, o
+// cálculo pedido no enunciado nunca aparecia no gabarito.
+function extractPercentageSavingsGoal(scenarioText) {
+  const source = stripDecorativeMarkers(scenarioText || "").replace(/\s+/g, " ");
+  const match = source.match(/(\d{1,3})\s*%\s+da\s+(?:nova\s+)?receita/i);
+  if (!match) return null;
+  const pct = Number(match[1]);
+  return Number.isFinite(pct) && pct > 0 && pct <= 100 ? pct : null;
+}
+
+// Cabeçalho de seção ("Despesas Fixas são:", "As Despesas Variáveis
+// estimadas são:"...) pode vir precedido de artigo/possessivo ("Suas",
+// "As"...) e seguido de um verbo de ligação antes dos dois-pontos. As duas
+// listas abaixo toleram essas variações comuns de prosa — sem elas, um
+// cabeçalho como "Suas Despesas Fixas são:" não batia com o regex antigo
+// (que só aceitava o rótulo colado no ":"), e os itens caíam no
+// classificador por palavra-chave, que já assume "farmácia" como despesa
+// fixa e "transporte" como variável — invertendo a categoria real quando o
+// cenário declara o contrário.
+const FINANCIAL_HEADER_LEAD_RE = "(?:^|[\\n.;]|\\b(?:e|ou|o|a|os|as|um|uma|este|esta|esse|essa|estes|estas|esses|essas|seu|sua|seus|suas|nosso|nossa|nossos|nossas|meu|minha|meus|minhas)\\s+)";
+const FINANCIAL_HEADER_FILLER_RE = "\\s*(?:(?:estimad[ao]s?|previst[ao]s?)\\s+)?(?:s[aã]o|foram|ser[aã]o|est[aã]o|[eé])?\\s*";
+
 function getCurrentFinancialSection(before) {
   const scope = stripDecorativeMarkers(before || "")
     .split(/\bCEN[AÁ]RIO\s*\d*\b/i)
     .pop() || "";
-  const matches = [...scope.matchAll(/(?:^|[\n.;]|\be\s+)\s*(receitas?|rendas?|despesas?\s+fixas?|gastos?\s+fixos?|custos?\s+fixos?|despesas?\s+vari[aá]veis?|gastos?\s+vari[aá]veis?|custos?\s+vari[aá]veis?|fixas?|vari[aá]veis?|imprevistos?|melhorias?|economias?)\s*:/gi)];
+  const headerRe = new RegExp(
+    `${FINANCIAL_HEADER_LEAD_RE}\\s*(receitas?|rendas?|despesas?\\s+fixas?|gastos?\\s+fixos?|custos?\\s+fixos?|despesas?\\s+vari[aá]veis?|gastos?\\s+vari[aá]veis?|custos?\\s+vari[aá]veis?|fixas?|vari[aá]veis?|imprevistos?|melhorias?|economias?)${FINANCIAL_HEADER_FILLER_RE}:`,
+    "gi"
+  );
+  const matches = [...scope.matchAll(headerRe)];
   const last = matches.length ? matches[matches.length - 1][0] : "";
   if (/receitas?|rendas?/i.test(last)) return FINANCIAL_ENTRY_TYPE.RECEITA;
   if (/(?:despesas?|gastos?|custos?)\s+fix[ao]s?/i.test(last)) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
@@ -1851,6 +1966,15 @@ function classifyFinancialEntry({ label, currentSection, afterClause }) {
   const labelOnly = normalizeFinancialLabel(label || "");
   const local = `${label} ${afterClause}`.replace(/\s+/g, " ").trim();
 
+  // Um cabeçalho de seção ("Despesas Fixas:", "Imprevistos:"...) fica
+  // "ativo" até o próximo cabeçalho — útil para listas estruturadas, mas
+  // pode grudar erroneamente numa frase seguinte que já mudou de assunto
+  // (ex.: "...imprevisto: ... manutenção... Além disso, a receita ... será
+  // reduzida em R$ 500,00"). Um rótulo com "receita" + verbo de variação é
+  // um sinal específico o bastante para vencer um cabeçalho desatualizado.
+  if (REVENUE_RE.test(labelOnly) && (REVENUE_DECREASE_RE.test(local) || REVENUE_INCREASE_RE.test(local))) {
+    return FINANCIAL_ENTRY_TYPE.RECEITA_AJUSTE;
+  }
   if (isDelimitedFinancialSection(currentSection)) return currentSection;
   if (PRIOR_EXPENSE_RE.test(local) && !UNEXPECTED_RE.test(local) && !IMPROVEMENT_RE.test(local) && !SAVINGS_GOAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_ANTERIOR;
   if (EXPENSE_TOTAL_RE.test(label) || EXPENSE_TOTAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.DESPESA_TOTAL;
@@ -1871,9 +1995,22 @@ function classifyFinancialEntry({ label, currentSection, afterClause }) {
   if (currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL && (FIXED_EXPENSE_RE.test(labelOnly) || VARIABLE_EXPENSE_RE.test(labelOnly) || EXPENSE_RE.test(labelOnly))) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
   if (FIXED_EXPENSE_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_FIXA) return FINANCIAL_ENTRY_TYPE.DESPESA_FIXA;
   if (VARIABLE_EXPENSE_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
+  // Ex.: "despesa extra não prevista de R$ 350,00 com manutenção de um
+  // eletrodoméstico" — "despesa" sozinho é genérico demais (cairia em
+  // DESPESA_VARIAVEL no fallback abaixo); o sinal de imprevisto no texto
+  // logo após o valor (manutenção/conserto/emergência...) é mais específico
+  // e deve decidir a categoria primeiro.
+  if (UNEXPECTED_RE.test(local)) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
   if (EXPENSE_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.DESPESA_VARIAVEL;
   if (REVENUE_TOTAL_RE.test(label) || REVENUE_TOTAL_RE.test(local)) return FINANCIAL_ENTRY_TYPE.RECEITA_TOTAL;
-  if (REVENUE_RE.test(labelOnly) || FAMILY_REVENUE_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.RECEITA) return FINANCIAL_ENTRY_TYPE.RECEITA;
+  if (REVENUE_RE.test(labelOnly) || currentSection === FINANCIAL_ENTRY_TYPE.RECEITA) {
+    // "a receita ... será reduzida em R$ 500" descreve uma VARIAÇÃO sobre a
+    // receita do cenário anterior, não um novo valor absoluto — precisa
+    // virar um ajuste (receita anterior ± delta), não substituir a receita.
+    if (REVENUE_DECREASE_RE.test(local) || REVENUE_INCREASE_RE.test(local)) return FINANCIAL_ENTRY_TYPE.RECEITA_AJUSTE;
+    return FINANCIAL_ENTRY_TYPE.RECEITA;
+  }
+  if (FAMILY_REVENUE_RE.test(labelOnly)) return FINANCIAL_ENTRY_TYPE.RECEITA;
   if (hasExplicitSavingsGoalContext(local)) return FINANCIAL_ENTRY_TYPE.META_POUPANCA;
   if (IMPROVEMENT_RE.test(local)) return FINANCIAL_ENTRY_TYPE.MELHORIA;
   if (UNEXPECTED_RE.test(local)) return FINANCIAL_ENTRY_TYPE.IMPREVISTO;
@@ -1918,6 +2055,10 @@ function parseFinancialEntries(text) {
         .trim();
       const type = classifyFinancialEntry({ label: normalizedLabel, currentSection, afterClause });
       const description = normalizeFinancialDescription(normalizedLabel, "Valor informado");
+      const deltaLocal = `${normalizedLabel} ${afterClause}`.replace(/\s+/g, " ").trim();
+      const deltaSign = type === FINANCIAL_ENTRY_TYPE.RECEITA_AJUSTE
+        ? (REVENUE_DECREASE_RE.test(deltaLocal) ? -1 : 1)
+        : 1;
 
       return {
         id: match.index,
@@ -1927,6 +2068,7 @@ function parseFinancialEntries(text) {
         context: `${currentSection} ${normalizedLabel}`.replace(/\s+/g, " ").trim(),
         description,
         type,
+        deltaSign,
         isRevenue: type === FINANCIAL_ENTRY_TYPE.RECEITA || type === FINANCIAL_ENTRY_TYPE.RECEITA_TOTAL,
         isExpense: [
           FINANCIAL_ENTRY_TYPE.DESPESA_FIXA,
@@ -1944,11 +2086,16 @@ function parseFinancialEntries(text) {
 
 function toBudgetItem(entry) {
   const labelContext = `${entry.description || ""} ${entry.afterClause || ""}`;
+  const isRevenueAdjustment = entry.type === FINANCIAL_ENTRY_TYPE.RECEITA_AJUSTE;
   return {
     descricao: entry.type === FINANCIAL_ENTRY_TYPE.META_POUPANCA
       ? cleanSavingsGoalLabel(labelContext)
-      : cleanFinancialItemLabel(`${entry.description || ""} ${entry.afterClause || ""}`, entry.type) || entry.description,
-    valor: entry.amount,
+      : isRevenueAdjustment
+        ? (entry.deltaSign < 0 ? "Redução da receita" : "Aumento da receita")
+        : cleanFinancialItemLabel(`${entry.description || ""} ${entry.afterClause || ""}`, entry.type) || entry.description,
+    // Ajuste de receita entra com sinal (soma/subtrai da receita do cenário
+    // anterior); os demais tipos guardam sempre o valor absoluto.
+    valor: isRevenueAdjustment ? entry.amount * entry.deltaSign : entry.amount,
     sourceIndex: entry.id,
     type: entry.type,
     rawLabel: entry.label,
@@ -1961,6 +2108,9 @@ function addEntryToStructuredBudget(structured, entry) {
   switch (entry.type) {
     case FINANCIAL_ENTRY_TYPE.RECEITA:
       structured.receitas.push(item);
+      break;
+    case FINANCIAL_ENTRY_TYPE.RECEITA_AJUSTE:
+      structured.receitaAjustes.push(item);
       break;
     case FINANCIAL_ENTRY_TYPE.RECEITA_TOTAL:
       structured.totaisDeclarados.receitas.push(item);
@@ -2135,9 +2285,19 @@ function buildFinancialDataForScenarios(scenarios) {
 
     const detailedRevenueTotal = sumBudgetItems(structured.receitas);
     const declaredRevenueTotal = getLastDeclaredTotal(structured.totaisDeclarados.receitas);
-    const receitaTotal = detailedRevenueTotal > 0
-      ? detailedRevenueTotal
-      : declaredRevenueTotal || previous?.receitaTotal || null;
+    // "a receita ... será reduzida em R$ 500" não é um novo valor absoluto —
+    // é um delta sobre a receita do cenário anterior (previous.receitaTotal).
+    const revenueAdjustmentTotal = sumBudgetItems(structured.receitaAjustes);
+    let receitaTotal = null;
+    if (detailedRevenueTotal > 0) {
+      receitaTotal = detailedRevenueTotal;
+    } else if (declaredRevenueTotal) {
+      receitaTotal = declaredRevenueTotal;
+    } else if (revenueAdjustmentTotal !== 0 && previous?.receitaTotal != null) {
+      receitaTotal = previous.receitaTotal + revenueAdjustmentTotal;
+    } else if (previous?.receitaTotal != null) {
+      receitaTotal = previous.receitaTotal;
+    }
     const despesasFixasTotal = sumBudgetItems(structured.despesasFixas);
     const despesasVariaveisTotal = sumBudgetItems(structured.despesasVariaveis);
     const imprevistosTotal = sumBudgetItems(structured.imprevistos);
@@ -2153,7 +2313,16 @@ function buildFinancialDataForScenarios(scenarios) {
       && despesasDetalhadasTotal === 0
       && !priorExpenseTotal
     );
-    const despesasAnterioresTotal = priorExpenseTotal || (usesPreviousExpenses ? previous.totalExpenses : 0);
+    // Cenário só cita O QUE mudou ("o valor da energia aumenta 20%") em vez
+    // de repetir o orçamento inteiro: ajusta o item correspondente do
+    // cenário anterior antes de somar ao total arrastado.
+    const percentageAdjustment = usesPreviousExpenses
+      ? extractPercentageAdjustment(scenario.text, previous)
+      : null;
+    const despesasAnterioresTotal = priorExpenseTotal || (usesPreviousExpenses
+      ? previous.totalExpenses + (percentageAdjustment?.delta || 0)
+      : 0);
+    const savingsGoalPct = extractPercentageSavingsGoal(scenario.text);
 
     const despesasBaseTotal = despesasDetalhadasTotal || declaredExpenseTotal || 0;
     let compromissoTotal = despesasDetalhadasTotal + imprevistosTotal + metasPoupancaTotal;
@@ -2166,6 +2335,13 @@ function buildFinancialDataForScenarios(scenarios) {
     }
 
     const totalExpenses = compromissoTotal;
+    // Meta de poupança em % (ex.: "destinar 10% da receita") não entra no
+    // compromissoTotal/saldo — é um valor à parte que o enunciado pede
+    // (ex.: "calcule o saldo E o valor destinado à poupança"), não uma
+    // despesa que reduz o saldo.
+    const savingsGoalValue = savingsGoalPct != null && receitaTotal != null
+      ? Math.round(receitaTotal * savingsGoalPct / 100 * 100) / 100
+      : null;
     const saldo = receitaTotal !== null ? receitaTotal - compromissoTotal : null;
     const saldoAfterImprovement = saldo !== null && melhoriasTotal > 0 ? saldo + melhoriasTotal : null;
     const expenses = [
@@ -2204,6 +2380,7 @@ function buildFinancialDataForScenarios(scenarios) {
       percentageImprovement: percentageImprovement || null,
       unresolvedPercentageImprovement,
       despesasAnterioresTotal,
+      percentageAdjustment,
       declaredExpenseTotal,
       compromissoTotal,
       expenses,
@@ -2212,6 +2389,8 @@ function buildFinancialDataForScenarios(scenarios) {
       totalExpenses,
       saldo,
       saldoAfterImprovement,
+      savingsGoalPct,
+      savingsGoalValue,
       usesPreviousExpenses,
       isBudgetScenario,
       summary: calculateFinancialSummary({
@@ -2384,7 +2563,13 @@ function buildImprovementSuggestion(financialData, improvementContext = "") {
   const positive = targetScenario;
 
   const saldo = positive.saldo;
-  const primaryAmount = Math.min(saldo, 150);
+  // Quando o enunciado pede uma meta de poupança em % (ex.: "pelo menos 5%
+  // da nova receita"), a melhoria não pode ser um valor arbitrário — precisa
+  // liberar exatamente o que falta para bater a meta.
+  const goalShortfall = positive.savingsGoalValue != null
+    ? Math.round(Math.max(0, positive.savingsGoalValue - saldo) * 100) / 100
+    : 0;
+  const primaryAmount = goalShortfall > 0 ? goalShortfall : Math.min(saldo, 150);
   const primaryResult = saldo + primaryAmount;
 
   const lines = [
@@ -2393,9 +2578,11 @@ function buildImprovementSuggestion(financialData, improvementContext = "") {
     "Resultado após melhoria:",
     `${fmt(saldo)} + ${fmt(primaryAmount)} = ${fmt(primaryResult)}.`,
     "Interpretação:",
-    positive.metasPoupancaTotal > 0 || positive.imprevistosTotal > 0
-      ? "A família cobre o imprevisto, mantém o compromisso financeiro planejado e ainda preserva saldo positivo."
-      : "A melhoria aumenta o saldo final e ajuda a preservar parte da poupança."
+    goalShortfall > 0
+      ? `Essa redução libera os ${formatCurrencyBRL(positive.savingsGoalValue)} (${positive.savingsGoalPct}% da receita) que a família precisa destinar à poupança de emergência neste cenário.`
+      : positive.metasPoupancaTotal > 0 || positive.imprevistosTotal > 0
+        ? "A família cobre o imprevisto, mantém o compromisso financeiro planejado e ainda preserva saldo positivo."
+        : "A melhoria aumenta o saldo final e ajuda a preservar parte da poupança."
   ];
 
   // Secondary: if there was an imprevisto, offer option to fully restore previous saldo
@@ -2425,7 +2612,13 @@ function buildStructuredScenarioGabarito(data) {
   ];
 
   if (data.despesasAnterioresTotal > 0 && data.despesasFixasTotal + data.despesasVariaveisTotal === 0) {
-    lines.push(`Despesas do Cenário ${Math.max(1, data.scenario.number - 1)}: ${formatCurrencyBRL(data.despesasAnterioresTotal)}.`);
+    const adj = data.percentageAdjustment;
+    const baseDespesasAnteriores = adj ? data.despesasAnterioresTotal - adj.delta : data.despesasAnterioresTotal;
+    lines.push(`Despesas do Cenário ${Math.max(1, data.scenario.number - 1)}: ${formatCurrencyBRL(baseDespesasAnteriores)}.`);
+    if (adj) {
+      lines.push(`Ajuste (${upperFirst(adj.target)} ${adj.sign > 0 ? "aumenta" : "diminui"} ${adj.percentage}% sobre ${formatCurrencyBRL(adj.baseValue)}): ${adj.delta >= 0 ? "+" : "-"}${formatCurrencyBRL(Math.abs(adj.delta))}.`);
+      lines.push(`Despesas do Cenário ${Math.max(1, data.scenario.number - 1)} ajustadas: ${formatCurrencyBRL(baseDespesasAnteriores)} ${adj.delta >= 0 ? "+" : "-"} ${formatCurrencyBRL(Math.abs(adj.delta))} = ${formatCurrencyBRL(data.despesasAnterioresTotal)}.`);
+    }
     if (data.imprevistosTotal > 0) {
       lines.push(formatContextualBudgetLine("Imprevisto", "Imprevistos", data.structured.imprevistos, data.imprevistosTotal));
     }
@@ -2438,6 +2631,9 @@ function buildStructuredScenarioGabarito(data) {
       data.compromissoTotal
     ));
     lines.push(`Saldo antes da melhoria: ${formatCurrencyBRL(data.receitaTotal)} - ${formatCurrencyBRL(data.compromissoTotal)} = ${formatCurrencyBRL(data.saldo)}.`);
+    if (data.savingsGoalValue != null) {
+      lines.push(`Valor destinado à poupança (${data.savingsGoalPct}% da receita de ${formatCurrencyBRL(data.receitaTotal)}): ${formatCurrencyBRL(data.savingsGoalValue)}.`);
+    }
     return lines.join("\n");
   }
 
@@ -2462,6 +2658,9 @@ function buildStructuredScenarioGabarito(data) {
     lines.push(`${data.metasPoupancaTotal > 0 ? "Compromisso total" : "Despesas totais"}: ${formatCurrencyBRL(data.compromissoTotal)}.`);
   }
   lines.push(`${data.imprevistosTotal > 0 || data.metasPoupancaTotal > 0 ? "Saldo antes da melhoria" : "Saldo final"}: ${formatCurrencyBRL(data.receitaTotal)} - ${formatCurrencyBRL(data.compromissoTotal)} = ${formatCurrencyBRL(data.saldo)}.`);
+  if (data.savingsGoalValue != null) {
+    lines.push(`Valor destinado à poupança (${data.savingsGoalPct}% da receita de ${formatCurrencyBRL(data.receitaTotal)}): ${formatCurrencyBRL(data.savingsGoalValue)}.`);
+  }
   return lines.join("\n");
 }
 
@@ -3856,6 +4055,9 @@ function buildActivityPrintHTMLFromExperience(experience) {
     .stage-body p { margin-bottom: 0; }
 	    .ready-materials { margin-top: 0.12cm; border-left: 2px solid #777; padding-left: 0.2cm; }
 	    .ready-materials strong { display: block; margin-bottom: 0.05cm; }
+	    /* Mais respiro entre um CENÁRIO e o próximo — o padrão geral de "li"
+	       (0.05cm) deixa os cenários quase colados, dificultando a leitura. */
+	    .ready-materials li + li { margin-top: 0.3cm; padding-top: 0.14cm; border-top: 1px dashed #bbb; }
 	    .illustrative-figures { margin-top: 0.14cm; display: grid; grid-template-columns: 1fr; gap: 0.12cm; }
 	    .illustrative-figure {
 	      margin: 0;
