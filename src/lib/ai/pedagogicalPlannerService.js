@@ -43,7 +43,18 @@ const COMPETENCY_TO_LETTER = {
   mathematics: 'M',
 }
 
-function buildPrompt({ discipline, grade, theme, steamCompetencies, availableMaterials, strictMaterials = true, numberOfClasses, modality, customInstructions, bnccSuggestions, verifiedSources = [], knowledgeContext = '', qualityPatterns = null }) {
+// Bloco injetado nas tentativas de regeração: lista o que a auditoria
+// reprovou na tentativa anterior para o modelo corrigir desde a concepção.
+function buildRegenDirective(hardViolations = [], constraints = {}) {
+  if (!hardViolations.length) return ''
+  const items = hardViolations.map((v, i) => `${i + 1}. ${v.detail}`).join('\n')
+  const matRule = constraints.strictMaterials
+    ? `\nOs ÚNICOS materiais permitidos são: ${(constraints.availableMaterialsList || []).join('; ')}. Não cite nenhum outro objeto, ferramenta ou insumo em NENHUMA seção, etapa, desafio, produto, avaliação ou gabarito.`
+    : ''
+  return `\nATENÇÃO — a tentativa anterior foi REPROVADA na auditoria de coerência pelos motivos abaixo. Gere a atividade novamente DO ZERO, corrigindo cada ponto desde a concepção (não apenas remendando o texto):\n${items}${matRule}\n`
+}
+
+function buildPrompt({ discipline, grade, theme, steamCompetencies, availableMaterials, strictMaterials = true, numberOfClasses, modality, customInstructions, bnccSuggestions, verifiedSources = [], knowledgeContext = '', qualityPatterns = null, regenDirective = '' }) {
   const materialsList = parseAvailableMaterialsList(availableMaterials)
   const hasStrictMaterials = strictMaterials && materialsList.length > 0
   const priorityBlock = `HIERARQUIA DE PRIORIDADES (ordem de decisão — a criatividade nunca se sobrepõe às restrições):
@@ -90,7 +101,7 @@ Gere uma EXPERIÊNCIA DE APRENDIZAGEM STEAM + CULTURA MAKER: problema real, inve
 
 ${priorityBlock}
 ${strictMaterialsBlock}
-
+${regenDirective}
 Dados da experiência:
 - Disciplina principal: ${discipline}
 - Série/Ano: ${grade}
@@ -422,7 +433,7 @@ function applyOfflineBncc(data, bnccSuggestions) {
   }
 }
 
-function buildClassroomPrompt(project) {
+function buildClassroomPrompt(project, regenDirective = '') {
   const stageTitles = NEUTRAL_STAGE_TITLES
     .map((title) => `- ${title}`)
     .join('\n')
@@ -441,7 +452,7 @@ Transforme o projeto abaixo em uma EXPERIÊNCIA DE APRENDIZAGEM STEAM + CULTURA 
 Não gere plano tradicional, apostila, fundamentação longa, matriz STEAM, material do aluno ou anexos.
 
 HIERARQUIA: as informações do projeto (materiais, problema, produto) têm prioridade sobre a criatividade do modelo.
-
+${regenDirective}
 DADOS DO PROJETO:
 - Título: ${project.title || ''}
 - Tema: ${project.theme || ''}
@@ -622,33 +633,51 @@ export class PedagogicalPlannerService {
     }).slice(0, 7)
 
     // ── 3. Gera prompt com contexto local + padrões aprendidos ──
-    const prompt = buildPrompt({
-      discipline, grade, theme, steamCompetencies, availableMaterials, strictMaterials, numberOfClasses, modality,
-      customInstructions, bnccSuggestions, verifiedSources,
-      knowledgeContext: kb.contextSummary,
-      qualityPatterns,
-    })
-
-    const response = await AIProviderManager.request({
-      requestType: 'pedagogicalactivity',
-      prompt
-    })
-
-    const rawText = response.content
-    if (!rawText || typeof rawText !== 'string') {
-      throw new Error('A IA não retornou conteúdo válido.')
-    }
-
     const normalizeCtx = { theme, grade, discipline, constraints }
     const parseNormalize = (text) => {
       const parsed = applyOfflineBncc(safeParseJson(extractJson(text)), bnccSuggestions)
       return normalizeLearningExperience(parsed, normalizeCtx)
     }
+    const hardCount = (a) => a.violations.filter((v) => v.severity === 'hard').length
 
-    let normalized = parseNormalize(rawText)
+    // Uma rodada completa: prompt → IA → parse/normalize → auditoria.
+    const runGeneration = async (regenDirective = '') => {
+      const prompt = buildPrompt({
+        discipline, grade, theme, steamCompetencies, availableMaterials, strictMaterials, numberOfClasses, modality,
+        customInstructions, bnccSuggestions, verifiedSources,
+        knowledgeContext: kb.contextSummary,
+        qualityPatterns,
+        regenDirective,
+      })
+      const response = await AIProviderManager.request({ requestType: 'pedagogicalactivity', prompt })
+      const rawText = response.content
+      if (!rawText || typeof rawText !== 'string') {
+        throw new Error('A IA não retornou conteúdo válido.')
+      }
+      const normalized = parseNormalize(rawText)
+      return { normalized, audit: checkConsistency(normalized, constraints), response }
+    }
 
-    // ── 3b. Auditoria de coerência + 1 rodada de reparo se necessário ──
-    let audit = checkConsistency(normalized, constraints)
+    // ── 3a. Geração + até 2 regerações do zero quando a auditoria reprova ──
+    const MAX_REGEN = 2
+    let best = await runGeneration()
+    for (let attempt = 1; attempt <= MAX_REGEN && !best.audit.pass; attempt += 1) {
+      let next
+      try {
+        next = await runGeneration(buildRegenDirective(
+          best.audit.violations.filter((v) => v.severity === 'hard'),
+          constraints
+        ))
+      } catch (regenError) {
+        console.warn('Regeração do plano falhou, mantendo melhor tentativa:', regenError)
+        break
+      }
+      if (hardCount(next.audit) < hardCount(best.audit)) best = next
+    }
+
+    let { normalized, audit, response } = best
+
+    // ── 3b. Auditoria de coerência + 1 rodada de reparo se ainda necessário ──
     if (!audit.pass || audit.violations.length) {
       try {
         const repairResponse = await AIProviderManager.request({
@@ -736,21 +765,38 @@ export class PedagogicalPlannerService {
       )
     }
 
-    const prompt = buildClassroomPrompt(project)
-
-    const response = await AIProviderManager.request({
-      requestType: 'classroomactivity',
-      prompt
-    })
-
-    const rawText = response.content
-    if (!rawText || typeof rawText !== 'string') {
-      throw new Error('A IA não retornou conteúdo válido.')
+    const hardCount = (a) => a.violations.filter((v) => v.severity === 'hard').length
+    const runGeneration = async (regenDirective = '') => {
+      const response = await AIProviderManager.request({
+        requestType: 'classroomactivity',
+        prompt: buildClassroomPrompt(project, regenDirective)
+      })
+      const rawText = response.content
+      if (!rawText || typeof rawText !== 'string') {
+        throw new Error('A IA não retornou conteúdo válido.')
+      }
+      const normalized = parseNormalize(rawText)
+      return { normalized, audit: checkConsistency(normalized, constraints) }
     }
 
-    let normalized = parseNormalize(rawText)
+    // Geração + até 2 regerações do zero quando a auditoria reprova
+    const MAX_REGEN = 2
+    let best = await runGeneration()
+    for (let attempt = 1; attempt <= MAX_REGEN && !best.audit.pass; attempt += 1) {
+      let next
+      try {
+        next = await runGeneration(buildRegenDirective(
+          best.audit.violations.filter((v) => v.severity === 'hard'),
+          constraints
+        ))
+      } catch (regenError) {
+        console.warn('Regeração da atividade falhou, mantendo melhor tentativa:', regenError)
+        break
+      }
+      if (hardCount(next.audit) < hardCount(best.audit)) best = next
+    }
 
-    let audit = checkConsistency(normalized, constraints)
+    let { normalized, audit } = best
     if (!audit.pass) {
       try {
         const repairResponse = await AIProviderManager.request({

@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabaseClient.js'
 import { buildUserLearningProfile } from '../../lib/machine-learning/user-profile/profileBuilder.js'
 import { suggestThemesFromProfile } from '../../lib/machine-learning/recommendation/recommendationEngine.js'
 import { selectBnccHabilidades } from '../../lib/bnccSelector.js'
+import { suggestSteamAreasForMaterials } from '../../lib/steamMaterialSuggester.js'
 
 import Modal from '../ui/Modal.jsx'
 import Button from '../ui/Button.jsx'
@@ -111,13 +112,13 @@ function SelectField({ label, placeholder, value, options, onChange }) {
   )
 }
 
-function MultiSelectDropdown({ label, placeholder, options, selectedValues, onToggle }) {
+function MultiSelectDropdown({ label, placeholder, options, selectedValues, onToggle, recommendedIds = [] }) {
   const selectedLabels = options
     .filter((option) => selectedValues.includes(option.id))
     .map((option) => option.label)
 
   return (
-    <details style={multiSelectStyle}>
+    <details style={multiSelectStyle} open={recommendedIds.length > 0}>
       <summary style={multiSelectSummaryStyle}>
         <span>
           <span style={selectLabelStyle}>{label}</span>
@@ -130,23 +131,30 @@ function MultiSelectDropdown({ label, placeholder, options, selectedValues, onTo
       <div style={multiSelectOptionsStyle}>
         {options.map((option) => {
           const checked = selectedValues.includes(option.id)
+          const recommended = recommendedIds.includes(option.id)
           return (
             <label
               key={option.id}
               style={{
                 ...multiSelectOptionStyle,
-                borderColor: checked ? '#3B82F6' : '#E5E7EB',
+                borderColor: checked ? '#3B82F6' : recommended ? '#F59E0B' : '#E5E7EB',
                 backgroundColor: checked ? '#DBEAFE' : '#FFFFFF',
-                color: checked ? '#1E40AF' : '#374151'
+                color: checked ? '#1E40AF' : '#374151',
+                justifyContent: 'space-between'
               }}
             >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => onToggle(option.id)}
-                style={multiSelectCheckboxStyle}
-              />
-              <span>{option.icon ? `${option.icon} ` : ''}{option.label}</span>
+              <span>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => onToggle(option.id)}
+                  style={multiSelectCheckboxStyle}
+                />
+                {option.icon ? `${option.icon} ` : ''}{option.label}
+              </span>
+              {recommended && !checked && (
+                <span style={recommendedBadgeStyle}>sugerido pelos materiais</span>
+              )}
             </label>
           )
         })}
@@ -202,6 +210,14 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
 
   const isUnlimited = currentUser?.email === UNLIMITED_EMAIL
 
+  // Assim que o professor lista os materiais que possui, sugere quais áreas
+  // STEAM eles sustentam e por quê — recalculado a cada alteração do texto.
+  const materialSteamSuggestions = useMemo(
+    () => suggestSteamAreasForMaterials(formData.availableMaterials),
+    [formData.availableMaterials]
+  )
+  const suggestedSteamIds = materialSteamSuggestions.matches.map((m) => m.id)
+
   useEffect(() => {
     if (isOpen) {
       resetForm()
@@ -220,6 +236,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       grade: '',
       theme: '',
       availableMaterials: '',
+      strictMaterials: true,
       steamCompetencies: [],
       numberOfClasses: '',
       modality: 'grupo',
@@ -316,6 +333,16 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       steamCompetencies: prev.steamCompetencies.includes(competencyId)
         ? prev.steamCompetencies.filter(id => id !== competencyId)
         : [...prev.steamCompetencies, competencyId]
+    }))
+    setError('')
+  }
+
+  // Aplica, com um clique, as áreas STEAM sugeridas a partir dos materiais
+  // informados — soma às já selecionadas em vez de substituir.
+  const handleApplySteamSuggestions = (suggestedIds) => {
+    setFormData(prev => ({
+      ...prev,
+      steamCompetencies: [...new Set([...prev.steamCompetencies, ...suggestedIds])]
     }))
     setError('')
   }
@@ -521,6 +548,43 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
               fullWidth
             />
             {formData.availableMaterials.trim().length > 0 && (
+              <div style={steamSuggestionBoxStyle}>
+                <div style={steamSuggestionHeaderStyle}>
+                  💡 Áreas STEAM sugeridas para estes materiais
+                </div>
+                {materialSteamSuggestions.matches.length > 0 ? (
+                  <>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                      {materialSteamSuggestions.matches.map((s) => (
+                        <div key={s.id} style={{ ...steamSuggestionItemStyle, borderLeftColor: s.color }}>
+                          <span style={{ fontSize: '20px', lineHeight: 1 }}>{s.icon}</span>
+                          <div>
+                            <div style={{ fontWeight: 700, color: s.color, fontSize: '0.85rem' }}>
+                              {s.letter} · {s.name}
+                            </div>
+                            <div style={{ fontSize: '0.82rem', color: '#4B5563', lineHeight: 1.4 }}>
+                              {s.reason}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleApplySteamSuggestions(suggestedSteamIds)}
+                      style={applySuggestionButtonStyle}
+                    >
+                      Usar {materialSteamSuggestions.matches.length > 1 ? 'estas sugestões' : 'esta sugestão'} nas competências STEAM
+                    </button>
+                  </>
+                ) : (
+                  <p style={{ fontSize: '0.82rem', color: '#6B7280', marginTop: '6px' }}>
+                    {materialSteamSuggestions.fallbackMessage}
+                  </p>
+                )}
+              </div>
+            )}
+            {formData.availableMaterials.trim().length > 0 && (
               <label
                 style={{
                   display: 'flex',
@@ -565,7 +629,13 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
               options={STEAM_COMPETENCIES}
               selectedValues={formData.steamCompetencies}
               onToggle={handleSteamCompetencyToggle}
+              recommendedIds={suggestedSteamIds}
             />
+            {suggestedSteamIds.length > 0 && (
+              <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
+                💡 Marcadas com base nos materiais informados na etapa anterior — ajuste como preferir.
+              </p>
+            )}
             <div style={makerNoteStyle}>
               🔧 <strong>Cultura Maker</strong> será incluída automaticamente em todas as atividades
             </div>
@@ -1221,6 +1291,57 @@ const makerNoteStyle = {
   color: '#92400E',
   fontSize: '14px',
   textAlign: 'center'
+}
+
+const steamSuggestionBoxStyle = {
+  marginTop: '0.75rem',
+  padding: '12px 14px',
+  backgroundColor: '#F9FAFB',
+  border: '1px solid #E5E7EB',
+  borderRadius: '10px'
+}
+
+const steamSuggestionHeaderStyle = {
+  fontSize: '0.78rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+  color: '#374151'
+}
+
+const steamSuggestionItemStyle = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: '10px',
+  padding: '8px 10px',
+  backgroundColor: '#FFFFFF',
+  border: '1px solid #E5E7EB',
+  borderLeft: '4px solid',
+  borderRadius: '6px'
+}
+
+const applySuggestionButtonStyle = {
+  marginTop: '10px',
+  padding: '8px 14px',
+  backgroundColor: '#4F46E5',
+  border: 'none',
+  borderRadius: '20px',
+  color: '#FFFFFF',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  cursor: 'pointer',
+  fontFamily: 'inherit'
+}
+
+const recommendedBadgeStyle = {
+  fontSize: '0.68rem',
+  fontWeight: 700,
+  color: '#92400E',
+  backgroundColor: '#FEF3C7',
+  border: '1px solid #F59E0B',
+  borderRadius: '10px',
+  padding: '2px 8px',
+  whiteSpace: 'nowrap'
 }
 
 const errorStyle = {
