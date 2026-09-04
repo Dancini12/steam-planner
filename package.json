@@ -10,6 +10,7 @@
     "test:ml": "node scripts/ml-selftest.js",
     "test:gen": "node scripts/generator-selftest.js",
     "test:export": "node scripts/exportreport-selftest.js",
+    "test:bncc": "node scripts/bncc-selector-selftest.js",
     "preview": "vite preview",
     "test": "playwright test",
     "test:validation": "playwright test tests/financial-export.spec.js tests/global-validation.spec.js tests/deterministic-validation.spec.js",
