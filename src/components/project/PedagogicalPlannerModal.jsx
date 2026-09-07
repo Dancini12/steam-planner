@@ -307,6 +307,24 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
     }
   }
 
+  // Avançar também com Enter, além do clique — não intercepta dentro de
+  // textarea (materiais/tema usam quebra de linha) nem em botões (o Enter
+  // nativo já vira "clique" neles; interceptar de novo duplicaria o avanço).
+  const handleWizardKeyDown = (event) => {
+    if (event.key !== 'Enter' || isGenerating) return
+    const tag = event.target?.tagName
+    if (tag === 'TEXTAREA' || tag === 'BUTTON') return
+
+    event.preventDefault()
+    if (!validateCurrentStep()) return
+
+    if (currentStep < 8) {
+      handleNext()
+    } else if (isUnlimited || remainingCount !== 0) {
+      handleGenerate()
+    }
+  }
+
   const handleDisciplineSelect = (discipline) => {
     setFormData(prev => ({ ...prev, discipline }))
     setError('')
@@ -969,7 +987,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
 
   return (
     <Modal isOpen={isOpen} onClose={isGenerating ? undefined : onClose} title="🎓 Planejador Pedagógico Inteligente" size="large">
-      <div style={containerStyle}>
+      <div style={containerStyle} onKeyDown={handleWizardKeyDown}>
         {isGenerating ? renderLoading() : (
           <>
             {/* Progress Indicator */}
