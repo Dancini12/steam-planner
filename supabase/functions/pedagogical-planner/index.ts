@@ -677,6 +677,7 @@ Regras:
 - Não use reticências. Nenhum campo pode terminar com texto cortado.
 - Nunca escreva "Pós-its" ou "Post-its". Use sempre "notas adesivas".
 - Inclua "steamConnection" com 1 frase curta por área: Ciência, Tecnologia, Engenharia, Arte, Matemática.
+- Tecnologia (T) não é só digital: ferramentas e instrumentos como lápis, régua, compasso, tesoura, balança ou lupa são tecnologias analógicas (BNCC, Competência Geral 2 — "criar soluções, inclusive tecnológicas"); computador, celular, sensores e programação são tecnologias digitais (BNCC, Competência Geral 5). Se só houver tecnologias analógicas, descreva T pelo uso intencional dessas ferramentas, sem acrescentar recurso digital.
 - Inclua "teacherGabarito": resultados esperados de cada cenário, 1 frase curta por item com valores, saldo ou conclusão objetiva.
 - Em cenários financeiros, nunca escreva apenas "Economia: R$ X". Use "Sobra mensal prevista: R$ X" ou "Saldo disponível para poupança/investimento: R$ X".
 - Nunca use tabelas markdown (| col | col | ou --- | --- | ---) em nenhum campo JSON. Em "readyMaterials", use apenas uma linha de texto simples: "TABELA DE TESTE - Col1 | Col2 | Col3." sem barras verticais extras ou linhas separadoras.
@@ -729,7 +730,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   ],
   "steamConnection": {
     "science": "conceito ou fenômeno investigado na atividade.",
-    "technology": "recurso, ferramenta ou sistema utilizado.",
+    "technology": "ferramenta ou recurso utilizado, analógico (lápis, régua) ou digital.",
     "engineering": "o que será construído, testado e melhorado.",
     "art": "elemento visual, criativo ou comunicativo do protótipo.",
     "mathematics": "cálculos, medidas ou comparação de dados."

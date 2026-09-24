@@ -257,7 +257,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
 
     const benefitsMap = {
       science: ['Desenvolvimento do pensamento científico', 'Capacidade de observação e investigação', 'Compreensão de conceitos fundamentais'],
-      technology: ['Letramento digital aprimorado', 'Pensamento computacional', 'Capacidade de resolver problemas tecnológicos'],
+      technology: ['Uso intencional de tecnologias analógicas e digitais', 'Pensamento computacional', 'Capacidade de resolver problemas tecnológicos'],
       engineering: ['Habilidade de design e prototipagem', 'Pensamento sistêmico', 'Capacidade de otimizar soluções'],
       arts: ['Expressão criativa', 'Desenvolvimento artístico e estético', 'Pensamento divergente'],
       mathematics: ['Aplicação prática de conceitos matemáticos', 'Raciocínio lógico aprimorado', 'Resolução de problemas complexos']
@@ -578,7 +578,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
                           <span style={{ fontSize: '20px', lineHeight: 1 }}>{s.icon}</span>
                           <div>
                             <div style={{ fontWeight: 700, color: s.color, fontSize: '0.85rem' }}>
-                              {s.letter} · {s.name}
+                              {s.letter} · {s.name}{s.subtype ? ` (${s.subtype})` : ''}
                             </div>
                             <div style={{ fontSize: '0.82rem', color: '#4B5563', lineHeight: 1.4 }}>
                               {s.reason}

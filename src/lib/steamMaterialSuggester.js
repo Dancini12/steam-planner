@@ -31,15 +31,36 @@ const AREA_META = {
 }
 
 // Por que um material daquele tipo indica a área — usado para montar a explicação.
+// (Tecnologia tem explicação própria por subtipo — ver TECHNOLOGY_WHY.)
 const AREA_WHY = {
   science: 'permitem observar, medir ou experimentar um fenômeno — a base do método científico',
-  technology: 'envolvem componentes eletrônicos, digitais ou dispositivos — uso e criação de ferramentas tecnológicas',
   engineering: 'servem para montar, sustentar ou testar uma estrutura física — projetar e construir soluções',
   arts: 'permitem expressão visual, estética ou criativa do resultado final',
   mathematics: 'permitem medir, contar, calcular ou organizar dados numericamente'
 }
 
+// Tecnologia não se limita ao digital: todo artefato criado pelo ser humano para
+// ampliar sua capacidade de registrar, medir, calcular, cortar ou observar também é
+// tecnologia (um lápis é tecnologia). A BNCC separa as duas faces: a Competência
+// Geral 5 trata das tecnologias DIGITAIS; a Competência Geral 2 fala em "criar
+// soluções (inclusive tecnológicas)" — o que abrange as analógicas.
+const TECHNOLOGY_WHY = {
+  digital: 'são tecnologias digitais — componentes eletrônicos, dispositivos ou programação (BNCC, Competência Geral 5)',
+  analog: 'são tecnologias analógicas — ferramentas e instrumentos criados pelo ser humano para registrar, desenhar, medir, calcular, cortar ou observar (BNCC, Competência Geral 2: "criar soluções, inclusive tecnológicas")'
+}
+
+// Ferramentas e instrumentos (não insumos como papel, cola ou barbante) —
+// contam como tecnologia analógica, além da área específica em que já se encaixam.
+const ANALOG_TECHNOLOGY_KEYWORDS = [
+  'lapis', 'lapiseira', 'caneta', 'giz', 'borracha', 'apontador', 'regua', 'esquadro',
+  'compasso', 'transferidor', 'fita metrica', 'trena', 'balanca', 'termometro',
+  'cronometro', 'relogio', 'bussola', 'lupa', 'microscopio', 'abaco', 'tesoura',
+  'estilete', 'grampeador', 'furador', 'martelo', 'chave de fenda', 'alicate',
+  'roldana', 'alavanca', 'engrenagem', 'pincel'
+]
+
 // Palavras-chave (normalizadas, sem acento) associadas a cada área.
+// Em `technology` ficam só as tecnologias digitais; as analógicas estão acima.
 const AREA_KEYWORDS = {
   science: [
     'lupa', 'microscopio', 'proveta', 'becker', 'tubo de ensaio', 'erlenmeyer', 'pipeta',
@@ -52,7 +73,7 @@ const AREA_KEYWORDS = {
     'app', 'internet', 'sensor', 'arduino', 'microcontrolador', 'circuito', 'led',
     'resistor', 'protoboard', 'fio eletrico', 'motor eletrico', 'pilha', 'bateria',
     'projetor', 'caixa de som', 'microfone', 'camera', 'codigo', 'programacao', 'robo',
-    'impressora 3d', 'placa eletronica', 'wifi', 'bluetooth', 'kit de circuito'
+    'impressora 3d', 'placa eletronica', 'wifi', 'bluetooth', 'kit de circuito', 'calculadora'
   ],
   engineering: [
     'estrutura', 'ponte', 'rampa', 'roldana', 'alavanca', 'engrenagem', 'palito de picole',
@@ -101,6 +122,23 @@ function matchAreas(materialsList, keywordMap) {
   return hits
 }
 
+// Monta subtipo (analógica/digital) e explicação da Tecnologia, citando
+// separadamente os materiais de cada face quando as duas aparecem.
+function describeTechnology(digitalHits, analogHits) {
+  const digital = [...new Set(digitalHits)].slice(0, 3)
+  const analog = [...new Set(analogHits)].filter((item) => !digital.includes(item)).slice(0, 3)
+  const parts = []
+  if (digital.length) parts.push(`"${digital.join(', ')}" ${TECHNOLOGY_WHY.digital}`)
+  if (analog.length) parts.push(`"${analog.join(', ')}" ${TECHNOLOGY_WHY.analog}`)
+
+  const subtype = digital.length && analog.length ? 'analógica e digital' : digital.length ? 'digital' : 'analógica'
+  return {
+    subtype,
+    matchedMaterials: [...digital, ...analog],
+    reason: `Materiais como ${parts.join('; e ')}.`
+  }
+}
+
 // Sugere as áreas STEAM aplicáveis aos materiais informados pelo professor.
 // Retorna { matches, fallbackMessage } — `matches` já vem ordenado por
 // relevância (mais materiais relacionados primeiro).
@@ -122,17 +160,33 @@ export function suggestSteamAreasForMaterials(availableMaterials = '') {
     })
   }
 
+  // Tecnologias analógicas entram DEPOIS do fallback: um lápis é tecnologia, mas
+  // não deve impedir que "lápis e papel" também sugiram Arte e Matemática.
+  const digitalHits = hits.technology || []
+  const analogHits = matchAreas(materialsList, { technology: ANALOG_TECHNOLOGY_KEYWORDS }).technology || []
+  if (analogHits.length) {
+    hits.technology = [...digitalHits, ...analogHits.filter((item) => !digitalHits.includes(item))]
+  }
+
   const matches = AREA_ORDER
     .filter((areaId) => hits[areaId]?.length)
     .map((areaId) => {
       const meta = AREA_META[areaId]
-      const items = [...new Set(hits[areaId])].slice(0, 3)
-      return {
+      const suggestion = {
         id: areaId,
         letter: meta.letter,
         name: meta.name,
         icon: meta.icon,
-        color: meta.color,
+        color: meta.color
+      }
+
+      if (areaId === 'technology') {
+        return { ...suggestion, ...describeTechnology(digitalHits, analogHits) }
+      }
+
+      const items = [...new Set(hits[areaId])].slice(0, 3)
+      return {
+        ...suggestion,
         matchedMaterials: items,
         reason: `Materiais como "${items.join(', ')}" ${AREA_WHY[areaId]}.`
       }
