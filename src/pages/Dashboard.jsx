@@ -35,9 +35,14 @@ function PixelIcon({ type }) {
   );
 }
 
-function DashboardCard({ title, text, icon, color, size = "large", onClick }) {
+// `ink` é a versão escura de `color`, usada no modo claro: o neon
+// some em fundo branco, então texto e bordas precisam de mais contraste.
+function DashboardCard({ title, text, icon, color, ink, size = "large", onClick }) {
   return (
-    <article className={`retro-card retro-card-${size}`} style={{ "--card-color": color }}>
+    <article
+      className={`retro-card retro-card-${size}`}
+      style={{ "--card-color": color, "--card-ink": ink }}
+    >
       <div className="retro-card-glow" />
       <PixelIcon type={icon} />
       <div className="retro-card-copy">
@@ -365,6 +370,7 @@ export default function Dashboard({
             icon="document"
             text="Crie atividades personalizadas em poucos passos"
             color="#39FF88"
+            ink="#047857"
             onClick={() => setShowPedagogicalModal(true)}
           />
           <DashboardCard
@@ -372,6 +378,7 @@ export default function Dashboard({
             icon="folder"
             text="Acesse e gerencie seus projetos"
             color="#22D3EE"
+            ink="#0E7490"
             onClick={handleOpenProjects}
           />
           <DashboardCard
@@ -379,6 +386,7 @@ export default function Dashboard({
             icon="books"
             text="Explore atividades prontas para usar"
             color="#FF4FD8"
+            ink="#A21CAF"
             onClick={onOpenLibrary}
           />
           <DashboardCard
@@ -386,6 +394,7 @@ export default function Dashboard({
             icon="bncc"
             text="Consulte a BNCC e alinhamentos"
             color="#FDE047"
+            ink="#A16207"
             onClick={onOpenBNCC}
           />
           {isAdmin && (
@@ -394,6 +403,7 @@ export default function Dashboard({
               icon="document"
               text="Modelos de IA, administradores, feedbacks e indicadores"
               color="#22D3EE"
+              ink="#0E7490"
               onClick={onOpenAdmin}
             />
           )}
@@ -402,6 +412,7 @@ export default function Dashboard({
             icon="feedback"
             text="Compartilhe sua experiência e ajude a melhorar a plataforma"
             color="#A78BFA"
+            ink="#6D28D9"
             onClick={() => setShowFeedbackModal(true)}
           />
         </section>
@@ -1170,6 +1181,15 @@ const retroCss = `
     background:
       linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.9)),
       repeating-linear-gradient(90deg, rgba(79, 70, 229, 0.035) 0 2px, transparent 2px 16px);
+    box-shadow:
+      0 0 0 1px rgba(148, 163, 184, 0.24),
+      0 18px 30px rgba(15, 23, 42, 0.06);
+  }
+
+  /* O anel escuro do modo escuro vira um contorno preto grosso no claro */
+  .theme-light .retro-footer {
+    box-shadow: none;
+    text-shadow: none;
   }
 
   .theme-light .retro-brand h1 {
@@ -1211,6 +1231,10 @@ const retroCss = `
       0 18px 30px rgba(15, 23, 42, 0.09);
   }
 
+  .theme-light .retro-card {
+    border-color: color-mix(in srgb, var(--card-ink, #475569) 80%, #FFFFFF);
+  }
+
   .theme-light .retro-card h2 {
     color: #1F2937;
   }
@@ -1222,7 +1246,32 @@ const retroCss = `
 
   .theme-light .retro-button {
     background: #FFFFFF;
+    border-color: var(--card-ink, #475569);
+    color: var(--card-ink, #475569);
+    font-weight: 700;
     box-shadow: none;
+  }
+
+  .theme-light .retro-button:hover {
+    background: var(--card-ink, #475569);
+    color: #FFFFFF;
+  }
+
+  /* Partes brancas dos ícones somem no cartão branco */
+  .theme-light .pixel-document {
+    background:
+      linear-gradient(#CBD5E1 0 0) 18px 8px / 42px 56px no-repeat,
+      linear-gradient(#94A3B8 0 0) 52px 8px / 8px 12px no-repeat,
+      linear-gradient(#059669 0 0) 29px 32px / 20px 8px no-repeat,
+      linear-gradient(#059669 0 0) 35px 26px / 8px 20px no-repeat;
+  }
+
+  .theme-light .pixel-books {
+    background:
+      linear-gradient(#FF4FD8 0 0) 10px 16px / 13px 48px no-repeat,
+      linear-gradient(#22D3EE 0 0) 28px 10px / 13px 54px no-repeat,
+      linear-gradient(#FDE047 0 0) 46px 20px / 13px 44px no-repeat,
+      linear-gradient(#94A3B8 0 0) 8px 64px / 58px 7px no-repeat;
   }
 
   .theme-light .theme-toggle {
