@@ -34,7 +34,6 @@ import { supabase } from "./lib/supabaseClient.js";
 import { getUserData, trackEvent } from "./lib/analytics.js";
 import { hasConsent } from "./lib/cookieConsent.js";
 import CookieBanner from "./components/ui/CookieBanner.jsx";
-import VisitorCounter from "./components/ui/VisitorCounter.jsx";
 
 // ------------------------------------------------------------
 // CONSTANTES DE NAVEGAÇÃO
@@ -299,12 +298,7 @@ export default function App() {
   }
 
   if (!currentUser) {
-    return (
-      <>
-        <Login onLogin={setCurrentUser} />
-        <VisitorCounter />
-      </>
-    );
+    return <Login onLogin={setCurrentUser} />;
   }
 
   return (
@@ -404,8 +398,6 @@ export default function App() {
       {showCookieBanner && (
         <CookieBanner onConsent={() => setShowCookieBanner(false)} />
       )}
-
-      <VisitorCounter />
     </div>
   );
 }
