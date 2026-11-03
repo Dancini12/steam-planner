@@ -192,6 +192,8 @@ export default function Login({ onLogin }) {
           email: signupEmail,
           password: signupPassword,
           options: {
+            // O link de confirmação do e-mail volta para o mesmo site do cadastro.
+            emailRedirectTo: window.location.origin,
             data: {
               name: signupName,
               school: signupSchool,
@@ -212,6 +214,15 @@ export default function Login({ onLogin }) {
 
         console.log("Usuário criado:", data);
 
+        // Com confirmação de e-mail ligada, o Supabase não devolve erro para
+        // e-mail já cadastrado: devolve um usuário sem identidades.
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          const errorMessage = "Este e-mail já está cadastrado. Tente fazer login.";
+          alert(errorMessage);
+          setSignupError(errorMessage);
+          return;
+        }
+
         if (data.user) {
           await registerUserProfile(data.user);
           await saveProfile(data.user);
@@ -226,7 +237,9 @@ export default function Login({ onLogin }) {
           });
         }
 
-        if (data.user) {
+        // Só entra na plataforma se o Supabase abriu uma sessão. Sem sessão,
+        // as chamadas autenticadas (ex.: gerar atividade) falham.
+        if (data.user && data.session) {
           const userData = {
             id: data.user.id,
             email: data.user.email,
@@ -240,8 +253,15 @@ export default function Login({ onLogin }) {
           return;
         }
 
-        setSignupSuccess("Conta criada com sucesso! Você pode fazer login agora.");
-        alert("Cadastro realizado com sucesso!");
+        // Sem sessão: o e-mail precisa ser confirmado antes do primeiro acesso.
+        const confirmMessage =
+          `Cadastro realizado! Enviamos um link de confirmação para ${signupEmail}. ` +
+          "Abra o e-mail e clique no link para ativar sua conta. Depois, é só entrar com seu e-mail e senha.";
+        setSignupSuccess(confirmMessage);
+        setSignupPassword("");
+        setSignupPasswordConfirm("");
+        setLoginEmail(signupEmail);
+        alert(confirmMessage);
 
         return;
       }

@@ -436,7 +436,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error('Sua sessão não está ativa. Se você acabou de se cadastrar, confirme seu e-mail pelo link que enviamos. Depois, saia e entre novamente.')
       }
 
       setLoadingPhase('generating')
