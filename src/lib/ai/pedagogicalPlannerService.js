@@ -9,6 +9,7 @@ import {
   validateBnccAgainstActivity
 } from '../bnccSelector.js'
 import { findSourcesForActivity } from '../sources/index.js'
+import { buildClassProfilePrompt } from '../classProfile.js'
 import {
   getContextForActivity,
   saveSourcesAsync,
@@ -54,7 +55,7 @@ function buildRegenDirective(hardViolations = [], constraints = {}) {
   return `\nATENÇÃO — a tentativa anterior foi REPROVADA na auditoria de coerência pelos motivos abaixo. Gere a atividade novamente DO ZERO, corrigindo cada ponto desde a concepção (não apenas remendando o texto):\n${items}${matRule}\n`
 }
 
-function buildPrompt({ discipline, grade, theme, steamCompetencies, availableMaterials, strictMaterials = true, numberOfClasses, modality, customInstructions, bnccSuggestions, verifiedSources = [], knowledgeContext = '', qualityPatterns = null, regenDirective = '' }) {
+function buildPrompt({ discipline, grade, theme, steamCompetencies, availableMaterials, strictMaterials = true, numberOfClasses, modality, customInstructions, classProfile = null, bnccSuggestions, verifiedSources = [], knowledgeContext = '', qualityPatterns = null, regenDirective = '' }) {
   const materialsList = parseAvailableMaterialsList(availableMaterials)
   const hasStrictMaterials = strictMaterials && materialsList.length > 0
   const priorityBlock = `HIERARQUIA DE PRIORIDADES (ordem de decisão — a criatividade nunca se sobrepõe às restrições):
@@ -113,7 +114,7 @@ ${complexityGuide}
 ${modalityInfo}
 - Habilidades BNCC selecionadas do banco offline:
 ${formatBnccSuggestions(bnccSuggestions)}
-${customInstructions?.trim() ? `\nSolicitações específicas do professor:\n${customInstructions.trim()}` : ''}
+${customInstructions?.trim() ? `\nSolicitações específicas do professor:\n${customInstructions.trim()}` : ''}${buildClassProfilePrompt(classProfile)}
 ${qualityPatterns && qualityPatterns.totalPositive > 0 ? `
 Aprendizado de atividades anteriores bem avaliadas por este professor (${qualityPatterns.totalPositive} avaliações positivas):
 ${qualityPatterns.topDisciplines.length ? `- Disciplinas mais eficazes para este professor: ${qualityPatterns.topDisciplines.join(', ')}` : ''}
@@ -597,7 +598,7 @@ export class PedagogicalPlannerService {
   }
 
   static async generatePedagogicalActivity(params) {
-    const { discipline, grade, theme, steamCompetencies, numberOfClasses, modality, customInstructions, personalization, userId, userEmail } = params
+    const { discipline, grade, theme, steamCompetencies, numberOfClasses, modality, customInstructions, classProfile, personalization, userId, userEmail } = params
     const availableMaterials = params.availableMaterials || ''
     const materialsList = parseAvailableMaterialsList(availableMaterials)
     const strictMaterials = params.strictMaterials !== false && materialsList.length > 0
@@ -645,7 +646,7 @@ export class PedagogicalPlannerService {
     const runGeneration = async (regenDirective = '') => {
       const prompt = buildPrompt({
         discipline, grade, theme, steamCompetencies, availableMaterials, strictMaterials, numberOfClasses, modality,
-        customInstructions, bnccSuggestions, verifiedSources,
+        customInstructions, classProfile, bnccSuggestions, verifiedSources,
         knowledgeContext: kb.contextSummary,
         qualityPatterns,
         regenDirective,
