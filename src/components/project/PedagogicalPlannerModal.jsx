@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { PedagogicalPlannerService, DAILY_LIMIT, UNLIMITED_EMAIL } from '../../lib/ai/pedagogicalPlannerService.js'
 import { AIProviderManager } from '../../lib/ai/AIProviderManager.js'
 import { supabase } from '../../lib/supabaseClient.js'
@@ -6,10 +6,13 @@ import { buildUserLearningProfile } from '../../lib/machine-learning/user-profil
 import { suggestThemesFromProfile } from '../../lib/machine-learning/recommendation/recommendationEngine.js'
 import { selectBnccHabilidades } from '../../lib/bnccSelector.js'
 import { suggestSteamAreasForMaterials } from '../../lib/steamMaterialSuggester.js'
+import { buildDefaultClassProfile, summarizeClassProfile } from '../../lib/classProfile.js'
 
 import Modal from '../ui/Modal.jsx'
 import Button from '../ui/Button.jsx'
 import TextField from '../ui/TextField.jsx'
+import ClassProfileFields from './ClassProfileFields.jsx'
+import { SelectField, MultiSelectDropdown } from './PlannerSelectFields.jsx'
 
 const LOCAL_QUEUE_KEY = 'steam-ml-behavior-queue'
 
@@ -50,11 +53,11 @@ const GRADES = [
 ]
 
 const STEAM_COMPETENCIES = [
-  { id: 'science', label: 'Ciência', icon: '🔬', color: '#10B981' },
-  { id: 'technology', label: 'Tecnologia', icon: '💻', color: '#3B82F6' },
-  { id: 'engineering', label: 'Engenharia', icon: '⚙️', color: '#F59E0B' },
-  { id: 'arts', label: 'Arte', icon: '🎨', color: '#EF4444' },
-  { id: 'mathematics', label: 'Matemática', icon: '🔢', color: '#8B5CF6' }
+  { id: 'science', label: 'Ciência', color: '#10B981' },
+  { id: 'technology', label: 'Tecnologia', color: '#3B82F6' },
+  { id: 'engineering', label: 'Engenharia', color: '#F59E0B' },
+  { id: 'arts', label: 'Arte', color: '#EF4444' },
+  { id: 'mathematics', label: 'Matemática', color: '#8B5CF6' }
 ]
 
 const PERSONALIZATION_OPTIONS = {
@@ -76,90 +79,12 @@ function buildDefaultPersonalization() {
   return { ...defaultPersonalization }
 }
 
-function TipCard({ icon, title, text, color }) {
+function TipCard({ title, text, color }) {
   return (
-    <div style={{ padding: '0.8rem 1rem', background: '#F9FAFB', border: '1px solid #E5E7EB', borderLeft: `3px solid ${color}`, borderRadius: '8px', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-      <span style={{ fontSize: '1.15rem', flexShrink: 0, lineHeight: 1.2 }}>{icon}</span>
-      <div>
-        <div style={{ fontSize: '0.68rem', fontWeight: '600', color, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.28rem' }}>{title}</div>
-        <div style={{ fontSize: '0.84rem', color: '#374151', lineHeight: 1.6 }}>{text}</div>
-      </div>
+    <div style={{ padding: '0.85rem 1.1rem', background: '#F9FAFB', border: '1px solid #E5E7EB', borderLeft: `4px solid ${color}`, borderRadius: '8px' }}>
+      <div style={{ fontSize: '0.78rem', fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.3rem' }}>{title}</div>
+      <div style={{ fontSize: '0.95rem', color: '#374151', lineHeight: 1.6 }}>{text}</div>
     </div>
-  )
-}
-
-function SelectField({ label, placeholder, value, options, onChange }) {
-  return (
-    <label style={selectFieldStyle}>
-      <span style={selectLabelStyle}>{label}</span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        style={selectInputStyle}
-      >
-        <option value="">{placeholder}</option>
-        {options.map((option) => {
-          const optionValue = typeof option === 'string' ? option : option.value
-          const optionLabel = typeof option === 'string' ? option : option.label
-          return (
-            <option key={optionValue} value={optionValue}>
-              {optionLabel}
-            </option>
-          )
-        })}
-      </select>
-    </label>
-  )
-}
-
-function MultiSelectDropdown({ label, placeholder, options, selectedValues, onToggle, recommendedIds = [] }) {
-  const selectedLabels = options
-    .filter((option) => selectedValues.includes(option.id))
-    .map((option) => option.label)
-
-  return (
-    <details style={multiSelectStyle} open={recommendedIds.length > 0}>
-      <summary style={multiSelectSummaryStyle}>
-        <span>
-          <span style={selectLabelStyle}>{label}</span>
-          <span style={multiSelectValueStyle}>
-            {selectedLabels.length > 0 ? selectedLabels.join(', ') : placeholder}
-          </span>
-        </span>
-        <span style={multiSelectArrowStyle}>⌄</span>
-      </summary>
-      <div style={multiSelectOptionsStyle}>
-        {options.map((option) => {
-          const checked = selectedValues.includes(option.id)
-          const recommended = recommendedIds.includes(option.id)
-          return (
-            <label
-              key={option.id}
-              style={{
-                ...multiSelectOptionStyle,
-                borderColor: checked ? '#3B82F6' : recommended ? '#F59E0B' : '#E5E7EB',
-                backgroundColor: checked ? '#DBEAFE' : '#FFFFFF',
-                color: checked ? '#1E40AF' : '#374151',
-                justifyContent: 'space-between'
-              }}
-            >
-              <span>
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => onToggle(option.id)}
-                  style={multiSelectCheckboxStyle}
-                />
-                {option.icon ? `${option.icon} ` : ''}{option.label}
-              </span>
-              {recommended && !checked && (
-                <span style={recommendedBadgeStyle}>sugerido pelos materiais</span>
-              )}
-            </label>
-          )
-        })}
-      </div>
-    </details>
   )
 }
 
@@ -178,12 +103,12 @@ function generateActivityTips(formData) {
     : 'As áreas STEAM selecionadas criam uma experiência interdisciplinar que conecta teoria e prática.'
 
   return [
-    { icon: '⚡', title: 'Dica STEAM', color: '#4F46E5', text: steamText + ' A combinação dessas áreas cria conexões interdisciplinares que tornam o aprendizado mais significativo.' },
-    { icon: '🔨', title: 'Cultura Maker', color: '#10B981', text: 'A Cultura Maker aparece quando os alunos constroem, testam e melhoram seus protótipos. O erro faz parte do processo — cada tentativa ensina mais do que qualquer explicação.' },
-    { icon: '📋', title: 'Competências BNCC', color: '#8B5CF6', text: `Para o ${formData.grade || 'Ensino Fundamental'}, esta atividade desenvolve pensamento científico, criatividade, comunicação, colaboração e uso de tecnologias — competências gerais da BNCC presentes em todas as áreas do conhecimento.` },
-    { icon: '🔧', title: 'Como adaptar', color: '#F59E0B', text: 'Sem laboratório? Sem problema. Papelão, recicláveis, palitos e cola são suficientes para prototipagem. Para aulas mais curtas, reduza o ciclo para 1 construção + 1 teste + 1 melhoria.' },
-    { icon: '🎨', title: 'Dica Criativa', color: '#EC4899', text: 'Apresente o problema como uma missão: "vocês são engenheiros(as) responsáveis por resolver...". Isso aumenta o engajamento e dá propósito real à atividade.' },
-    { icon: '📚', title: 'Referências', color: '#06B6D4', text: 'As referências ficam junto ao documento da atividade para revisão, validação e impressão pelo professor.' }
+    { title: 'Dica STEAM', color: '#4F46E5', text: steamText + ' A combinação dessas áreas cria conexões interdisciplinares que tornam o aprendizado mais significativo.' },
+    { title: 'Cultura Maker', color: '#10B981', text: 'A Cultura Maker aparece quando os alunos constroem, testam e melhoram seus protótipos. O erro faz parte do processo — cada tentativa ensina mais do que qualquer explicação.' },
+    { title: 'Competências BNCC', color: '#8B5CF6', text: `Para o ${formData.grade || 'Ensino Fundamental'}, esta atividade desenvolve pensamento científico, criatividade, comunicação, colaboração e uso de tecnologias — competências gerais da BNCC presentes em todas as áreas do conhecimento.` },
+    { title: 'Como adaptar', color: '#F59E0B', text: 'Sem laboratório? Sem problema. Papelão, recicláveis, palitos e cola são suficientes para prototipagem. Para aulas mais curtas, reduza o ciclo para 1 construção + 1 teste + 1 melhoria.' },
+    { title: 'Dica Criativa', color: '#EC4899', text: 'Apresente o problema como uma missão: "vocês são engenheiros(as) responsáveis por resolver...". Isso aumenta o engajamento e dá propósito real à atividade.' },
+    { title: 'Referências', color: '#06B6D4', text: 'As referências ficam junto ao documento da atividade para revisão, validação e impressão pelo professor.' }
   ]
 }
 
@@ -198,7 +123,8 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
     steamCompetencies: [],
     numberOfClasses: '',
     modality: 'grupo',
-    personalization: buildDefaultPersonalization()
+    personalization: buildDefaultPersonalization(),
+    classProfile: buildDefaultClassProfile()
   })
   const [previewData, setPreviewData] = useState(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -209,6 +135,15 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
   const [remainingCount, setRemainingCount] = useState(null)
 
   const isUnlimited = currentUser?.email === UNLIMITED_EMAIL
+  const progressRef = useRef(null)
+
+  // Em telas estreitas a barra de passos rola de lado: centraliza o passo atual.
+  useEffect(() => {
+    const bar = progressRef.current
+    const step = bar?.children[currentStep]
+    if (!bar || !step) return
+    bar.scrollLeft = step.offsetLeft - (bar.clientWidth - step.clientWidth) / 2
+  }, [currentStep, isOpen])
 
   // Assim que o professor lista os materiais que possui, sugere quais áreas
   // STEAM eles sustentam e por quê — recalculado a cada alteração do texto.
@@ -217,6 +152,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
     [formData.availableMaterials]
   )
   const suggestedSteamIds = materialSteamSuggestions.matches.map((m) => m.id)
+  const classProfileSummary = summarizeClassProfile(formData.classProfile)
 
   useEffect(() => {
     if (isOpen) {
@@ -240,7 +176,8 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       steamCompetencies: [],
       numberOfClasses: '',
       modality: 'grupo',
-      personalization: buildDefaultPersonalization()
+      personalization: buildDefaultPersonalization(),
+      classProfile: buildDefaultClassProfile()
     })
     setPreviewData(null)
     setError('')
@@ -273,7 +210,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
     setPreviewData({
       bnccItems,
       studentBenefits: [...new Set(selectedBenefits)],
-      makerElements: ['🔨 Prototipagem prática', '🔄 Ciclos de iteração', '🧠 Pensamento crítico', '👥 Trabalho colaborativo', '⚡ Aprendizagem mão na massa']
+      makerElements: ['Prototipagem prática', 'Ciclos de iteração', 'Pensamento crítico', 'Trabalho colaborativo', 'Aprendizagem mão na massa']
     })
   }
 
@@ -333,6 +270,10 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
   const handleGradeSelect = (grade) => {
     setFormData(prev => ({ ...prev, grade }))
     setError('')
+  }
+
+  const handleClassProfileChange = (classProfile) => {
+    setFormData(prev => ({ ...prev, classProfile }))
   }
 
   const handleThemeChange = (theme) => {
@@ -467,7 +408,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       case 0:
         return (
           <div style={stepContentStyle}>
-            <h3 style={stepTitleStyle}>📚 Qual disciplina?</h3>
+            <h3 style={stepTitleStyle}>Qual disciplina?</h3>
             <p style={stepDescriptionStyle}>
               Escolha a disciplina principal da atividade pedagógica.
             </p>
@@ -484,7 +425,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       case 1:
         return (
           <div style={stepContentStyle}>
-            <h3 style={stepTitleStyle}>🎓 Qual série/ano?</h3>
+            <h3 style={stepTitleStyle}>Qual série/ano?</h3>
             <p style={stepDescriptionStyle}>
               Selecione a série ou ano escolar apropriado.
             </p>
@@ -495,6 +436,12 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
               options={GRADES}
               onChange={handleGradeSelect}
             />
+            {formData.grade && (
+              <ClassProfileFields
+                value={formData.classProfile}
+                onChange={handleClassProfileChange}
+              />
+            )}
           </div>
         )
 
@@ -502,13 +449,13 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
         const themeSuggestions = getLocalThemeSuggestions(5)
         return (
           <div style={stepContentStyle}>
-            <h3 style={stepTitleStyle}>🎯 Qual tema central?</h3>
+            <h3 style={stepTitleStyle}>Qual tema central?</h3>
             <p style={stepDescriptionStyle}>
               Descreva o tema principal da atividade (mínimo 3 caracteres).
             </p>
             {themeSuggestions.length > 0 && (
               <div>
-                <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9CA3AF', marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.7)', marginBottom: '0.5rem' }}>
                   Temas do seu histórico
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.75rem' }}>
@@ -551,7 +498,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       case 3:
         return (
           <div style={stepContentStyle}>
-            <h3 style={stepTitleStyle}>📦 Materiais disponíveis</h3>
+            <h3 style={stepTitleStyle}>Materiais disponíveis</h3>
             <p style={stepDescriptionStyle}>
               Informe quais materiais e quantidades você já possui para montar a atividade. Assim a IA pode propor uma atividade mais alinhada à sua realidade.
             </p>
@@ -568,19 +515,18 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
             {formData.availableMaterials.trim().length > 0 && (
               <div style={steamSuggestionBoxStyle}>
                 <div style={steamSuggestionHeaderStyle}>
-                  💡 Áreas STEAM sugeridas para estes materiais
+                  Áreas STEAM sugeridas para estes materiais
                 </div>
                 {materialSteamSuggestions.matches.length > 0 ? (
                   <>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
                       {materialSteamSuggestions.matches.map((s) => (
                         <div key={s.id} style={{ ...steamSuggestionItemStyle, borderLeftColor: s.color }}>
-                          <span style={{ fontSize: '20px', lineHeight: 1 }}>{s.icon}</span>
                           <div>
-                            <div style={{ fontWeight: 700, color: s.color, fontSize: '0.85rem' }}>
+                            <div style={{ fontWeight: 700, color: s.color, fontSize: '0.92rem' }}>
                               {s.letter} · {s.name}{s.subtype ? ` (${s.subtype})` : ''}
                             </div>
-                            <div style={{ fontSize: '0.82rem', color: '#4B5563', lineHeight: 1.4 }}>
+                            <div style={{ fontSize: '0.9rem', color: '#4B5563', lineHeight: 1.45 }}>
                               {s.reason}
                             </div>
                           </div>
@@ -637,7 +583,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       case 4:
         return (
           <div style={stepContentStyle}>
-            <h3 style={stepTitleStyle}>🔬 Competências STEAM</h3>
+            <h3 style={stepTitleStyle}>Competências STEAM</h3>
             <p style={stepDescriptionStyle}>
               Selecione as competências STEAM que deseja utilizar. A Cultura Maker será incluída automaticamente.
             </p>
@@ -651,11 +597,11 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
             />
             {suggestedSteamIds.length > 0 && (
               <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
-                💡 Marcadas com base nos materiais informados na etapa anterior — ajuste como preferir.
+                Marcadas com base nos materiais informados na etapa anterior — ajuste como preferir.
               </p>
             )}
             <div style={makerNoteStyle}>
-              🔧 <strong>Cultura Maker</strong> será incluída automaticamente em todas as atividades
+              <strong>Cultura Maker</strong> será incluída automaticamente em todas as atividades
             </div>
           </div>
         )
@@ -663,7 +609,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       case 5:
         return (
           <div style={stepContentStyle}>
-            <h3 style={stepTitleStyle}>⏱️ Quantas aulas?</h3>
+            <h3 style={stepTitleStyle}>Quantas aulas?</h3>
             <p style={stepDescriptionStyle}>
               Defina a quantidade de aulas que você deseja trabalhar o conteúdo. A atividade será adequada à duração especificada.
             </p>
@@ -687,15 +633,15 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       case 6:
         return (
           <div style={stepContentStyle}>
-            <h3 style={stepTitleStyle}>👥 Como será desenvolvida?</h3>
+            <h3 style={stepTitleStyle}>Como será desenvolvida?</h3>
             <p style={stepDescriptionStyle}>
               Defina se a atividade será realizada em grupo ou individualmente pelos estudantes.
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
               {[
-                { value: 'grupo', label: 'Em grupo', icon: '👥', desc: 'Colaboração, papéis definidos e aprendizagem entre pares' },
-                { value: 'individual', label: 'Individual', icon: '👤', desc: 'Autonomia, reflexão pessoal e ritmo próprio' }
-              ].map(({ value, label, icon, desc }) => {
+                { value: 'grupo', label: 'Em grupo', desc: 'Colaboração, papéis definidos e aprendizagem entre pares' },
+                { value: 'individual', label: 'Individual', desc: 'Autonomia, reflexão pessoal e ritmo próprio' }
+              ].map(({ value, label, desc }) => {
                 const active = formData.modality === value
                 return (
                   <button
@@ -713,9 +659,8 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
                       transition: 'all 0.15s'
                     }}
                   >
-                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{icon}</div>
-                    <div style={{ fontWeight: 700, fontSize: '1rem', color: active ? '#1E40AF' : '#1F2937', marginBottom: '0.35rem' }}>{label}</div>
-                    <div style={{ fontSize: '0.8rem', color: active ? '#3B82F6' : '#6B7280', lineHeight: 1.4 }}>{desc}</div>
+                    <div style={{ fontWeight: 700, fontSize: '1.1rem', color: active ? '#1E40AF' : '#1F2937', marginBottom: '0.35rem' }}>{label}</div>
+                    <div style={{ fontSize: '0.9rem', color: active ? '#1D4ED8' : '#4B5563', lineHeight: 1.45 }}>{desc}</div>
                   </button>
                 )
               })}
@@ -726,7 +671,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       case 7:
         return (
           <div style={stepContentStyle}>
-            <h3 style={stepTitleStyle}>⚙️ Como você quer personalizar?</h3>
+            <h3 style={stepTitleStyle}>Como você quer personalizar?</h3>
             <p style={stepDescriptionStyle}>
               Escolha as opções que melhor combinam com sua turma. Se faltar algo, escreva uma orientação extra no final.
             </p>
@@ -743,6 +688,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
                   />
                 ) : (
                   <SelectField
+                    variant="light"
                     label={group.title}
                     placeholder="Clique para selecionar uma opção"
                     value={formData.personalization[groupId]}
@@ -762,15 +708,31 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       case 8:
         return (
           <div style={stepContentStyle}>
-            <h3 style={stepTitleStyle}>👁️ Prévia da Atividade</h3>
+            <h3 style={stepTitleStyle}>Prévia da Atividade</h3>
             <p style={stepDescriptionStyle}>
               Confira o que será abordado nesta atividade:
             </p>
 
             {previewData && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {classProfileSummary.length > 0 && (
+                  <div style={previewSectionStyle}>
+                    <h4 style={previewSubtitleStyle}>Perfil da turma</h4>
+                    <div style={previewListStyle}>
+                      {classProfileSummary.map((line, idx) => (
+                        <div key={idx} style={previewItemStyle}>
+                          {line}
+                        </div>
+                      ))}
+                    </div>
+                    <p style={previewHintStyle}>
+                      A atividade será contextualizada para essa turma.
+                    </p>
+                  </div>
+                )}
+
                 <div style={previewSectionStyle}>
-                  <h4 style={previewSubtitleStyle}>📋 Competências da BNCC</h4>
+                  <h4 style={previewSubtitleStyle}>Competências da BNCC</h4>
                   <div style={previewListStyle}>
                     {previewData.bnccItems.map((item, idx) => (
                       <div key={idx} style={previewItemStyle}>
@@ -785,18 +747,18 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
                 </div>
 
                 <div style={previewSectionStyle}>
-                  <h4 style={previewSubtitleStyle}>⚙️ Personalização escolhida</h4>
+                  <h4 style={previewSubtitleStyle}>Personalização escolhida</h4>
                   <div style={previewListStyle}>
                     {buildCustomInstructions().split('\n').map((instruction, idx) => (
                       <div key={idx} style={previewItemStyle}>
-                        {instruction.replace(/^- /, '✓ ')}
+                        {instruction.replace(/^- /, '')}
                       </div>
                     ))}
                   </div>
                 </div>
 
                 <div style={previewSectionStyle}>
-                  <h4 style={previewSubtitleStyle}>🔧 Elementos Maker Inclusos</h4>
+                  <h4 style={previewSubtitleStyle}>Elementos Maker Inclusos</h4>
                   <div style={previewListStyle}>
                     {previewData.makerElements.map((element, idx) => (
                       <div key={idx} style={previewItemStyle}>
@@ -807,11 +769,11 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
                 </div>
 
                 <div style={previewSectionStyle}>
-                  <h4 style={previewSubtitleStyle}>✨ O que o aluno vai aprender?</h4>
+                  <h4 style={previewSubtitleStyle}>O que o aluno vai aprender?</h4>
                   <div style={previewListStyle}>
                     {previewData.studentBenefits.map((benefit, idx) => (
                       <div key={idx} style={previewItemStyle}>
-                        ✓ {benefit}
+                        {benefit}
                       </div>
                     ))}
                   </div>
@@ -831,7 +793,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       const tips = generateActivityTips(formData)
       return (
         <div style={{ marginTop: '1rem' }}>
-          <div style={{ fontSize: '0.68rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.09em', color: '#9CA3AF', marginBottom: '0.6rem' }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.7)', marginBottom: '0.6rem' }}>
             Orientações pedagógicas
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.55rem' }}>
@@ -842,18 +804,16 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
     }
 
     const byStep = {
-      0: { icon: '💡', title: 'Dica STEAM', color: '#4F46E5', text: 'Toda disciplina conecta ao STEAM. Você não precisa abandonar o currículo — apenas transformar o conteúdo em uma experiência investigativa e prática que faz sentido para o aluno.' },
+      0: { title: 'Dica STEAM', color: '#4F46E5', text: 'Toda disciplina conecta ao STEAM. Você não precisa abandonar o currículo — apenas transformar o conteúdo em uma experiência investigativa e prática que faz sentido para o aluno.' },
       1: {
-        icon: '🎓',
         title: formData.grade?.includes('6') || formData.grade?.includes('7') ? 'Série ideal para Maker' : 'Protagonismo estudantil',
         color: '#10B981',
         text: formData.grade?.includes('6') || formData.grade?.includes('7')
           ? 'Alunos de 6º e 7º ano adoram explorar e construir. Desafios mão na massa e investigação criam memórias de aprendizado duradouras.'
           : 'No 8º e 9º ano, projetos com impacto real e autonomia aumentam muito o engajamento. Desafios sociais e tecnológicos são ideais para esta faixa.'
       },
-      2: { icon: '🔍', title: 'Transforme em desafio', color: '#EC4899', text: 'Um bom tema STEAM começa com uma pergunta real: "Como podemos resolver...?" Isso coloca os alunos como protagonistas da investigação, não receptores de conteúdo.' },
+      2: { title: 'Transforme em desafio', color: '#EC4899', text: 'Um bom tema STEAM começa com uma pergunta real: "Como podemos resolver...?" Isso coloca os alunos como protagonistas da investigação, não receptores de conteúdo.' },
       3: {
-        icon: '📦',
         title: 'Materiais reais',
         color: '#F59E0B',
         text: formData.availableMaterials.trim()
@@ -861,7 +821,6 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
           : 'Se você não souber ao certo, a IA ainda sugerirá uma atividade, mas incluir os materiais disponíveis melhora a proposta.'
       },
       4: {
-        icon: '⚡',
         title: 'Sinergia STEAM',
         color: '#4F46E5',
         text: formData.steamCompetencies.length > 1
@@ -869,20 +828,18 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
           : 'Selecione mais áreas STEAM para criar conexões interdisciplinares mais ricas. A Cultura Maker estará presente automaticamente em toda a atividade.'
       },
       5: {
-        icon: '🗓️',
         title: 'Jornada Maker',
         color: '#8B5CF6',
         text: `Com ${formData.numberOfClasses || '?'} aula(s) sugerimos: exploração do problema → investigação → construção → testes e ajustes → apresentação. Cada fase aprofunda o aprendizado progressivamente.`
       },
       6: {
-        icon: '👥',
         title: 'Modo de Trabalho',
         color: '#10B981',
         text: formData.modality === 'individual'
           ? 'Atividades individuais fortalecem autonomia, autoavaliação e o ritmo próprio de cada aluno. A IA adaptará as etapas, desafios e a Atividade do Aluno para trabalho solo.'
           : 'Atividades em grupo desenvolvem colaboração, comunicação e aprendizagem entre pares. A IA distribuirá papéis (construtor, testador, registrador, apresentador) entre os membros.'
       },
-      7: { icon: '⚙️', title: 'Ajustes finais', color: '#06B6D4', text: 'Use este passo para definir nível de detalhe, materiais, avaliação e qualquer orientação específica da turma.' }
+      7: { title: 'Ajustes finais', color: '#06B6D4', text: 'Use este passo para definir nível de detalhe, materiais, avaliação e qualquer orientação específica da turma.' }
     }
 
     const tip = byStep[step]
@@ -890,15 +847,15 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
   }
 
   const steps = [
-    { title: 'Disciplina', icon: '📚' },
-    { title: 'Série', icon: '🎓' },
-    { title: 'Tema', icon: '🎯' },
-    { title: 'Materiais', icon: '📦' },
-    { title: 'STEAM', icon: '🔬' },
-    { title: 'Aulas', icon: '⏱️' },
-    { title: 'Modo', icon: '👥' },
-    { title: 'Ajustes', icon: '⚙️' },
-    { title: 'Prévia', icon: '👁️' }
+    { title: 'Disciplina' },
+    { title: 'Série' },
+    { title: 'Tema' },
+    { title: 'Materiais' },
+    { title: 'STEAM' },
+    { title: 'Aulas' },
+    { title: 'Modo' },
+    { title: 'Ajustes' },
+    { title: 'Prévia' }
   ]
 
   const PROVIDER_META = {
@@ -913,7 +870,6 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
       `}</style>
       <div style={loadingSpinnerWrapStyle}>
         <div style={loadingRingStyle} />
-        <span style={loadingIconStyle}>✨</span>
       </div>
 
       <div style={loadingTitleStyle}>
@@ -929,9 +885,9 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20 }}>
         {[
-          { key: 'sources', label: '🔍 Fontes' },
-          { key: 'generating', label: '✨ Geração' },
-          { key: 'saving', label: '💾 Salvando' }
+          { key: 'sources', label: 'Fontes' },
+          { key: 'generating', label: 'Geração' },
+          { key: 'saving', label: 'Salvando' }
         ].map(({ key, label }, i) => {
           const phaseOrder = ['sources', 'generating', 'saving']
           const currentIndex = phaseOrder.indexOf(loadingPhase)
@@ -946,7 +902,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
                 background: done ? '#D1FAE5' : active ? '#EDE9FE' : '#F3F4F6',
                 color: done ? '#065F46' : active ? '#5B21B6' : '#9CA3AF',
                 border: `1px solid ${done ? '#6EE7B7' : active ? '#C4B5FD' : '#E5E7EB'}`
-              }}>{done ? '✓ ' : ''}{label}</div>
+              }}>{label}</div>
             </div>
           )
         })}
@@ -986,35 +942,40 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
   )
 
   return (
-    <Modal isOpen={isOpen} onClose={isGenerating ? undefined : onClose} title="🎓 Planejador Pedagógico Inteligente" size="large">
+    <Modal isOpen={isOpen} onClose={isGenerating ? undefined : onClose} title="Planejador Pedagógico Inteligente" maxWidth="820px">
       <div style={containerStyle} onKeyDown={handleWizardKeyDown}>
         {isGenerating ? renderLoading() : (
           <>
             {/* Progress Indicator */}
-            <div style={progressStyle}>
-              {steps.map((step, index) => (
-                <div key={index} style={progressStepStyle}>
-                  <div style={{
-                    ...progressCircleStyle,
-                    backgroundColor: index <= currentStep ? '#3B82F6' : '#E5E7EB',
-                    color: index <= currentStep ? 'white' : '#6B7280'
-                  }}>
-                    {index < currentStep ? '✓' : step.icon}
-                  </div>
-                  <span style={{
-                    ...progressLabelStyle,
-                    color: index <= currentStep ? '#3B82F6' : '#6B7280'
-                  }}>
-                    {step.title}
-                  </span>
-                  {index < steps.length - 1 && (
+            {/* Só as etapas feitas e a atual: mostrar todas de uma vez desanima.
+                A linha apagada depois da atual indica que ainda há mais. */}
+            <div ref={progressRef} style={progressStyle}>
+              {steps.slice(0, currentStep + 1).map((step, index) => {
+                const current = index === currentStep
+                return (
+                  <div key={step.title} style={progressStepStyle}>
+                    {!current && (
+                      <div style={{ ...progressLineStyle, backgroundColor: '#3B82F6' }} />
+                    )}
+                    {current && index < steps.length - 1 && (
+                      <div style={progressNextHintStyle} />
+                    )}
                     <div style={{
-                      ...progressLineStyle,
-                      backgroundColor: index < currentStep ? '#3B82F6' : '#E5E7EB'
-                    }} />
-                  )}
-                </div>
-              ))}
+                      ...progressCircleStyle,
+                      borderColor: current ? '#93C5FD' : '#3B82F6'
+                    }}>
+                      {current ? index + 1 : '✓'}
+                    </div>
+                    <span style={{
+                      ...progressLabelStyle,
+                      color: current ? '#FFFFFF' : '#93C5FD',
+                      fontWeight: current ? 700 : 500
+                    }}>
+                      {step.title}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
 
             {/* Step Content */}
@@ -1024,7 +985,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
 
               {error && (
                 <div style={errorStyle}>
-                  ⚠️ {error}
+                  {error}
                 </div>
               )}
             </div>
@@ -1065,7 +1026,7 @@ function PedagogicalPlannerModal({ isOpen, onClose, onActivityGenerated, current
                     onClick={handleGenerate}
                     disabled={!validateCurrentStep() || remainingCount === 0}
                   >
-                    ✨ Gerar Atividade Completa
+                    Gerar Atividade Completa
                   </Button>
                 </div>
               )}
@@ -1086,38 +1047,57 @@ const containerStyle = {
 
 const progressStyle = {
   display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '16px 0'
+  alignItems: 'flex-start',
+  justifyContent: 'flex-start',
+  padding: '4px 0 8px',
+  overflowX: 'auto'
 }
 
 const progressStepStyle = {
+  position: 'relative',
+  flex: '0 0 auto',
+  width: '92px',
   display: 'flex',
+  flexDirection: 'column',
   alignItems: 'center',
   gap: '8px'
 }
 
 const progressCircleStyle = {
-  width: '40px',
-  height: '40px',
+  position: 'relative',
+  zIndex: 1,
+  width: '34px',
+  height: '34px',
   borderRadius: '50%',
+  border: '2px solid',
+  boxSizing: 'border-box',
+  backgroundColor: '#3B82F6',
+  color: '#FFFFFF',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: '16px',
-  fontWeight: '600'
+  fontSize: '15px',
+  fontWeight: '700'
 }
 
 const progressLabelStyle = {
-  fontSize: '12px',
-  fontWeight: '500',
+  fontSize: '13px',
   whiteSpace: 'nowrap'
 }
 
+// Linha que liga o centro de um círculo ao do próximo.
 const progressLineStyle = {
-  width: '60px',
-  height: '2px',
-  margin: '0 16px'
+  position: 'absolute',
+  top: '16px',
+  left: 'calc(50% + 20px)',
+  right: 'calc(-50% + 20px)',
+  height: '2px'
+}
+
+// Depois da etapa atual: linha que some aos poucos, sem dizer quantas faltam.
+const progressNextHintStyle = {
+  ...progressLineStyle,
+  background: 'linear-gradient(to right, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0))'
 }
 
 const contentStyle = {
@@ -1134,106 +1114,18 @@ const stepContentStyle = {
 }
 
 const stepTitleStyle = {
-  fontSize: '24px',
-  fontWeight: '600',
-  color: '#1F2937',
+  fontSize: '26px',
+  fontWeight: '700',
+  color: '#FFFFFF',
+  lineHeight: 1.25,
   margin: 0
 }
 
 const stepDescriptionStyle = {
-  fontSize: '16px',
-  color: '#6B7280',
+  fontSize: '17px',
+  color: 'rgba(255, 255, 255, 0.78)',
   margin: 0,
-  lineHeight: '1.5'
-}
-
-const selectFieldStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '8px',
-  marginTop: '12px'
-}
-
-const selectLabelStyle = {
-  display: 'block',
-  fontSize: '14px',
-  fontWeight: '500',
-  color: '#374151',
-  marginBottom: '6px'
-}
-
-const selectInputStyle = {
-  width: '100%',
-  minHeight: '48px',
-  padding: '0 44px 0 14px',
-  border: '2px solid #D1D5DB',
-  borderRadius: '8px',
-  backgroundColor: '#FFFFFF',
-  color: '#1F2937',
-  fontSize: '15px',
-  fontWeight: '500',
-  outline: 'none',
-  cursor: 'pointer'
-}
-
-const multiSelectStyle = {
-  marginTop: '12px',
-  border: '2px solid #D1D5DB',
-  borderRadius: '8px',
-  backgroundColor: '#FFFFFF',
-  overflow: 'hidden'
-}
-
-const multiSelectSummaryStyle = {
-  minHeight: '48px',
-  padding: '10px 14px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: '12px',
-  cursor: 'pointer',
-  listStyle: 'none'
-}
-
-const multiSelectValueStyle = {
-  display: 'block',
-  color: '#1F2937',
-  fontSize: '15px',
-  fontWeight: '500',
-  lineHeight: 1.35
-}
-
-const multiSelectArrowStyle = {
-  color: '#6B7280',
-  fontSize: '18px',
-  flexShrink: 0
-}
-
-const multiSelectOptionsStyle = {
-  display: 'grid',
-  gap: '8px',
-  padding: '12px',
-  backgroundColor: '#F9FAFB',
-  borderTop: '1px solid #E5E7EB'
-}
-
-const multiSelectOptionStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-  minHeight: '42px',
-  padding: '10px 12px',
-  border: '1px solid #E5E7EB',
-  borderRadius: '8px',
-  fontSize: '14px',
-  fontWeight: '500',
-  cursor: 'pointer'
-}
-
-const multiSelectCheckboxStyle = {
-  width: '16px',
-  height: '16px',
-  flexShrink: 0
+  lineHeight: '1.55'
 }
 
 const gridStyle = {
@@ -1294,7 +1186,7 @@ const makerNoteStyle = {
   border: '1px solid #F59E0B',
   borderRadius: '8px',
   color: '#92400E',
-  fontSize: '14px',
+  fontSize: '15px',
   textAlign: 'center'
 }
 
@@ -1307,7 +1199,7 @@ const steamSuggestionBoxStyle = {
 }
 
 const steamSuggestionHeaderStyle = {
-  fontSize: '0.78rem',
+  fontSize: '0.82rem',
   fontWeight: 700,
   textTransform: 'uppercase',
   letterSpacing: '0.04em',
@@ -1338,17 +1230,6 @@ const applySuggestionButtonStyle = {
   fontFamily: 'inherit'
 }
 
-const recommendedBadgeStyle = {
-  fontSize: '0.68rem',
-  fontWeight: 700,
-  color: '#92400E',
-  backgroundColor: '#FEF3C7',
-  border: '1px solid #F59E0B',
-  borderRadius: '10px',
-  padding: '2px 8px',
-  whiteSpace: 'nowrap'
-}
-
 const errorStyle = {
   padding: '12px',
   backgroundColor: '#FEE2E2',
@@ -1364,7 +1245,7 @@ const actionsStyle = {
   justifyContent: 'space-between',
   alignItems: 'center',
   paddingTop: '24px',
-  borderTop: '1px solid #E5E7EB'
+  borderTop: '1px solid rgba(255, 255, 255, 0.12)'
 }
 
 const spacerStyle = {
@@ -1379,8 +1260,8 @@ const previewSectionStyle = {
 }
 
 const previewSubtitleStyle = {
-  fontSize: '16px',
-  fontWeight: '600',
+  fontSize: '18px',
+  fontWeight: '700',
   color: '#1F2937',
   margin: '0 0 12px 0'
 }
@@ -1396,7 +1277,8 @@ const previewItemStyle = {
   backgroundColor: 'white',
   borderRadius: '6px',
   border: '1px solid #E5E7EB',
-  fontSize: '14px',
+  fontSize: '15px',
+  lineHeight: 1.5,
   color: '#374151'
 }
 
@@ -1406,13 +1288,13 @@ const previewBadgeStyle = {
   backgroundColor: '#DBEAFE',
   color: '#1E40AF',
   borderRadius: '4px',
-  fontWeight: '500',
-  fontSize: '12px'
+  fontWeight: '600',
+  fontSize: '13px'
 }
 
 const previewHintStyle = {
-  fontSize: '13px',
-  color: '#6B7280',
+  fontSize: '14px',
+  color: '#4B5563',
   marginTop: '8px',
   fontStyle: 'italic'
 }
@@ -1458,9 +1340,9 @@ const classesInputFieldStyle = {
 }
 
 const classesLabelStyle = {
-  fontSize: '14px',
-  fontWeight: '500',
-  color: '#374151'
+  fontSize: '15px',
+  fontWeight: '600',
+  color: 'rgba(255, 255, 255, 0.88)'
 }
 
 const classesNumberInputStyle = {
@@ -1469,6 +1351,7 @@ const classesNumberInputStyle = {
   borderRadius: '8px',
   fontSize: '16px',
   fontWeight: '500',
+  fontFamily: 'inherit',
   color: '#1F2937',
   transition: 'border-color 0.2s ease',
   outline: 'none'
@@ -1521,21 +1404,17 @@ const loadingRingStyle = {
   animation: 'spin 1s linear infinite'
 }
 
-const loadingIconStyle = {
-  fontSize: '1.75rem',
-  zIndex: 1
-}
 
 const loadingTitleStyle = {
-  fontSize: '1.25rem',
-  fontWeight: '600',
-  color: '#1F2937',
+  fontSize: '1.35rem',
+  fontWeight: '700',
+  color: '#FFFFFF',
   textAlign: 'center'
 }
 
 const loadingSubtitleStyle = {
-  fontSize: '0.9rem',
-  color: '#6B7280',
+  fontSize: '1rem',
+  color: 'rgba(255, 255, 255, 0.75)',
   textAlign: 'center',
   maxWidth: '380px',
   lineHeight: 1.6,
@@ -1552,11 +1431,11 @@ const loadingProviderBoxStyle = {
 }
 
 const loadingProviderLabelStyle = {
-  fontSize: '0.7rem',
-  fontWeight: '600',
+  fontSize: '0.78rem',
+  fontWeight: '700',
   textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: '#9CA3AF',
+  letterSpacing: '0.06em',
+  color: '#6B7280',
   marginBottom: '0.75rem'
 }
 
